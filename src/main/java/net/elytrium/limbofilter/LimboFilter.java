@@ -51,6 +51,7 @@ import net.elytrium.limbofilter.generator.CaptchaGeneration;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
+import net.elytrium.limbofilter.utils.UpdatesChecker;
 import org.slf4j.Logger;
 
 @Plugin(
@@ -93,7 +94,10 @@ public class LimboFilter {
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
     this.server.getEventManager().register(this, new FilterListener(this));
+
     this.reload();
+
+    UpdatesChecker.checkForUpdates(this.getLogger());
   }
 
   @SuppressWarnings("SwitchStatementWithTooFewBranches")

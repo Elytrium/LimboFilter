@@ -31,7 +31,7 @@ public class UpdatesChecker {
 
   public static void checkForUpdates(Logger logger) {
     try {
-      URLConnection conn = new URL("https://raw.githubusercontent.com/Elytrium/LimboAPI/master/VERSION").openConnection();
+      URLConnection conn = new URL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION").openConnection();
       int timeout = (int) TimeUnit.SECONDS.toMillis(5);
       conn.setConnectTimeout(timeout);
       conn.setReadTimeout(timeout);
