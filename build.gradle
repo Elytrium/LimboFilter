@@ -1,0 +1,80 @@
+//file:noinspection GroovyAssignabilityCheck
+
+import com.github.spotbugs.snom.SpotBugsTask
+
+plugins {
+    id "java"
+    id "checkstyle"
+    id "com.github.spotbugs" version "4.7.9"
+    id "org.cadixdev.licenser" version "0.6.1"
+}
+
+group = "net.elytrium"
+version = "1.0.3-SNAPSHOT"
+
+compileJava.options.encoding = "UTF-8"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        name = "velocitypowered-repo"
+        url = "https://repo.velocitypowered.com/snapshots/"
+    }
+    maven {
+        name = "elytrium-repo"
+        url = "https://maven.elytrium.net/repo/"
+    }
+}
+
+dependencies {
+    compileOnly("net.elytrium:limboapi-api:1.0.3-SNAPSHOT")
+
+    compileOnly("com.velocitypowered:velocity-api:3.1.0")
+    annotationProcessor("com.velocitypowered:velocity-api:3.1.0")
+    compileOnly("com.velocitypowered:velocity-proxy:3.1.0") // From Elytrium Repo
+
+    // Needs for some velocity methods
+    compileOnly("io.netty:netty-codec:4.1.70.Final")
+
+    compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.0")
+}
+
+license {
+    header = project.rootProject.file("HEADER.txt")
+}
+
+checkstyle {
+    toolVersion "9.0.1"
+    configFile file("${project.rootDir}/config/checkstyle/checkstyle.xml")
+    configProperties = [configDirectory: "${project.rootDir}/config/checkstyle"]
+
+    // The build should immediately fail if we have errors.
+    maxErrors = 0
+    maxWarnings = 0
+}
+
+tasks.withType(SpotBugsTask) {
+    reports {
+        html {
+            enabled = true
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+            stylesheet = "fancy-hist.xsl"
+        }
+    }
+}
+
+sourceSets.main.java.srcDir(tasks.register("generateTemplates", Copy) { task ->
+    task.inputs.properties "version": project.version
+
+    task.from file("src/main/templates")
+    task.into layout.buildDirectory.dir("../build/generated/sources/templates")
+    task.expand "version": project.version
+}.map {
+    it.outputs
+})
