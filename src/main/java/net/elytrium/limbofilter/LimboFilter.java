@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
@@ -58,7 +57,7 @@ import org.slf4j.Logger;
     id = "limbofilter",
     name = "LimboFilter",
     version = BuildConstants.FILTER_VERSION,
-    url = "ely.su",
+    url = "https://elytrium.net/",
     authors = {"hevav", "mdxd44"},
     dependencies = {@Dependency(id = "limboapi")}
 )
@@ -93,8 +92,6 @@ public class LimboFilter {
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    this.server.getEventManager().register(this, new FilterListener(this));
-
     this.reload();
 
     UpdatesChecker.checkForUpdates(this.getLogger());
@@ -146,18 +143,19 @@ public class LimboFilter {
 
     this.filterServer = this.factory.createLimbo(filterWorld);
 
-    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> new Thread(task, "purge-cache"));
+    CommandManager manager = this.server.getCommandManager();
+    manager.unregister("limbofilter");
+    manager.register("limbofilter", new LimboFilterCommand(this.server, this), "lf", "botfilter", "bf", "lfilter");
 
-    scheduler.scheduleAtFixedRate(() ->
+    this.server.getEventManager().unregisterListeners(this);
+    this.server.getEventManager().register(this, new FilterListener(this));
+
+    Executors.newScheduledThreadPool(1, task -> new Thread(task, "purge-cache")).scheduleAtFixedRate(() ->
         this.checkCache(this.cachedFilterChecks, Settings.IMP.MAIN.PURGE_CACHE_MILLIS),
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         TimeUnit.MILLISECONDS
     );
-
-    CommandManager manager = this.server.getCommandManager();
-    manager.unregister("limbofilter");
-    manager.register("limbofilter", new LimboFilterCommand(this.server, this), "lf", "botfilter", "bf", "lfilter");
   }
 
   public void cacheFilterUser(Player player) {

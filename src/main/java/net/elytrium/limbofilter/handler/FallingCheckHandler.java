@@ -34,9 +34,9 @@ public abstract class FallingCheckHandler implements LimboSessionHandler {
     }
   }
 
-  public double x;
-  public double y;
-  public double z;
+  public double posX;
+  public double posY;
+  public double posZ;
   public boolean onGround = false;
   public int waitingTeleportId = 9876;
   public double lastY;
@@ -58,9 +58,9 @@ public abstract class FallingCheckHandler implements LimboSessionHandler {
     this.validZ = rnd.nextInt(256, 16384);
     this.validTeleportId = rnd.nextInt(65535);
 
-    this.x = this.validX;
-    this.y = this.validY;
-    this.z = this.validZ;
+    this.posX = this.validX;
+    this.posY = this.validY;
+    this.posZ = this.validZ;
   }
 
   @Override
@@ -76,14 +76,14 @@ public abstract class FallingCheckHandler implements LimboSessionHandler {
     if (this.version.compareTo(ProtocolVersion.MINECRAFT_1_8) <= 0
         && x == this.validX && y == this.validY && z == this.validZ && this.waitingTeleportId == this.validTeleportId) {
       this.ticks = 1;
-      this.y = -1;
+      this.posY = -1;
       this.waitingTeleportId = -1;
     }
 
-    this.x = x;
-    this.lastY = this.y;
-    this.y = y;
-    this.z = z;
+    this.posX = x;
+    this.lastY = this.posY;
+    this.posY = y;
+    this.posZ = z;
     this.onMove();
   }
 
@@ -93,7 +93,7 @@ public abstract class FallingCheckHandler implements LimboSessionHandler {
   public void onTeleport(int teleportId) {
     if (teleportId == this.waitingTeleportId) {
       this.ticks = 1;
-      this.y = -1;
+      this.posY = -1;
       this.lastY = -1;
       this.waitingTeleportId = -1;
     }

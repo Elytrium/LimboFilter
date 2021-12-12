@@ -117,7 +117,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
   @Override
   public void onMove() {
     if (!this.startedListening && this.state != CheckState.ONLY_CAPTCHA) {
-      if (this.x == this.validX && this.z == this.validZ) {
+      if (this.posX == this.validX && this.posZ == this.validZ) {
         this.startedListening = true;
       }
       if (this.nonValidPacketsSize > Settings.IMP.MAIN.NON_VALID_POSITION_XZ_ATTEMPTS) {
@@ -133,12 +133,12 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
         return;
       }
       if (this.state == CheckState.ONLY_CAPTCHA) {
-        if (this.lastY != this.y && this.waitingTeleportId == -1) {
+        if (this.lastY != this.posY && this.waitingTeleportId == -1) {
           this.setCaptchaPositionAndDisableFalling();
         }
         return;
       }
-      if (this.lastY - this.y == 0) {
+      if (this.lastY - this.posY == 0) {
         ++this.ignoredTicks;
         return;
       }
@@ -152,9 +152,9 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
       }
       if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
         System.out.println(
-            "lastY=" + this.lastY + "; y=" + this.y + "; diff=" + (this.lastY - this.y)
+            "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY)
             + "; need=" + getLoadedChunkSpeed(this.ticks) + "; ticks=" + this.ticks
-            + "; x=" + this.x + "; z=" + this.z + "; validX=" + this.validX + "; validZ=" + this.validZ
+            + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validZ=" + this.validZ
             + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
         );
       }
@@ -162,7 +162,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
         this.fallingCheckFailed();
         return;
       }
-      if ((this.x != this.validX && this.z != this.validZ) || this.checkY()) {
+      if ((this.posX != this.validX && this.posZ != this.validZ) || this.checkY()) {
         this.fallingCheckFailed();
         return;
       }
@@ -300,7 +300,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
   }
 
   private boolean checkY() {
-    return Math.abs(this.lastY - this.y - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE;
+    return Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE;
   }
 
   private void setCaptchaPositionAndDisableFalling() {
