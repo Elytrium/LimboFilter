@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 
 public class BotFilterSessionHandler extends FallingCheckHandler {
 
-  public static long FALLING_CHECK_TOTAL_TIME;
+  private static long FALLING_CHECK_TOTAL_TIME;
 
   private final Player proxyPlayer;
   private final LimboFilter plugin;
@@ -348,6 +348,10 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
 
   private MinecraftPacket createUpdateViewPosition(LimboFactory factory, int x, int z) {
     return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.UpdateViewPosition, x >> 4, z >> 4);
+  }
+
+  public static void setFallingCheckTotalTime(long time) {
+    FALLING_CHECK_TOTAL_TIME = time;
   }
 
   public enum CheckState {

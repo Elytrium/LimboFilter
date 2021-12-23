@@ -44,8 +44,8 @@ import net.elytrium.limboapi.api.file.SchematicFile;
 import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
-import net.elytrium.limbofilter.commands.LimboFilterCommand;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
+import net.elytrium.limbofilter.commands.LimboFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
@@ -99,7 +99,7 @@ public class LimboFilter {
   public void reload() {
     Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"));
 
-    BotFilterSessionHandler.FALLING_CHECK_TOTAL_TIME = Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L;
+    BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L);
 
     this.statistics.startUpdating();
 

@@ -24,7 +24,7 @@ repositories {
 
     maven {
         setName("velocitypowered-repo")
-        setUrl("https://nexus.velocitypowered.com/repository/maven-public/")
+        setUrl("https://repo.velocitypowered.com/snapshots/")
     }
     maven {
         setName("elytrium-repo")
