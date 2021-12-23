@@ -15,16 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.elytrium.limbofilter.generator.map;
+package net.elytrium.limbofilter.captcha.map;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboapi.api.protocol.map.MapPalette;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 
-@SuppressFBWarnings("EI_EXPOSE_REP")
 public class CraftMapCanvas {
 
   private static final int MAP_SIZE = 16384; // 128 x 128

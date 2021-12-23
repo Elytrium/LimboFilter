@@ -48,6 +48,8 @@ public class Settings extends Config {
     public int CAPTCHA_ATTEMPTS = 2;
     @Comment("Duration of Falling Check in Minecraft ticks (1 tick = 0.05 second, 20 ticks = 1 second).")
     public int FALLING_CHECK_TICKS = 128;
+    @Comment("Maximum time to check the player in milliseconds. If the player stays on the filter limbo for longer than this time, then the check will fail.")
+    public int TIME_OUT = 15000;
     @Comment("Change the parameters below only if you know what they mean.")
     public int NON_VALID_POSITION_XZ_ATTEMPTS = 10;
     public int NON_VALID_POSITION_Y_ATTEMPTS = 10;
@@ -164,11 +166,14 @@ public class Settings extends Config {
     @Create
     public MAIN.STRINGS STRINGS;
 
-    @Comment("Leave titles empty to disable.")
+    @Comment("Leave title fields empty to disable.")
     public static class STRINGS {
 
       public String RELOAD = "{PRFX} &aReloaded successfully!";
       public String RELOAD_FAILED = "{PRFX} &cReload failed, check console for details.";
+
+      public String CLIENT_SETTINGS_KICK = "{PRFX}{NL}&cYour client doesn't send settings packets.";
+      public String CLIENT_BRAND_KICK = "{PRFX}{NL}&cYour client doesn't send brand packet or it's blocked.";
 
       public String CHECKING_CHAT = "{PRFX} Bot-Filter check was started, please wait and don't move..";
       public String CHECKING_TITLE = "{PRFX}";
@@ -180,17 +185,15 @@ public class Settings extends Config {
       public String CHECKING_CAPTCHA_SUBTITLE = "&aYou have &6{0} &aattempts.";
 
       public String SUCCESSFUL_CRACKED = "{PRFX} &aSuccessfully passed Bot-Filter check.";
-      public String SUCCESSFUL_PREMIUM = "{PRFX} &aSuccessfully passed Bot-Filter check.{NL}&6Please, rejoin the server!";
+      public String SUCCESSFUL_PREMIUM_KICK = "{PRFX}{NL}&aSuccessfully passed Bot-Filter check.{NL}&6Please, rejoin the server!";
 
-      public String CAPTCHA_FAILED = "{PRFX} &cYou've mistaken in captcha check.{NL}&6Please, rejoin the server.";
-      public String FALLING_CHECK_FAILED = "{PRFX} &cFalling Check was failed.{NL}&6Please, rejoin the server.";
+      public String CAPTCHA_FAILED_KICK = "{PRFX}{NL}&cYou've mistaken in captcha check.{NL}&6Please, rejoin the server.";
+      public String FALLING_CHECK_FAILED_KICK = "{PRFX}{NL}&cFalling Check was failed.{NL}&6Please, rejoin the server.";
+      public String TIMES_UP = "{PRFX}{NL}&cВы не успели пройти проверку за отведённое время.{NL}&6Please, rejoin the server.";
 
       public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1} &c&l| Pings: &6&l{2} &c&l| Total Connections: &6&l{3} &c&l| Ping: &6&l{4}";
       public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
       public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
-
-      public String KICK_CLIENT_CHECK_SETTINGS = "{NL}{NL}&cYour client doesn't send settings packets.";
-      public String KICK_CLIENT_CHECK_BRAND = "{NL}{NL}&cYour client doesn't send brand packet or it's blocked.";
     }
 
     @Create

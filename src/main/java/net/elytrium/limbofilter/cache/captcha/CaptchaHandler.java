@@ -19,10 +19,8 @@ package net.elytrium.limbofilter.cache.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
 public class CaptchaHandler {
 
   private final MinecraftPacket mapPacket;

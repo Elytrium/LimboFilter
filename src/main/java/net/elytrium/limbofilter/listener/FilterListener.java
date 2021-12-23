@@ -46,7 +46,7 @@ public class FilterListener {
   @Subscribe(order = PostOrder.FIRST)
   public void onLogin(LoginLimboRegisterEvent event) {
     if (this.plugin.shouldCheck(event.getPlayer())) {
-      event.addCallback(() -> this.plugin.filter(event.getPlayer()));
+      event.addCallback(() -> this.plugin.sendToFilterServer(event.getPlayer()));
     }
   }
 

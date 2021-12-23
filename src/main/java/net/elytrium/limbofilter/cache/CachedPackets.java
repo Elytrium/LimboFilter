@@ -23,7 +23,6 @@ import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.packet.Chat;
 import com.velocitypowered.proxy.protocol.packet.Disconnect;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import net.elytrium.limboapi.api.LimboFactory;
@@ -32,17 +31,16 @@ import net.elytrium.limboapi.api.material.VirtualItem;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
 import net.elytrium.limbofilter.Settings;
-import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.IntBinaryTag;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
-@SuppressFBWarnings("EI_EXPOSE_REP")
 public class CachedPackets {
 
   private PreparedPacket captchaFailed;
   private PreparedPacket fallingCheckFailed;
+  private PreparedPacket timesUp;
   private PreparedPacket setSlot;
   private PreparedPacket resetSlot;
   private PreparedPacket checkingChat;
@@ -57,8 +55,9 @@ public class CachedPackets {
   public void createPackets(LimboFactory factory) {
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
 
-    this.captchaFailed = this.createDisconnectPacket(factory, strings.CAPTCHA_FAILED);
-    this.fallingCheckFailed = this.createDisconnectPacket(factory, strings.FALLING_CHECK_FAILED);
+    this.captchaFailed = this.createDisconnectPacket(factory, strings.CAPTCHA_FAILED_KICK);
+    this.fallingCheckFailed = this.createDisconnectPacket(factory, strings.FALLING_CHECK_FAILED_KICK);
+    this.timesUp = this.createDisconnectPacket(factory, strings.TIMES_UP);
 
     this.setSlot = factory.createPreparedPacket()
         .prepare(
@@ -75,11 +74,11 @@ public class CachedPackets {
     this.checkingChat = this.createChatPacket(factory, strings.CHECKING_CHAT);
     this.checkingTitle = this.createTitlePacket(factory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE);
 
-    this.kickClientCheckSettings = this.createDisconnectPacket(factory, strings.KICK_CLIENT_CHECK_SETTINGS);
-    this.kickClientCheckBrand = this.createDisconnectPacket(factory, strings.KICK_CLIENT_CHECK_BRAND);
+    this.kickClientCheckSettings = this.createDisconnectPacket(factory, strings.CLIENT_SETTINGS_KICK);
+    this.kickClientCheckBrand = this.createDisconnectPacket(factory, strings.CLIENT_BRAND_KICK);
 
     this.successfulBotFilterChat = this.createChatPacket(factory, strings.SUCCESSFUL_CRACKED);
-    this.successfulBotFilterDisconnect = this.createDisconnectPacket(factory, strings.SUCCESSFUL_PREMIUM);
+    this.successfulBotFilterDisconnect = this.createDisconnectPacket(factory, strings.SUCCESSFUL_PREMIUM_KICK);
 
     this.noAbilities = this.createAbilitiesPacket(factory);
     this.experience = this.createExpPackets(factory);
@@ -91,7 +90,7 @@ public class CachedPackets {
 
   private List<PreparedPacket> createExpPackets(LimboFactory factory) {
     List<PreparedPacket> packets = new ArrayList<>();
-    long ticks = BotFilterSessionHandler.getTotalTicks();
+    long ticks = Settings.IMP.MAIN.FALLING_CHECK_TICKS;
     float expInterval = 0.01F;
     for (int i = 0; i < ticks; ++i) {
       int percentage = (int) (i * 100 / ticks);
@@ -150,8 +149,8 @@ public class CachedPackets {
       preparedPacket.prepare((version) -> {
         GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_TIMES, version);
         packet.setFadeIn(10);
-        packet.setStay(50);
-        packet.setFadeOut(10);
+        packet.setStay(70);
+        packet.setFadeOut(20);
         return packet;
       }, ProtocolVersion.MINECRAFT_1_8);
     }
@@ -165,6 +164,10 @@ public class CachedPackets {
 
   public PreparedPacket getFallingCheckFailed() {
     return this.fallingCheckFailed;
+  }
+
+  public PreparedPacket getTimesUp() {
+    return this.timesUp;
   }
 
   public PreparedPacket getSetSlot() {

@@ -43,24 +43,24 @@ public class UpdatesChecker {
         }
         String latestVersion0 = getCleanVersion(latestVersion.trim());
         String currentVersion0 = getCleanVersion(Settings.IMP.VERSION);
-        int latestVersionID = Integer.parseInt(latestVersion0.replace(".", "").replace("$", ""));
-        int currentVersionID = Integer.parseInt(currentVersion0.replace(".", "").replace("$", ""));
+        int latestVersionId = Integer.parseInt(latestVersion0.replace(".", "").replace("$", ""));
+        int currentVersionId = Integer.parseInt(currentVersion0.replace(".", "").replace("$", ""));
         if (latestVersion0.endsWith("$")) {
-          --latestVersionID;
+          --latestVersionId;
         }
         if (currentVersion0.endsWith("$")) {
-          --currentVersionID;
+          --currentVersionId;
         }
 
-        if (currentVersionID < latestVersionID) {
+        if (currentVersionId < latestVersionId) {
           logger.error("****************************************");
           logger.warn("The new LimboFilter update was found, please update.");
           logger.error("https://github.com/Elytrium/LimboFilter/releases/");
           logger.error("****************************************");
         }
       }
-    } catch (IOException ex) {
-      logger.warn("Unable to check for updates.", ex);
+    } catch (IOException e) {
+      logger.warn("Unable to check for updates.", e);
     }
   }
 

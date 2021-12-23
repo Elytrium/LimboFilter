@@ -28,7 +28,6 @@ import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -46,7 +45,7 @@ import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
 import net.elytrium.limbofilter.commands.LimboFilterCommand;
-import net.elytrium.limbofilter.generator.CaptchaGeneration;
+import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
@@ -61,7 +60,6 @@ import org.slf4j.Logger;
     authors = {"hevav", "mdxd44"},
     dependencies = {@Dependency(id = "limboapi")}
 )
-@SuppressFBWarnings("EI_EXPOSE_REP")
 public class LimboFilter {
 
   private static LimboFilter instance;
@@ -101,12 +99,13 @@ public class LimboFilter {
   public void reload() {
     Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"));
 
-    BotFilterSessionHandler.reload();
+    BotFilterSessionHandler.FALLING_CHECK_TOTAL_TIME = Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L;
 
     this.statistics.startUpdating();
 
     this.cachedCaptcha = new CachedCaptcha();
-    CaptchaGeneration.init();
+    CaptchaGenerator.init();
+
     this.packets.createPackets(this.getFactory());
 
     this.cachedFilterChecks = new ConcurrentHashMap<>();
@@ -184,7 +183,7 @@ public class LimboFilter {
     }
   }
 
-  public void filter(Player player) {
+  public void sendToFilterServer(Player player) {
     try {
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {
@@ -221,6 +220,10 @@ public class LimboFilter {
 
   public static LimboFilter getInstance() {
     return instance;
+  }
+
+  public ProxyServer getServer() {
+    return this.server;
   }
 
   public Logger getLogger() {

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.elytrium.limbofilter.generator;
+package net.elytrium.limbofilter.captcha;
 
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import java.awt.Color;
@@ -38,11 +38,11 @@ import net.elytrium.limboapi.api.protocol.map.MapPalette;
 import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
-import net.elytrium.limbofilter.generator.map.CraftMapCanvas;
-import net.elytrium.limbofilter.generator.painter.CaptchaPainter;
+import net.elytrium.limbofilter.captcha.map.CraftMapCanvas;
+import net.elytrium.limbofilter.captcha.painter.CaptchaPainter;
 import org.slf4j.Logger;
 
-public class CaptchaGeneration {
+public class CaptchaGenerator {
 
   private static final CraftMapCanvas cachedBackgroundMap = new CraftMapCanvas();
   private static final LimboFilter plugin = LimboFilter.getInstance();
@@ -98,14 +98,14 @@ public class CaptchaGeneration {
       });
     }
 
-    new Thread(CaptchaGeneration::generateImages).start();
+    new Thread(CaptchaGenerator::generateImages).start();
   }
 
   @SuppressWarnings("StatementWithEmptyBody")
   public static void generateImages() {
     ThreadPoolExecutor ex = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     for (int i = 100; i <= 999; ++i) {
-      ex.execute(CaptchaGeneration::genNewPacket);
+      ex.execute(CaptchaGenerator::genNewPacket);
     }
 
     long start = System.currentTimeMillis();

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.elytrium.limbofilter.generator.painter;
+package net.elytrium.limbofilter.captcha.painter;
 
 
 import java.awt.image.BufferedImage;
