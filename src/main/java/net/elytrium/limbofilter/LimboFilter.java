@@ -50,6 +50,7 @@ import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.elytrium.limbofilter.utils.UpdatesChecker;
+import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
 
 @Plugin(
@@ -66,6 +67,7 @@ public class LimboFilter {
 
   private final Path dataDirectory;
   private final Logger logger;
+  private final Metrics.Factory metricsFactory;
   private final ProxyServer server;
   private final LimboFactory factory;
   private final CachedPackets packets;
@@ -77,19 +79,23 @@ public class LimboFilter {
 
   @Inject
   @SuppressWarnings("OptionalGetWithoutIsPresent")
-  public LimboFilter(ProxyServer server, Logger logger, @Named("limboapi") PluginContainer factory, @DataDirectory Path dataDirectory) {
+  public LimboFilter(ProxyServer server, Logger logger, Metrics.Factory metricsFactory,
+      @Named("limboapi") PluginContainer factory, @DataDirectory Path dataDirectory) {
     setInstance(this);
 
     this.server = server;
     this.logger = logger;
-    this.dataDirectory = dataDirectory;
+    this.metricsFactory = metricsFactory;
     this.factory = (LimboFactory) factory.getInstance().get();
+    this.dataDirectory = dataDirectory;
     this.packets = new CachedPackets();
     this.statistics = new Statistics();
   }
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
+    this.metricsFactory.make(this, 13699);
+
     this.reload();
 
     UpdatesChecker.checkForUpdates(this.getLogger());

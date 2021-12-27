@@ -104,7 +104,7 @@ public class CaptchaGenerator {
   @SuppressWarnings("StatementWithEmptyBody")
   public static void generateImages() {
     ThreadPoolExecutor ex = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    for (int i = 100; i <= 999; ++i) {
+    for (int i = 0; i < 100; ++i) {
       ex.execute(CaptchaGenerator::genNewPacket);
     }
 

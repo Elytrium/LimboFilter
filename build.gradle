@@ -5,10 +5,11 @@ plugins {
     id("checkstyle")
     id("com.github.spotbugs").version("5.0.3")
     id("org.cadixdev.licenser").version("0.6.1")
+    id("com.github.johnrengelman.shadow").version("7.1.0")
 }
 
 setGroup("net.elytrium")
-setVersion("1.0.3-SNAPSHOT")
+setVersion("1.0.3-rc1")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
@@ -33,16 +34,26 @@ repositories {
 }
 
 dependencies {
-    compileOnly("net.elytrium:limboapi-api:1.0.3-SNAPSHOT")
+    compileOnly("net.elytrium:limboapi-api:1.0.3-rc1")
 
-    compileOnly("com.velocitypowered:velocity-api:3.1.0")
-    annotationProcessor("com.velocitypowered:velocity-api:3.1.0")
-    compileOnly("com.velocitypowered:velocity-proxy:3.1.0") // From Elytrium Repo
+    compileOnly("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-proxy:3.1.2-SNAPSHOT") // From Elytrium Repo
 
     // Needs for some velocity methods
     compileOnly("io.netty:netty-codec:4.1.72.Final")
 
+    implementation("org.bstats:bstats-velocity:2.2.1")
+
     compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.2")
+}
+
+shadowJar {
+    getArchiveClassifier().set("")
+
+    // Why are we increasing the size of the plugin if we can do that? :thinking:
+    relocate("org.bstats", "net.elytrium.limboapi.thirdparty.org.bstats")
+    exclude("org/bstats/**")
 }
 
 license {
@@ -80,3 +91,5 @@ sourceSets.main.getJava().srcDir(getTasks().register("generateTemplates", Copy) 
 }.map {
     it.getOutputs()
 })
+
+assemble.dependsOn(shadowJar)
