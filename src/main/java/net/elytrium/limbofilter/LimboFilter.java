@@ -49,6 +49,8 @@ import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.elytrium.limbofilter.utils.UpdatesChecker;
+import org.bstats.charts.SimplePie;
+import org.bstats.charts.SingleLineChart;
 import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
 
@@ -80,6 +82,7 @@ public class LimboFilter {
 
   private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
+  private Metrics metrics;
 
   @Inject
   public LimboFilter(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -96,9 +99,19 @@ public class LimboFilter {
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    this.metricsFactory.make(this, 13699);
+    this.metrics = this.metricsFactory.make(this, 13699);
 
     this.reload();
+
+    this.metrics.addCustomChart(new SimplePie("filter_type", () -> Settings.IMP.MAIN.CHECK_STATE));
+    this.metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
+    this.metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_BRAND)));
+    this.metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS)));
+    this.metrics.addCustomChart(new SimplePie("has_backplate", () ->
+        String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATH.isEmpty())));
+
+    this.metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings())));
+    this.metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
 
     UpdatesChecker.checkForUpdates(this.getLogger());
   }
