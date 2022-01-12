@@ -3,8 +3,8 @@
 # LimboFilter
 
 [![Join our Discord](https://img.shields.io/discord/775778822334709780.svg?logo=discord&label=Discord)](https://ely.su/discord)
-[![Proxy Stats](https://img.shields.io/bstats/servers/12530?logo=minecraft&label=Servers)](https://bstats.org/plugin/velocity/LimboAPI/12530)
-[![Proxy Stats](https://img.shields.io/bstats/players/12530?logo=minecraft&label=Players)](https://bstats.org/plugin/velocity/LimboAPI/12530)
+[![Proxy Stats](https://img.shields.io/bstats/servers/13699?logo=minecraft&label=Servers)](https://bstats.org/plugin/velocity/LimboFilter/13699)
+[![Proxy Stats](https://img.shields.io/bstats/players/13699?logo=minecraft&label=Players)](https://bstats.org/plugin/velocity/LimboFilter/13699)
 
 Most powerful bot filtering solution for Minecraft proxies. Built with LimboAPI. \
 [MC-Market](https://www.mc-market.org/resources/21097/) \
@@ -21,31 +21,32 @@ Test server: [``ely.su``](https://hotmc.ru/minecraft-server-203216)
 
 ## Features of LimboFilter
 
-- Improved Falling Check - Check X, Z coordinates, 
-- Highly customizable CAPTCHA's - change fonts, backplates, colors, alphabet-pattern, length
-- Client settings and brand checking
-- Highly customisable config - you can change all the messages the plugin sends
-- Ability to partially disable protection on low-loads of proxy
-- Ability to prepare raw packets to reduce CPU usage
-- Fast MCEdit schematic world loading for CAPTCHA checking
-- And more..
+- Improved Falling Check - Check X, Z coordinates;
+- Highly customizable CAPTCHA's - change fonts, backplates, colors, alphabet-pattern, length;
+- Client settings and brand checking;
+- Highly customisable config - you can change all the messages the plugin sends;
+- Ability to partially disable protection on low-loads of proxy;
+- Ability to prepare raw packets to reduce CPU usage;
+- Fast MCEdit schematic world loading for CAPTCHA checking;
+- And more...
 
 ### LimboFilter /vs/ popular antibot solutions:
 
-Test server: i7-3770 (4c/8t 3.4GHz) Dedicated server, Ubuntu Server 20.04, OpenJDK 11, 16GB DDR3 1600MHz RAM, 4GB RAM is allocated to proxy. <br>
+Test server: i7-3770 (4c/8t 3.4GHz) Dedicated server, Ubuntu Server 20.04, OpenJDK 11, 16GB DDR3 1600MHz RAM, 4GB RAM is allocated to proxy. \
 Attack: Motd + Join bot attack (100k joins per seconds, 1.17 Protocol)
 
-Proxy server | Info | Boot time | % CPU on attack
---- | --- | --- | ---
-Velocity | LimboFilter + LimboAuth Online/Offline Mode | 2 sec | 20%
-Velocity | LimboFilter + Offline Mode | 2 sec | 20%
-Leymooo's BungeeCord BotFilter | JPremium Online/Offline Mode | 8 sec | 95%
-Leymooo's BungeeCord BotFilter | Offline Mode | 8 sec | 40%
-yooniks' BungeeCord Aegis Escanor 1.3.1 | Offline Mode | 10 sec | 20%
-yooniks' BungeeCord Aegis 9.2.1 | Offline Mode | 10 sec | 100% (what?)
-Velocity | JPremium Online/Offline Mode | 2 sec | 95%
-Velocity | Online Mode | 2 sec | 70%
-Velocity | Offline Mode | 2 sec | 55%
+| Proxy server                            | Info                                        | Boot time | % CPU on attack |
+|-----------------------------------------|---------------------------------------------|-----------|-----------------|
+| Velocity                                | LimboFilter + LimboAuth Online/Offline Mode | 2 sec     | 20%             |
+| Velocity                                | LimboFilter + Offline Mode                  | 2 sec     | 20%             |
+| Leymooo's BungeeCord BotFilter          | JPremium Online/Offline Mode                | 8 sec     | 95%             |
+| Leymooo's BungeeCord BotFilter          | Offline Mode                                | 8 sec     | 40%             |
+| yooniks' BungeeCord Aegis Escanor 1.3.1 | Offline Mode                                | 10 sec    | 20%             |
+| yooniks' BungeeCord Aegis 9.2.1         | Offline Mode                                | 10 sec    | 100% (xd)       |
+| Velocity                                | JPremium Online/Offline Mode                | 2 sec     | 95%             |
+| Velocity                                | BotSentry 9.2 + Online Mode                 | 2 sec     | 70%             |
+| Velocity                                | Online Mode                                 | 2 sec     | 70%             |
+| Velocity                                | Offline Mode                                | 2 sec     | 55%             |
 
 ## Donation
 

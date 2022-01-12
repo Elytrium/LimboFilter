@@ -18,7 +18,6 @@
 package net.elytrium.limbofilter;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -58,38 +57,41 @@ import org.slf4j.Logger;
     name = "LimboFilter",
     version = BuildConstants.FILTER_VERSION,
     url = "https://elytrium.net/",
-    authors = {"hevav", "mdxd44"},
-    dependencies = {@Dependency(id = "limboapi")}
+    authors = {
+        "hevav",
+        "mdxd44"
+    },
+    dependencies = {
+        @Dependency(id = "limboapi")
+    }
 )
 public class LimboFilter {
 
-  private static LimboFilter instance;
+  private final Map<String, CachedUser> cachedFilterChecks = new ConcurrentHashMap<>();
 
   private final Path dataDirectory;
   private final Logger logger;
   private final Metrics.Factory metricsFactory;
   private final ProxyServer server;
-  private final LimboFactory factory;
   private final CachedPackets packets;
+  private final CaptchaGenerator generator;
   private final Statistics statistics;
+  private final LimboFactory factory;
 
-  private Map<String, CachedUser> cachedFilterChecks;
   private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
 
   @Inject
-  @SuppressWarnings("OptionalGetWithoutIsPresent")
-  public LimboFilter(ProxyServer server, Logger logger, Metrics.Factory metricsFactory,
-      @Named("limboapi") PluginContainer factory, @DataDirectory Path dataDirectory) {
-    setInstance(this);
-
+  public LimboFilter(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
     this.server = server;
     this.logger = logger;
     this.metricsFactory = metricsFactory;
-    this.factory = (LimboFactory) factory.getInstance().get();
     this.dataDirectory = dataDirectory;
     this.packets = new CachedPackets();
+    this.generator = new CaptchaGenerator(this);
     this.statistics = new Statistics();
+
+    this.factory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
   }
 
   @Subscribe
@@ -109,12 +111,12 @@ public class LimboFilter {
 
     this.statistics.startUpdating();
 
-    this.cachedCaptcha = new CachedCaptcha();
-    CaptchaGenerator.init();
+    this.cachedCaptcha = new CachedCaptcha(this);
+    this.generator.generateCaptcha();
 
     this.packets.createPackets(this.getFactory());
 
-    this.cachedFilterChecks = new ConcurrentHashMap<>();
+    this.cachedFilterChecks.clear();
 
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
     VirtualWorld filterWorld = this.factory.createVirtualWorld(
@@ -218,14 +220,6 @@ public class LimboFilter {
     }
 
     return limit <= this.statistics.getPings();
-  }
-
-  private static void setInstance(LimboFilter instance) {
-    LimboFilter.instance = instance;
-  }
-
-  public static LimboFilter getInstance() {
-    return instance;
   }
 
   public ProxyServer getServer() {

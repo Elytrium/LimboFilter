@@ -31,12 +31,11 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 import java.util.Random;
+import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.Settings;
 
 public class CaptchaPainter {
 
-  private static final int width = 128;
-  private static final int height = 128;
   private final Color background = Color.WHITE;
   private final Random rnd = new Random();
 
@@ -71,15 +70,15 @@ public class CaptchaPainter {
 
     this.transform(vector);
 
-    Rectangle bounds = vector.getPixelBounds(null, 0, height);
+    Rectangle bounds = vector.getPixelBounds(null, 0, MapData.MAP_DIM_SIZE);
     float bw = (float) bounds.getWidth();
     float bh = (float) bounds.getHeight();
 
     boolean outlineEnabled = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE;
 
-    float wr = width / bw * (this.rnd.nextFloat() / 20 + (outlineEnabled ? 0.89f : 0.92f)) * 1;
-    float hr = height / bh * (this.rnd.nextFloat() / 20 + (outlineEnabled ? 0.68f : 0.75f)) * 1;
-    g.translate((width - bw * wr) / 2, (height - bh * hr) / 2);
+    float wr = MapData.MAP_DIM_SIZE / bw * (this.rnd.nextFloat() / 20 + (outlineEnabled ? 0.89f : 0.92f)) * 1;
+    float hr = MapData.MAP_DIM_SIZE / bh * (this.rnd.nextFloat() / 20 + (outlineEnabled ? 0.68f : 0.75f)) * 1;
+    g.translate((MapData.MAP_DIM_SIZE - bw * wr) / 2, (MapData.MAP_DIM_SIZE - bh * hr) / 2);
     g.scale(wr, hr);
 
     float bx = (float) bounds.getX();
@@ -87,16 +86,17 @@ public class CaptchaPainter {
     if (outlineEnabled) {
       g.draw(
           vector.getOutline(
-              Math.signum(this.rnd.nextFloat() - 0.5f) * 1 * width / 200 - bx, Math.signum(this.rnd.nextFloat() - 0.5f) * 1 * height / 70 + height - by
+              Math.signum(this.rnd.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 200 - bx,
+              Math.signum(this.rnd.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 70 + MapData.MAP_DIM_SIZE - by
           )
       );
     }
 
-    g.drawGlyphVector(vector, -bx, height - by);
+    g.drawGlyphVector(vector, -bx, MapData.MAP_DIM_SIZE - by);
   }
 
   protected BufferedImage createImage() {
-    return new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_3BYTE_BGR);
   }
 
   protected Graphics2D configureGraphics(Graphics g, Font font, Color foreground) {
@@ -111,7 +111,7 @@ public class CaptchaPainter {
     g2.setBackground(this.background);
     g2.setFont(font);
 
-    g2.clearRect(0, 0, width, height);
+    g2.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);
 
     return g2;
   }

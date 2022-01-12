@@ -25,34 +25,32 @@ import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 
 public class CraftMapCanvas {
 
-  private static final int MAP_SIZE = 16384; // 128 x 128
-
   private final byte[] canvas;
   private final byte[][] canvas17; // 1.7.x canvas
 
   public CraftMapCanvas() {
-    this.canvas = new byte[MAP_SIZE];
+    this.canvas = new byte[MapData.MAP_SIZE];
     Arrays.fill(this.canvas, MapPalette.WHITE);
 
-    this.canvas17 = new byte[128][128];
-    for (int x = 0; x < 128; ++x) {
-      for (int y = 0; y < 128; ++y) {
+    this.canvas17 = new byte[MapData.MAP_DIM_SIZE][MapData.MAP_DIM_SIZE];
+    for (int x = 0; x < MapData.MAP_DIM_SIZE; ++x) {
+      for (int y = 0; y < MapData.MAP_DIM_SIZE; ++y) {
         this.canvas17[x][y] = MapPalette.WHITE;
       }
     }
   }
 
   public CraftMapCanvas(CraftMapCanvas another) {
-    byte[] canvasBuf = new byte[MAP_SIZE];
-    System.arraycopy(another.getCanvas(), 0, canvasBuf, 0, MAP_SIZE);
+    byte[] canvasBuf = new byte[MapData.MAP_SIZE];
+    System.arraycopy(another.getCanvas(), 0, canvasBuf, 0, MapData.MAP_SIZE);
     this.canvas = canvasBuf;
 
     this.canvas17 = Arrays.stream(another.get17Canvas()).map(byte[]::clone).toArray(byte[][]::new);
   }
 
   public void setPixel(int x, int y, byte color) {
-    if (x >= 0 && y >= 0 && x < 128 && y < 128) {
-      this.canvas[y * 128 + x] = color;
+    if (x >= 0 && y >= 0 && x < MapData.MAP_DIM_SIZE && y < MapData.MAP_DIM_SIZE) {
+      this.canvas[y * MapData.MAP_DIM_SIZE + x] = color;
       this.canvas17[x][y] = color;
     }
   }
@@ -88,8 +86,8 @@ public class CraftMapCanvas {
   }
 
   public MapData[] get17MapsData() {
-    MapData[] maps = new MapData[128];
-    for (int i = 0; i < 128; ++i) {
+    MapData[] maps = new MapData[MapData.MAP_DIM_SIZE];
+    for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
       maps[i] = new MapData(i, this.canvas17[i]);
     }
 

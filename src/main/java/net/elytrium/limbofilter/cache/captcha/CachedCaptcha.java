@@ -29,11 +29,17 @@ import net.elytrium.limbofilter.Settings;
 public class CachedCaptcha {
 
   private final List<CaptchaHandler> captchas = new ArrayList<>();
-  private final AtomicInteger counterAtomic = new AtomicInteger(0);
+  private final AtomicInteger captchaCounter = new AtomicInteger(0);
+
+  private final LimboFilter plugin;
+
+  public CachedCaptcha(LimboFilter plugin) {
+    this.plugin = plugin;
+  }
 
   public void createCaptchaPacket(MinecraftPacket mapDataPacket, MinecraftPacket[] mapDataPackets17, String answer) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
-      PreparedPacket prepared = LimboFilter.getInstance().getFactory().createPreparedPacket();
+      PreparedPacket prepared = this.plugin.getFactory().createPreparedPacket();
       this.captchas.add(
           new CaptchaHandler(
               prepared.prepare(
@@ -49,12 +55,10 @@ public class CachedCaptcha {
   }
 
   public CaptchaHandler randomCaptcha() {
-    int counter = this.counterAtomic.incrementAndGet();
-    if (counter >= this.captchas.size()) {
-      counter = 0;
-      this.counterAtomic.set(0);
+    if (this.captchaCounter.incrementAndGet() >= this.captchas.size()) {
+      this.captchaCounter.set(0);
     }
 
-    return this.captchas.get(counter);
+    return this.captchas.get(this.captchaCounter.get());
   }
 }
