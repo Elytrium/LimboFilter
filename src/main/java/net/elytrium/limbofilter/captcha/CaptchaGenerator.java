@@ -34,7 +34,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
-import net.elytrium.limboapi.api.protocol.map.MapPalette;
 import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
@@ -44,11 +43,11 @@ import org.slf4j.Logger;
 
 public class CaptchaGenerator {
 
-  private final CraftMapCanvas cachedBackgroundMap = new CraftMapCanvas();
-  private final CaptchaPainter painter = new CaptchaPainter();
-  private final List<Font> fonts = new ArrayList<>();
-  private final AtomicInteger fontCounter = new AtomicInteger(0);
-  private final AtomicInteger colorCounter = new AtomicInteger(0);
+  private static final CraftMapCanvas cachedBackgroundMap = new CraftMapCanvas();
+  private static final CaptchaPainter painter = new CaptchaPainter();
+  private static final List<Font> fonts = new ArrayList<>();
+  private static final AtomicInteger fontCounter = new AtomicInteger(0);
+  private static final AtomicInteger colorCounter = new AtomicInteger(0);
 
   private final LimboFilter plugin;
   private final Logger logger;
@@ -61,13 +60,13 @@ public class CaptchaGenerator {
   public void generateCaptcha() {
     try {
       if (!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATH.equals("")) {
-        this.cachedBackgroundMap.drawImage(0, 0, ImageIO.read(new File(Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATH)), false);
+        cachedBackgroundMap.drawImage(0, 0, ImageIO.read(new File(Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATH)), false);
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
 
-    this.fonts.clear();
+    fonts.clear();
 
     int fontSize = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_SIZE;
     Map<TextAttribute, Object> textSettings = Map.of(
@@ -82,9 +81,9 @@ public class CaptchaGenerator {
     );
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.USE_STANDARD_FONTS) {
-      this.fonts.add(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
-      this.fonts.add(new Font(Font.SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
-      this.fonts.add(new Font(Font.MONOSPACED, Font.PLAIN, fontSize).deriveFont(textSettings));
+      fonts.add(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
+      fonts.add(new Font(Font.SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
+      fonts.add(new Font(Font.MONOSPACED, Font.PLAIN, fontSize).deriveFont(textSettings));
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONTS_PATH != null) {
@@ -94,7 +93,7 @@ public class CaptchaGenerator {
             this.logger.info("Loading font " + fontFile);
             Font font = Font.createFont(Font.TRUETYPE_FONT, new File(fontFile));
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
-            this.fonts.add(font.deriveFont(textSettings));
+            fonts.add(font.deriveFont(textSettings));
           }
         } catch (FontFormatException | IOException e) {
           e.printStackTrace();
@@ -108,7 +107,7 @@ public class CaptchaGenerator {
   @SuppressWarnings("StatementWithEmptyBody")
   public void generateImages() {
     ThreadPoolExecutor ex = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT; ++i) {
       ex.execute(this::genNewPacket);
     }
 
@@ -124,15 +123,15 @@ public class CaptchaGenerator {
 
   public void genNewPacket() {
     String answer = this.randomAnswer();
-    CraftMapCanvas map = new CraftMapCanvas(this.cachedBackgroundMap);
+    CraftMapCanvas map = new CraftMapCanvas(cachedBackgroundMap);
 
-    int fontNumber = this.fontCounter.getAndIncrement();
-    if (fontNumber >= this.fonts.size()) {
+    int fontNumber = fontCounter.getAndIncrement();
+    if (fontNumber >= fonts.size()) {
       fontNumber = 0;
-      this.fontCounter.set(0);
+      fontCounter.set(0);
     }
 
-    BufferedImage image = this.painter.draw(this.fonts.get(fontNumber), this.randomNotWhiteColor(), answer);
+    BufferedImage image = painter.draw(fonts.get(fontNumber), this.randomColor(), answer);
     map.drawImage(0, 0, image, Settings.IMP.MAIN.CAPTCHA_GENERATOR.COLORIFY);
 
     MinecraftPacket packet = (MinecraftPacket) this.plugin.getFactory().instantiatePacket(BuiltInPackets.MapData, 0, (byte) 0, map.getMapData());
@@ -144,19 +143,22 @@ public class CaptchaGenerator {
     this.plugin.getCachedCaptcha().createCaptchaPacket(packet, packets17, answer);
   }
 
-  private Color randomNotWhiteColor() {
-    MapPalette.Color[] colors = MapPalette.getColors();
+  private Color randomColor() {
+    int index = colorCounter.getAndIncrement();
+    if (index >= Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.size()) {
+      index = 0;
+      colorCounter.set(0);
+    }
 
-    int index;
-    do {
-      index = this.colorCounter.getAndIncrement();
-      if (index >= colors.length) {
-        index = 0;
-        this.colorCounter.set(0);
-      }
-    } while (colors[index].getRed() >= 200 && colors[index].getGreen() >= 200 && colors[index].getBlue() >= 200);
+    return simplifyRGB(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.get(index), 16));
+  }
 
-    return colors[index].toJava();
+  private static Color simplifyRGB(int rgb) {
+    int r = ((rgb & 0xff0000) >>> 16) & ~15;
+    int g = ((rgb & 0xff00) >>> 8) & ~15;
+    int b = (rgb & 0xff) & ~15;
+
+    return new Color(r, g, b);
   }
 
   private String randomAnswer() {

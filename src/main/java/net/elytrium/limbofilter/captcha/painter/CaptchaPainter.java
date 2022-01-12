@@ -36,7 +36,6 @@ import net.elytrium.limbofilter.Settings;
 
 public class CaptchaPainter {
 
-  private final Color background = Color.WHITE;
   private final Random rnd = new Random();
 
   public BufferedImage draw(Font font, Color foreground, String text) {
@@ -96,7 +95,7 @@ public class CaptchaPainter {
   }
 
   protected BufferedImage createImage() {
-    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_3BYTE_BGR);
+    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
   }
 
   protected Graphics2D configureGraphics(Graphics g, Font font, Color foreground) {
@@ -108,7 +107,7 @@ public class CaptchaPainter {
     this.configureGraphicsQuality(g2);
 
     g2.setColor(foreground);
-    g2.setBackground(this.background);
+    g2.setBackground(new Color(0, 0, 0, 0));
     g2.setFont(font);
 
     g2.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);

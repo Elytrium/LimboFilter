@@ -55,10 +55,12 @@ public class CachedCaptcha {
   }
 
   public CaptchaHandler randomCaptcha() {
-    if (this.captchaCounter.incrementAndGet() >= this.captchas.size()) {
+    int counter = this.captchaCounter.incrementAndGet();
+    if (counter >= this.captchas.size()) {
+      counter = 0;
       this.captchaCounter.set(0);
     }
 
-    return this.captchas.get(this.captchaCounter.get());
+    return this.captchas.get(counter);
   }
 }

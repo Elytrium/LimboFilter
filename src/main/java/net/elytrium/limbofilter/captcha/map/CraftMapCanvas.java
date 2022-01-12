@@ -30,12 +30,12 @@ public class CraftMapCanvas {
 
   public CraftMapCanvas() {
     this.canvas = new byte[MapData.MAP_SIZE];
-    Arrays.fill(this.canvas, MapPalette.WHITE);
+    Arrays.fill(this.canvas, (byte) 0);
 
     this.canvas17 = new byte[MapData.MAP_DIM_SIZE][MapData.MAP_DIM_SIZE];
     for (int x = 0; x < MapData.MAP_DIM_SIZE; ++x) {
       for (int y = 0; y < MapData.MAP_DIM_SIZE; ++y) {
-        this.canvas17[x][y] = MapPalette.WHITE;
+        this.canvas17[x][y] = 0;
       }
     }
   }
@@ -67,7 +67,7 @@ public class CraftMapCanvas {
     for (int x2 = 0; x2 < width; ++x2) {
       for (int y2 = 0; y2 < height; ++y2) {
         byte color = (byte) bytes[y2 * width + x2];
-        if (color != MapPalette.WHITE) {
+        if ((image.getRGB(x2, y2) & 0xff000000) >>> 24 >= 128) {
           if (colorify) {
             color -= randomizedColor;
             if (color < 0) {

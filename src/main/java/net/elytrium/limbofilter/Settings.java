@@ -156,6 +156,8 @@ public class Settings extends Config {
       public boolean COLORIFY = false;
       public String PATTERN = "abcdefghijklmnopqrtuvwxyz1234567890";
       public int LENGTH = 3;
+      public int IMAGES_COUNT = 1000;
+      public List<String> RGB_COLOR_LIST = List.of("000000", "AA0000", "00AA00", "0000AA", "AAAA00", "AA00AA", "00AAAA");
     }
 
     @Comment(
