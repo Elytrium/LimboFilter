@@ -67,6 +67,9 @@ public class Settings extends Config {
     })
     public String CHECK_STATE = "CAPTCHA_POSITION";
 
+    @Comment("See filter-auto-toggle")
+    public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
+
     public boolean LOAD_WORLD = false;
     @Comment("World file type: schematic")
     public String WORLD_FILE_TYPE = "schematic";
@@ -106,10 +109,18 @@ public class Settings extends Config {
 
       @Comment({
           "Verify Online Mode connection before AntiBot.",
-          "If connections per second amount is bigger than the limit: online mode players will need to reconnect",
+          "If connections per unit of time amount is bigger than the limit: online mode players will need to reconnect",
           "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting"
       })
       public int ONLINE_MODE_VERIFY = 79;
+
+      @Comment({
+          "Toggles CHECK_STATE/CHECK_STATE_NON_TOGGLED.",
+          "It is not recommended to enable it, if you want to protect your server from spam-bots.",
+          "If connections per unit of time amount is bigger than the limit: CHECK_STATE will be used",
+          "Else: CHECK_STATE_NON_TOGGLED will be used"
+      })
+      public int CHECK_STATE_TOGGLE = 0;
 
       @Comment({
           "The player will need to reconnect after passing AntiBot check.",

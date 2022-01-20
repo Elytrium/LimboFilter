@@ -57,7 +57,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
   private final long joinTime = System.currentTimeMillis();
   private ScheduledTask filterMainTask;
 
-  private CheckState state = CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE);
+  private CheckState state;
   private LimboPlayer player;
   private Limbo server;
   private String captchaAnswer;
@@ -77,6 +77,9 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     this.statistics = this.plugin.getStatistics();
     this.logger = this.plugin.getLogger();
     this.packets = this.plugin.getPackets();
+
+    this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
+        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED) : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE);
 
     Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
     this.fallingCheckPos = this.createPlayerPosAndLook(
@@ -160,9 +163,9 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
       if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
         System.out.println(
             "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY)
-            + "; need=" + getLoadedChunkSpeed(this.ticks) + "; ticks=" + this.ticks
-            + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validZ=" + this.validZ
-            + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
+                + "; need=" + getLoadedChunkSpeed(this.ticks) + "; ticks=" + this.ticks
+                + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validZ=" + this.validZ
+                + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
         );
       }
       if (this.ignoredTicks > Settings.IMP.MAIN.NON_VALID_POSITION_Y_ATTEMPTS) {
