@@ -79,7 +79,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     this.packets = this.plugin.getPackets();
 
     this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
-        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED) : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE);
+        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE) : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
 
     Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
     this.fallingCheckPos = this.createPlayerPosAndLook(
