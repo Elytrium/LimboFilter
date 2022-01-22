@@ -161,7 +161,7 @@ public class LimboFilter {
       }
     }
 
-    this.filterServer = this.factory.createLimbo(filterWorld);
+    this.filterServer = this.factory.createLimbo(filterWorld).setName("LimboFilter");
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");

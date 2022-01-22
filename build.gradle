@@ -3,13 +3,13 @@
 plugins {
     id("java")
     id("checkstyle")
-    id("com.github.spotbugs").version("5.0.3")
+    id("com.github.spotbugs").version("5.0.5")
     id("org.cadixdev.licenser").version("0.6.1")
-    id("com.github.johnrengelman.shadow").version("7.1.0")
+    id("com.github.johnrengelman.shadow").version("7.1.2")
 }
 
 setGroup("net.elytrium")
-setVersion("1.0.3-rc2")
+setVersion("1.0.3-rc3")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
@@ -34,18 +34,18 @@ repositories {
 }
 
 dependencies {
-    compileOnly("net.elytrium:limboapi-api:1.0.3-rc4")
+    compileOnly("net.elytrium:limboapi-api:1.0.3-rc5")
 
     compileOnly("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
     compileOnly("com.velocitypowered:velocity-proxy:3.1.2-SNAPSHOT") // From Elytrium Repo
 
     // Needs for some velocity methods
-    compileOnly("io.netty:netty-codec:4.1.72.Final")
+    compileOnly("io.netty:netty-codec:4.1.73.Final")
 
     implementation("org.bstats:bstats-velocity:2.2.1")
 
-    compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.2")
+    compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.3")
 }
 
 shadowJar {
@@ -61,7 +61,7 @@ license {
 }
 
 checkstyle {
-    setToolVersion("9.2")
+    setToolVersion("9.2.1")
     setConfigFile(file("${this.getRootDir()}/config/checkstyle/checkstyle.xml"))
     setConfigProperties("configDirectory": "${this.getRootDir()}/config/checkstyle")
 

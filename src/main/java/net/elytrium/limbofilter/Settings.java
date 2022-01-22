@@ -204,7 +204,7 @@ public class Settings extends Config {
       public String FALLING_CHECK_FAILED_KICK = "{PRFX}{NL}&cFalling Check was failed.{NL}&6Please, rejoin the server.";
       public String TIMES_UP = "{PRFX}{NL}&cYou have exceeded the maximum Bot-Filter check time.{NL}&6Please, rejoin the server.";
 
-      public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1} &c&l| Pings: &6&l{2} &c&l| Total Connections: &6&l{3} &c&l| Ping: &6&l{4}";
+      public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| Ping: &6&l{4}";
       public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
       public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
     }

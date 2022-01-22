@@ -28,9 +28,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.elytrium.limbofilter.LimboFilter;
@@ -42,25 +41,21 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 public class LimboFilterCommand implements SimpleCommand {
 
   private final LimboFilter plugin;
-
   private final List<UUID> playersWithStats = Collections.synchronizedList(new ArrayList<>());
 
   public LimboFilterCommand(ProxyServer server, LimboFilter plugin) {
     this.plugin = plugin;
 
-    new Timer().scheduleAtFixedRate(new TimerTask() {
-      @Override
-      public void run() {
-        try {
-          LimboFilterCommand.this.playersWithStats
-              .stream()
-              .map(server::getPlayer)
-              .forEach(player -> player.ifPresent(p -> p.sendActionBar(LimboFilterCommand.this.createStatsComponent(p.getPing()))));
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
+    this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
+      try {
+        this.playersWithStats
+            .stream()
+            .map(server::getPlayer)
+            .forEach(player -> player.ifPresent(pl -> pl.sendActionBar(this.createStatsComponent(pl.getPing()))));
+      } catch (Exception e) {
+        e.printStackTrace();
       }
-    }, 1000, 1000);
+    }).repeat(1, TimeUnit.SECONDS).schedule();
   }
 
   @Override
@@ -160,8 +155,8 @@ public class LimboFilterCommand implements SimpleCommand {
         MessageFormat.format(
             Settings.IMP.MAIN.STRINGS.STATS_FORMAT,
             statistics.getBlockedConnections(),
-            statistics.getConnections() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_CPS + "s",
-            statistics.getPings() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_PPS + "s",
+            statistics.getConnections() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_CPS,
+            statistics.getPings() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_PPS,
             statistics.getTotalConnection(),
             ping
         )
