@@ -63,6 +63,12 @@ public class Config {
       Field field = this.getField(split, instance);
       if (field != null) {
         try {
+          if (field.getType() != Map.class && value instanceof Map) {
+            //noinspection unchecked
+            this.set((Map<String, Object>) value, key);
+            return;
+          }
+
           if (field.getAnnotation(Final.class) != null) {
             return;
           }
@@ -74,21 +80,21 @@ public class Config {
         } catch (Throwable e) {
           e.printStackTrace();
         }
+      } else if (value instanceof Map) {
+        //noinspection unchecked
+        this.set((Map<String, Object>) value, key);
       }
     }
 
     this.logger.debug("Failed to set config option: " + key + ": " + value + " | " + instance + " | " + root.getSimpleName() + ".yml");
   }
 
-  @SuppressWarnings("unchecked")
   public void set(Map<String, Object> input, String oldPath) {
     for (Map.Entry<String, Object> entry : input.entrySet()) {
       String key = oldPath + (oldPath.isEmpty() ? "" : ".") + entry.getKey();
       Object value = entry.getValue();
 
-      if (value instanceof Map) {
-        this.set((Map<String, Object>) value, key);
-      } else if (value instanceof String) {
+      if (value instanceof String) {
         if (key.equalsIgnoreCase("prefix") && !this.currentPrefix.equals(value)) {
           this.currentPrefix = (String) value;
         }
@@ -154,7 +160,21 @@ public class Config {
 
   }
 
-  private String toYamlString(Object value, String spacing, String fieldName) {
+  private String toYamlString(Object value, String spacing, String fieldName, int indent) {
+    if (value instanceof Map) {
+      //noinspection unchecked
+      Map<String, ?> map = (Map<String, ?>) value;
+
+      StringBuilder m = new StringBuilder();
+      map.forEach((key, mapValue) -> {
+        m.append(System.lineSeparator()).append(spacing);
+        m.append(" ".repeat(indent));
+        m.append(key).append(": ").append(this.toYamlString(mapValue, spacing, key, indent));
+      });
+
+      return m.toString();
+    }
+
     if (value instanceof List) {
       Collection<?> listValue = (Collection<?>) value;
       if (listValue.isEmpty()) {
@@ -162,7 +182,7 @@ public class Config {
       }
       StringBuilder m = new StringBuilder();
       for (Object obj : listValue) {
-        m.append(System.lineSeparator()).append(spacing).append("- ").append(this.toYamlString(obj, spacing, fieldName));
+        m.append(System.lineSeparator()).append(spacing).append("- ").append(this.toYamlString(obj, spacing, fieldName, indent));
       }
 
       return m.toString();
@@ -249,7 +269,7 @@ public class Config {
           }
           this.save(writer, current, value, indent + 2);
         } else {
-          String value = this.toYamlString(field.get(instance), spacing, field.getName());
+          String value = this.toYamlString(field.get(instance), spacing, field.getName(), indent);
           writer.write(spacing + this.toNodeName(field.getName() + ": ") + value + lineSeparator);
         }
       }

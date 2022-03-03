@@ -19,6 +19,7 @@ package net.elytrium.limbofilter;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import net.elytrium.limbofilter.config.Config;
 
 public class Settings extends Config {
@@ -84,6 +85,9 @@ public class Settings extends Config {
     public int UNIT_OF_TIME_PPS = 5;
     @Comment("How many times per unit of time we need to change the amount of pings")
     public int INTERPOLATE_PPS_WEIGHT = 10;
+
+    @Comment("A 'USERNAME:IP' map containing information about players who should join the server without verification")
+    public Map<String, String> WHITELISTED_PLAYERS = Map.of("TestBot1234", "127.0.0.1", "TestBot4321", "127.0.0.1");
 
     @Create
     public FILTER_AUTO_TOGGLE FILTER_AUTO_TOGGLE;

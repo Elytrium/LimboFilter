@@ -341,7 +341,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
   }
 
   private MinecraftPacket createChunkData(LimboFactory factory, VirtualChunk chunk) {
-    chunk.setSkyLight(chunk.getX() % 16, 256, chunk.getZ() % 16, (byte) 1);
+    chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
     return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.ChunkData, chunk.getFullChunkSnapshot(), true);
   }
 

@@ -30,6 +30,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,6 +132,14 @@ public class LimboFilter {
 
     this.cachedFilterChecks.clear();
 
+    Settings.IMP.MAIN.WHITELISTED_PLAYERS.forEach((username, ip) -> {
+      try {
+        this.cachedFilterChecks.put(username, new CachedUser(InetAddress.getByName(ip), Long.MAX_VALUE));
+      } catch (UnknownHostException e) {
+        e.printStackTrace();
+      }
+    });
+
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
     VirtualWorld filterWorld = this.factory.createVirtualWorld(
         Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION),
@@ -171,7 +180,7 @@ public class LimboFilter {
     this.server.getEventManager().register(this, new FilterListener(this));
 
     Executors.newScheduledThreadPool(1, task -> new Thread(task, "purge-cache")).scheduleAtFixedRate(() ->
-        this.checkCache(this.cachedFilterChecks, Settings.IMP.MAIN.PURGE_CACHE_MILLIS),
+        this.checkCache(this.cachedFilterChecks),
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         TimeUnit.MILLISECONDS
@@ -181,7 +190,8 @@ public class LimboFilter {
   public void cacheFilterUser(Player player) {
     String username = player.getUsername();
     this.cachedFilterChecks.remove(username);
-    this.cachedFilterChecks.put(username, new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis()));
+    this.cachedFilterChecks.put(username,
+        new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis() + Settings.IMP.MAIN.PURGE_CACHE_MILLIS));
   }
 
   public boolean shouldCheck(Player player) {
@@ -212,9 +222,9 @@ public class LimboFilter {
     }
   }
 
-  private void checkCache(Map<String, CachedUser> userMap, long time) {
+  private void checkCache(Map<String, CachedUser> userMap) {
     userMap.entrySet().stream()
-        .filter(u -> u.getValue().getCheckTime() + time <= System.currentTimeMillis())
+        .filter(u -> u.getValue().getCheckTime() <= System.currentTimeMillis())
         .map(Map.Entry::getKey)
         .forEach(userMap::remove);
   }
