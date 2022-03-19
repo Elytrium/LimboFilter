@@ -54,7 +54,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
   private final MinecraftPacket fallingCheckChunk;
   private final MinecraftPacket fallingCheckView;
 
-  private final long joinTime = System.currentTimeMillis();
+  private long joinTime;
   private ScheduledTask filterMainTask;
 
   private CheckState state;
@@ -99,6 +99,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     this.server = server;
     this.player = player;
 
+    this.joinTime = System.currentTimeMillis();
     if (this.state == CheckState.ONLY_CAPTCHA) {
       this.sendCaptcha();
     } else if (this.state == CheckState.CAPTCHA_POSITION) {
@@ -126,12 +127,15 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
 
   @Override
   public void onMove() {
+    if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
+      this.logPosition();
+    }
     if (!this.startedListening && this.state != CheckState.ONLY_CAPTCHA) {
       if (this.posX == this.validX && this.posZ == this.validZ) {
         this.startedListening = true;
       }
       if (this.nonValidPacketsSize > Settings.IMP.MAIN.NON_VALID_POSITION_XZ_ATTEMPTS) {
-        this.fallingCheckFailed();
+        this.fallingCheckFailed("A lot of non-valid XZ attempts");
         return;
       }
 
@@ -160,20 +164,12 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
         }
         return;
       }
-      if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
-        System.out.println(
-            "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY)
-                + "; need=" + getLoadedChunkSpeed(this.ticks) + "; ticks=" + this.ticks
-                + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validZ=" + this.validZ
-                + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
-        );
-      }
       if (this.ignoredTicks > Settings.IMP.MAIN.NON_VALID_POSITION_Y_ATTEMPTS) {
-        this.fallingCheckFailed();
+        this.fallingCheckFailed("A lot of non-valid Y attempts");
         return;
       }
       if ((this.posX != this.validX && this.posZ != this.validZ) || this.checkY()) {
-        this.fallingCheckFailed();
+        this.fallingCheckFailed("Non-valid X, Z or Velocity");
         return;
       }
       PreparedPacket expBuf = this.packets.getExperience().get(this.ticks);
@@ -183,6 +179,15 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
 
       ++this.ticks;
     }
+  }
+
+  private void logPosition() {
+    this.logger.info(
+        "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY)
+            + "; need=" + getLoadedChunkSpeed(this.ticks) + "; ticks=" + this.ticks
+            + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX  + "; validY=" + this.validY + "; validZ=" + this.validZ
+            + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
+    );
   }
 
   @Override
@@ -302,7 +307,12 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     this.player.flushPackets();
   }
 
-  private void fallingCheckFailed() {
+  private void fallingCheckFailed(String reason) {
+    if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
+      this.logger.info(reason);
+      this.logPosition();
+    }
+
     if (this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
       List<PreparedPacket> expList = this.packets.getExperience();
       this.player.writePacketAndFlush(expList.get(expList.size() - 1));
