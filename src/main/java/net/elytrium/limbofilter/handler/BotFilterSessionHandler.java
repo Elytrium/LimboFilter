@@ -257,11 +257,15 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
 
   private void sendFallingCheckPackets() {
     this.player.writePacket(this.fallingCheckPos);
-    if (this.proxyPlayer.getProtocolVersion().compareTo(ProtocolVersion.MINECRAFT_1_14) >= 0) {
+
+    ProtocolVersion playerVersion = this.proxyPlayer.getProtocolVersion();
+    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_14) >= 0) {
       this.player.writePacket(this.fallingCheckView);
     }
 
-    this.player.writePacket(this.fallingCheckChunk);
+    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_17) < 0) {
+      this.player.writePacket(this.fallingCheckChunk);
+    }
   }
 
   private void sendCaptcha() {
