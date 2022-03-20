@@ -84,6 +84,7 @@ public class LimboFilter {
   private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
   private Metrics metrics;
+  private VirtualWorld filterWorld;
 
   @Inject
   public LimboFilter(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -141,7 +142,7 @@ public class LimboFilter {
     });
 
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
-    VirtualWorld filterWorld = this.factory.createVirtualWorld(
+    this.filterWorld = this.factory.createVirtualWorld(
         Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION),
         captchaCoords.CAPTCHA_X, captchaCoords.CAPTCHA_Y, captchaCoords.CAPTCHA_Z,
         (float) captchaCoords.CAPTCHA_YAW, (float) captchaCoords.CAPTCHA_PITCH
@@ -164,13 +165,13 @@ public class LimboFilter {
         }
 
         Settings.MAIN.WORLD_COORDS coords = Settings.IMP.MAIN.WORLD_COORDS;
-        file.toWorld(this.factory, filterWorld, coords.X, coords.Y, coords.Z);
+        file.toWorld(this.factory, this.filterWorld, coords.X, coords.Y, coords.Z);
       } catch (IOException e) {
         e.printStackTrace();
       }
     }
 
-    this.filterServer = this.factory.createLimbo(filterWorld).setName("LimboFilter");
+    this.filterServer = this.factory.createLimbo(this.filterWorld).setName("LimboFilter");
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
@@ -267,6 +268,10 @@ public class LimboFilter {
 
   public CachedCaptcha getCachedCaptcha() {
     return this.cachedCaptcha;
+  }
+
+  public VirtualWorld getFilterWorld() {
+    return this.filterWorld;
   }
 
   private static class CachedUser {
