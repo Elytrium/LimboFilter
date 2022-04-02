@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Elytrium
+ * Copyright (C) 2021 - 2022 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -128,7 +128,7 @@ public class LimboFilterCommand implements SimpleCommand {
 
   private void showHelp(CommandSource source) {
     source.sendMessage(Component.text("§eThis server is using LimboFilter and LimboAPI"));
-    source.sendMessage(Component.text("§e(c) 2021 Elytrium"));
+    source.sendMessage(Component.text("§e(C) 2021 - 2022 Elytrium"));
     source.sendMessage(Component.text("§ahttps://ely.su/github/"));
     source.sendMessage(Component.text("§r"));
     source.sendMessage(Component.text("§fAvailable subcommands:"));
