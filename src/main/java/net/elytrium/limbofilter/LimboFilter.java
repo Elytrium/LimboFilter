@@ -171,7 +171,9 @@ public class LimboFilter {
       }
     }
 
-    this.filterServer = this.factory.createLimbo(this.filterWorld).setName("LimboFilter");
+    this.filterServer = this.factory.createLimbo(this.filterWorld)
+        .setName("LimboFilter")
+        .setReadTimeout(Settings.IMP.MAIN.MAX_PING);
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
