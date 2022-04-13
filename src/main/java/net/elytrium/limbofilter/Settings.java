@@ -51,6 +51,8 @@ public class Settings extends Config {
     public int FALLING_CHECK_TICKS = 128;
     @Comment("Maximum time to check the player in milliseconds. If the player stays on the filter limbo for longer than this time, then the check will fail.")
     public int TIME_OUT = 15000;
+    @Comment("Same, but for Geyser users.")
+    public int GEYSER_TIME_OUT = 45000;
     @Comment("The timeout for Netty. Max ping while being on the filter limbo. Used to remove useless buffers from RAM.")
     public int MAX_PING = 2000;
     @Comment("Change the parameters below only if you know what they mean.")

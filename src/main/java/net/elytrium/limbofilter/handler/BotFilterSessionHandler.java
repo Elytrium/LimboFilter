@@ -119,7 +119,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
 
     this.filterMainTask = this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
       // TODO: Maybe check for max ping?
-      if (System.currentTimeMillis() - BotFilterSessionHandler.this.joinTime > Settings.IMP.MAIN.TIME_OUT) {
+      if (System.currentTimeMillis() - BotFilterSessionHandler.this.joinTime > this.getTimeout()) {
         BotFilterSessionHandler.this.disconnect(BotFilterSessionHandler.this.packets.getTimesUp(), true);
       }
     }).delay(1, TimeUnit.SECONDS).repeat(1, TimeUnit.SECONDS).schedule();
@@ -327,6 +327,14 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     this.player.closeWith(reason);
     if (blocked) {
       this.statistics.addBlockedConnection();
+    }
+  }
+
+  private int getTimeout() {
+    if (this.proxyPlayer.getRemoteAddress().getPort() == 0) {
+      return Settings.IMP.MAIN.GEYSER_TIME_OUT;
+    } else {
+      return Settings.IMP.MAIN.TIME_OUT;
     }
   }
 
