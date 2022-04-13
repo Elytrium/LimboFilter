@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 11, 16 ]
+        java: [ 11, 17 ]
       fail-fast: true
     steps:
       - name: Checkout
@@ -24,3 +24,11 @@ jobs:
         with:
           name: LimboFilter Built On ${{ matrix.java }} JDK
           path: "build/libs/limbofilter*.jar"
+      - name: Release the build
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/libs/limbofilter*.jar"
+          body: ${{ join(github.event.commits, '\n') }}
+          prerelease: true
+          name: JDK ${{ matrix.java }} Dev-build
+          tag: dev-build-jdk-${{ matrix.java }}
