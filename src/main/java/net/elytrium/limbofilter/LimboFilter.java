@@ -46,6 +46,7 @@ import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.commands.LimboFilterCommand;
+import net.elytrium.limbofilter.commands.SendFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
@@ -177,7 +178,10 @@ public class LimboFilter {
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
-    manager.register("limbofilter", new LimboFilterCommand(this.server, this), "lf", "botfilter", "bf", "lfilter");
+    manager.unregister("sendfilter");
+
+    manager.register("limbofilter", new LimboFilterCommand(this), "lf", "botfilter", "bf", "lfilter");
+    manager.register("sendfilter", new SendFilterCommand(this));
 
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));

@@ -215,6 +215,10 @@ public class Settings extends Config {
       public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| Ping: &6&l{4}";
       public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
       public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
+
+      public String SEND_COMMAND_SUCCESS = "{PRFX} Sent {0} to the filter limbo";
+      public String SEND_COMMAND_SERVER_SUCCESS = "{PRFX} Sent {0} players from {1} to the filter limbo";
+      public String SEND_COMMAND_FAIL = "{PRFX} Failed to send {0} to the filter limbo";
     }
 
     @Create

@@ -43,10 +43,11 @@ public class LimboFilterCommand implements SimpleCommand {
   private final LimboFilter plugin;
   private final List<UUID> playersWithStats = Collections.synchronizedList(new ArrayList<>());
 
-  public LimboFilterCommand(ProxyServer server, LimboFilter plugin) {
+  public LimboFilterCommand(LimboFilter plugin) {
     this.plugin = plugin;
 
-    this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
+    ProxyServer server = plugin.getServer();
+    server.getScheduler().buildTask(this.plugin, () -> {
       try {
         this.playersWithStats
             .stream()
