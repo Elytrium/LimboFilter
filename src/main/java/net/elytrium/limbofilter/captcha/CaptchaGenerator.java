@@ -43,9 +43,10 @@ import org.slf4j.Logger;
 
 public class CaptchaGenerator {
 
-  private static final CraftMapCanvas cachedBackgroundMap = new CraftMapCanvas();
+  private static final List<CraftMapCanvas> cachedBackgroundMap = new ArrayList<>();
   private static final CaptchaPainter painter = new CaptchaPainter();
   private static final List<Font> fonts = new ArrayList<>();
+  private static final AtomicInteger backplatesCounter = new AtomicInteger(0);
   private static final AtomicInteger fontCounter = new AtomicInteger(0);
   private static final AtomicInteger colorCounter = new AtomicInteger(0);
 
@@ -59,8 +60,12 @@ public class CaptchaGenerator {
 
   public void generateCaptcha() {
     try {
-      if (!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATH.equals("")) {
-        cachedBackgroundMap.drawImage(0, 0, ImageIO.read(new File(Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATH)), false);
+      for (String backplatePath : Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS) {
+        if (!backplatePath.isEmpty()) {
+          CraftMapCanvas craftMapCanvas = new CraftMapCanvas();
+          craftMapCanvas.drawImage(0, 0, ImageIO.read(new File(backplatePath)), false);
+          cachedBackgroundMap.add(craftMapCanvas);
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -123,7 +128,19 @@ public class CaptchaGenerator {
 
   public void genNewPacket() {
     String answer = this.randomAnswer();
-    CraftMapCanvas map = new CraftMapCanvas(cachedBackgroundMap);
+
+    CraftMapCanvas map;
+    if (cachedBackgroundMap.isEmpty()) {
+      map = new CraftMapCanvas();
+    } else {
+      int backplateNumber = backplatesCounter.getAndIncrement();
+      if (backplateNumber >= cachedBackgroundMap.size()) {
+        backplateNumber = 0;
+        backplatesCounter.set(0);
+      }
+
+      map = new CraftMapCanvas(cachedBackgroundMap.get(backplateNumber));
+    }
 
     int fontNumber = fontCounter.getAndIncrement();
     if (fontNumber >= fonts.size()) {

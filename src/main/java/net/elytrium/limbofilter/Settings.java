@@ -158,8 +158,8 @@ public class Settings extends Config {
 
       @Comment("Prepares Captcha packets, uses ~0.5GB RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
       public boolean PREPARE_CAPTCHA_PACKETS = false;
-      @Comment("Path to the background image to draw on captcha (any format, 128x128), none if empty")
-      public String BACKPLATE_PATH = "";
+      @Comment("List of paths to the background image to draw on captcha (any format, 128x128), [] if empty")
+      public List<String> BACKPLATE_PATHS = List.of("");
       @Comment("Path to the font files to draw on captcha (ttf), can be empty")
       public List<String> FONTS_PATH = List.of("");
       @Comment("Use standard fonts(SANS_SERIF/SERIF/MONOSPACED), use false only if you provide fonts path")
