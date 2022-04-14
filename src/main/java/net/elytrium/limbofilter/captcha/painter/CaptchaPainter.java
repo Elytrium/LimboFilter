@@ -17,6 +17,7 @@
 
 package net.elytrium.limbofilter.captcha.painter;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -25,18 +26,22 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.CubicCurve2D;
+import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.Settings;
 
 public class CaptchaPainter {
 
-  private final Random rnd = new Random();
+  private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
+  private final Random rnd = ThreadLocalRandom.current();
 
   public BufferedImage draw(Font font, Color foreground, String text) {
     if (font == null) {
@@ -60,6 +65,17 @@ public class CaptchaPainter {
     }
 
     img = this.postProcess(img);
+
+    g = img.getGraphics();
+    try {
+      Graphics2D g2 = (Graphics2D) g;
+      g2.setColor(foreground);
+      for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; i++) {
+        this.addCurve(g2);
+      }
+    } finally {
+      g.dispose();
+    }
 
     return img;
   }
@@ -94,6 +110,44 @@ public class CaptchaPainter {
     g.drawGlyphVector(vector, -bx, MapData.MAP_DIM_SIZE - by);
   }
 
+  protected void addCurve(Graphics2D g) {
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVE_SIZE != 0) {
+      CubicCurve2D cc;
+
+      if (this.rnd.nextBoolean()) {
+        cc = new CubicCurve2D.Double(
+            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE,
+            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, (0.8 + 0.1 * this.rnd.nextDouble()) * MapData.MAP_DIM_SIZE);
+      } else {
+        cc = new CubicCurve2D.Double(
+            this.rnd.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
+            (0.8 + 0.1 * this.rnd.nextDouble()) * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE);
+      }
+
+      double[] coords = new double[6];
+      PathIterator pi = cc.getPathIterator(null, 0.1);
+      pi.currentSegment(coords);
+      Point2D.Double prev = new Point2D.Double(coords[0], coords[1]);
+      pi.next();
+
+      g.setStroke(new BasicStroke(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVE_SIZE));
+
+      while (!pi.isDone()) {
+        int i = pi.currentSegment(coords);
+        if (i == PathIterator.SEG_MOVETO || i == PathIterator.SEG_LINETO) {
+          Point2D.Double point = new Point2D.Double(coords[0], coords[1]);
+          g.drawLine((int) prev.x, (int) prev.y, (int) point.x, (int) point.y);
+          prev = point;
+        }
+        pi.next();
+      }
+    }
+  }
+
   protected BufferedImage createImage() {
     return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
   }
@@ -107,7 +161,7 @@ public class CaptchaPainter {
     this.configureGraphicsQuality(g2);
 
     g2.setColor(foreground);
-    g2.setBackground(new Color(0, 0, 0, 0));
+    g2.setBackground(TRANSPARENT);
     g2.setFont(font);
 
     g2.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);

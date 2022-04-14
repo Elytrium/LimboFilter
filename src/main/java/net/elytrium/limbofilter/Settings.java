@@ -170,6 +170,10 @@ public class Settings extends Config {
       public boolean FONT_ROTATE = true;
       public boolean FONT_RIPPLE = true;
       public boolean FONT_BLUR = true;
+      @Comment("Set 0 to disable")
+      public int CURVE_SIZE = 1;
+      @Comment("Set 0 to disable")
+      public int CURVES_AMOUNT = 3;
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
       public boolean COLORIFY = false;
