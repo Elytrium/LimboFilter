@@ -41,6 +41,7 @@ import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.chunk.VirtualWorld;
 import net.elytrium.limboapi.api.file.SchematicFile;
+import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
@@ -156,6 +157,10 @@ public class LimboFilter {
         switch (Settings.IMP.MAIN.WORLD_FILE_TYPE) {
           case "schematic": {
             file = new SchematicFile(path);
+            break;
+          }
+          case "structure": {
+            file = new StructureFile(path);
             break;
           }
           default: {
