@@ -43,6 +43,7 @@ public class Settings extends YamlConfig {
   @Create
   public MAIN MAIN;
 
+  @Comment("Don't use \\n, use {NL} for new line, and {PRFX} for prefix.")
   public static class MAIN {
 
     @Comment("Check if player's Minecraft client sends the network packet with the settings.")
