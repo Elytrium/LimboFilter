@@ -144,7 +144,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.player.flushPackets();
 
     this.filterMainTask = this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
-      // TODO: Maybe check for max ping?
       if (System.currentTimeMillis() - this.joinTime > this.getTimeout()) {
         this.disconnect(this.packets.getTimesUp(), true);
       }
