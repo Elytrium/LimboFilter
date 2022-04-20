@@ -326,10 +326,12 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
       this.disconnect(this.packets.getKickClientCheckSettings(), true);
+      return;
     }
 
     if (Settings.IMP.MAIN.CHECK_CLIENT_BRAND && !this.checkedByBrand) {
       this.disconnect(this.packets.getKickClientCheckBrand(), true);
+      return;
     }
 
     this.state = CheckState.SUCCESSFUL;
