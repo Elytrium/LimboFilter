@@ -89,15 +89,11 @@ public class Settings extends YamlConfig {
     public String WORLD_FILE_TYPE = "structure";
     public String WORLD_FILE_PATH = "world.nbt";
 
-    @Comment("Unit of time in seconds for the Statistics")
+    @Comment("Unit of time in seconds for the Auto Toggles the Statistics")
     public int UNIT_OF_TIME_CPS = 300;
-    @Comment("How many times per unit of time we need to change the amount of connections")
-    public int INTERPOLATE_CPS_WEIGHT = 600;
 
-    @Comment("Unit of time in seconds for the Statistics")
+    @Comment("Unit of time in seconds for the Auto Toggles and the Statistics")
     public int UNIT_OF_TIME_PPS = 5;
-    @Comment("How many times per unit of time we need to change the amount of pings")
-    public int INTERPOLATE_PPS_WEIGHT = 10;
 
     @Comment("A 'USERNAME:IP' map containing information about players who should join the server without verification")
     public Map<String, String> WHITELISTED_PLAYERS = Map.of("TestBot1234", "127.0.0.1", "TestBot4321", "127.0.0.1");

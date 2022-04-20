@@ -35,11 +35,11 @@ public class Statistics {
   }
 
   public void addConnection() {
-    this.connections.addAndGet(Settings.IMP.MAIN.INTERPOLATE_CPS_WEIGHT);
+    this.connections.addAndGet(Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 2L);
   }
 
   public void addPing() {
-    this.pings.addAndGet(Settings.IMP.MAIN.INTERPOLATE_PPS_WEIGHT);
+    this.pings.addAndGet(Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 2L);
   }
 
   public long getBlockedConnections() {
@@ -47,11 +47,11 @@ public class Statistics {
   }
 
   public long getConnections() {
-    return this.connections.get() / Settings.IMP.MAIN.INTERPOLATE_CPS_WEIGHT;
+    return this.connections.get() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
   }
 
   public long getPings() {
-    return this.pings.get() / Settings.IMP.MAIN.INTERPOLATE_PPS_WEIGHT;
+    return this.pings.get() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
   }
 
   public long getTotalConnection() {
@@ -68,11 +68,11 @@ public class Statistics {
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        Statistics.this.interpolatedCpsBefore.set(Statistics.this.connections.get() / Settings.IMP.MAIN.INTERPOLATE_CPS_WEIGHT);
+        Statistics.this.interpolatedCpsBefore.set(Statistics.this.connections.get() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L);
       }
     }, delayInterpolate, delayInterpolate);
 
-    long delay = delayInterpolate / Settings.IMP.MAIN.INTERPOLATE_CPS_WEIGHT;
+    long delay = delayInterpolate / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
@@ -91,11 +91,11 @@ public class Statistics {
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        Statistics.this.interpolatedPpsBefore.set(Statistics.this.pings.get() / Settings.IMP.MAIN.INTERPOLATE_PPS_WEIGHT);
+        Statistics.this.interpolatedPpsBefore.set(Statistics.this.pings.get() / Settings.IMP.MAIN.UNIT_OF_TIME_PPS / 2L);
       }
     }, delayInterpolate, delayInterpolate);
 
-    long delay = delayInterpolate / Settings.IMP.MAIN.INTERPOLATE_PPS_WEIGHT;
+    long delay = delayInterpolate / Settings.IMP.MAIN.UNIT_OF_TIME_PPS / 2L;
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
