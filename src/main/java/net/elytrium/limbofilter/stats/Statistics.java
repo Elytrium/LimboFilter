@@ -24,11 +24,11 @@ import net.elytrium.limbofilter.Settings;
 
 public class Statistics {
 
-  private final AtomicLong blockedConnections = new AtomicLong(0L);
-  private final AtomicLong connections = new AtomicLong(0L);
-  private final AtomicLong pings = new AtomicLong(0L);
-  private final AtomicLong interpolatedCpsBefore = new AtomicLong(0L);
-  private final AtomicLong interpolatedPpsBefore = new AtomicLong(0L);
+  private final AtomicLong blockedConnections = new AtomicLong();
+  private final AtomicLong connections = new AtomicLong();
+  private final AtomicLong pings = new AtomicLong();
+  private final AtomicLong interpolatedCpsBefore = new AtomicLong();
+  private final AtomicLong interpolatedPpsBefore = new AtomicLong();
 
   public void addBlockedConnection() {
     this.blockedConnections.incrementAndGet();
@@ -63,7 +63,7 @@ public class Statistics {
     this.startUpdatingPps();
   }
 
-  public void startUpdatingCps() {
+  private void startUpdatingCps() {
     long delayInterpolate = Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 1000L;
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
@@ -86,7 +86,7 @@ public class Statistics {
     }, delay, delay);
   }
 
-  public void startUpdatingPps() {
+  private void startUpdatingPps() {
     long delayInterpolate = Settings.IMP.MAIN.UNIT_OF_TIME_PPS * 1000L;
 
     new Timer().scheduleAtFixedRate(new TimerTask() {

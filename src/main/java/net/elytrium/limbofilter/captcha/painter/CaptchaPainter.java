@@ -20,7 +20,6 @@ package net.elytrium.limbofilter.captcha.painter;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -33,7 +32,6 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.Settings;
@@ -41,215 +39,202 @@ import net.elytrium.limbofilter.Settings;
 public class CaptchaPainter {
 
   private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
-  private final Random rnd = ThreadLocalRandom.current();
 
-  public BufferedImage draw(Font font, Color foreground, String text) {
-    if (font == null) {
-      throw new IllegalArgumentException("Font can not be null.");
-    }
-    if (foreground == null) {
-      throw new IllegalArgumentException("Foreground color can not be null.");
-    }
-    if (text == null || text.length() < 1) {
-      throw new IllegalArgumentException("No text given.");
-    }
+  private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
-    BufferedImage img = this.createImage();
+  public BufferedImage drawCaptcha(Font font, Color foreground, String text) {
+    BufferedImage image = this.createImage();
+    Graphics2D graphics = (Graphics2D) image.getGraphics();
 
-    Graphics g = img.getGraphics();
-    try {
-      Graphics2D g2 = this.configureGraphics(g, font, foreground);
-      this.draw(g2, text);
-    } finally {
-      g.dispose();
+    this.drawText(this.configureGraphics(graphics, font, foreground), text);
+
+    graphics.dispose();
+
+    image = this.postProcess(image);
+    graphics = (Graphics2D) image.getGraphics();
+
+    graphics.setColor(foreground);
+    for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; ++i) {
+      this.addCurve(graphics);
     }
 
-    img = this.postProcess(img);
+    graphics.dispose();
 
-    g = img.getGraphics();
-    try {
-      Graphics2D g2 = (Graphics2D) g;
-      g2.setColor(foreground);
-      for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; i++) {
-        this.addCurve(g2);
-      }
-    } finally {
-      g.dispose();
-    }
-
-    return img;
+    return image;
   }
 
-  protected void draw(Graphics2D g, String text) {
-    GlyphVector vector = g.getFont().createGlyphVector(g.getFontRenderContext(), text);
+  private Graphics2D configureGraphics(Graphics2D graphics, Font font, Color foreground) {
+    this.configureGraphicsQuality(graphics);
+
+    graphics.setColor(foreground);
+    graphics.setBackground(TRANSPARENT);
+    graphics.setFont(font);
+
+    graphics.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);
+
+    return graphics;
+  }
+
+  private void configureGraphicsQuality(Graphics2D graphics) {
+    graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+    graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+    graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    graphics.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+    graphics.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+    graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+    graphics.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+    graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+  }
+
+  private void drawText(Graphics2D graphics, String text) {
+    GlyphVector vector = graphics.getFont().createGlyphVector(graphics.getFontRenderContext(), text);
 
     this.transform(vector);
 
     Rectangle bounds = vector.getPixelBounds(null, 0, MapData.MAP_DIM_SIZE);
-    float bw = (float) bounds.getWidth();
-    float bh = (float) bounds.getHeight();
+    float boundsWidth = (float) bounds.getWidth();
+    float boundsHeight = (float) bounds.getHeight();
 
     boolean outlineEnabled = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE;
 
-    float wr = MapData.MAP_DIM_SIZE / bw * (this.rnd.nextFloat() / 20 + (outlineEnabled ? 0.89f : 0.92f)) * 1;
-    float hr = MapData.MAP_DIM_SIZE / bh * (this.rnd.nextFloat() / 20 + (outlineEnabled ? 0.68f : 0.75f)) * 1;
-    g.translate((MapData.MAP_DIM_SIZE - bw * wr) / 2, (MapData.MAP_DIM_SIZE - bh * hr) / 2);
-    g.scale(wr, hr);
+    float wr = MapData.MAP_DIM_SIZE / boundsWidth * (this.random.nextFloat() / 20 + (outlineEnabled ? 0.89f : 0.92f)) * 1;
+    float hr = MapData.MAP_DIM_SIZE / boundsHeight * (this.random.nextFloat() / 20 + (outlineEnabled ? 0.68f : 0.75f)) * 1;
+    graphics.translate((MapData.MAP_DIM_SIZE - boundsWidth * wr) / 2, (MapData.MAP_DIM_SIZE - boundsHeight * hr) / 2);
+    graphics.scale(wr, hr);
 
-    float bx = (float) bounds.getX();
-    float by = (float) bounds.getY();
+    float boundsX = (float) bounds.getX();
+    float boundsY = (float) bounds.getY();
     if (outlineEnabled) {
-      g.draw(
+      graphics.draw(
           vector.getOutline(
-              Math.signum(this.rnd.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 200 - bx,
-              Math.signum(this.rnd.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 70 + MapData.MAP_DIM_SIZE - by
+              Math.signum(this.random.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 200 - boundsX,
+              Math.signum(this.random.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 70 + MapData.MAP_DIM_SIZE - boundsY
           )
       );
     }
 
-    g.drawGlyphVector(vector, -bx, MapData.MAP_DIM_SIZE - by);
+    graphics.drawGlyphVector(vector, -boundsX, MapData.MAP_DIM_SIZE - boundsY);
   }
 
-  protected void addCurve(Graphics2D g) {
-    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVE_SIZE != 0) {
-      CubicCurve2D cc;
-
-      if (this.rnd.nextBoolean()) {
-        cc = new CubicCurve2D.Double(
-            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE,
-            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, (0.8 + 0.1 * this.rnd.nextDouble()) * MapData.MAP_DIM_SIZE);
-      } else {
-        cc = new CubicCurve2D.Double(
-            this.rnd.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.rnd.nextDouble() * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE,
-            (0.8 + 0.1 * this.rnd.nextDouble()) * MapData.MAP_DIM_SIZE, this.rnd.nextDouble() * MapData.MAP_DIM_SIZE);
-      }
-
-      double[] coords = new double[6];
-      PathIterator pi = cc.getPathIterator(null, 0.1);
-      pi.currentSegment(coords);
-      Point2D.Double prev = new Point2D.Double(coords[0], coords[1]);
-      pi.next();
-
-      g.setStroke(new BasicStroke(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVE_SIZE));
-
-      while (!pi.isDone()) {
-        int i = pi.currentSegment(coords);
-        if (i == PathIterator.SEG_MOVETO || i == PathIterator.SEG_LINETO) {
-          Point2D.Double point = new Point2D.Double(coords[0], coords[1]);
-          g.drawLine((int) prev.x, (int) prev.y, (int) point.x, (int) point.y);
-          prev = point;
-        }
-        pi.next();
-      }
-    }
-  }
-
-  protected BufferedImage createImage() {
-    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
-  }
-
-  protected Graphics2D configureGraphics(Graphics g, Font font, Color foreground) {
-    if (!(g instanceof Graphics2D)) {
-      throw new IllegalStateException("Graphics (" + g + ") that is not an instance of Graphics2D.");
-    }
-    Graphics2D g2 = (Graphics2D) g;
-
-    this.configureGraphicsQuality(g2);
-
-    g2.setColor(foreground);
-    g2.setBackground(TRANSPARENT);
-    g2.setFont(font);
-
-    g2.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);
-
-    return g2;
-  }
-
-  protected void configureGraphicsQuality(Graphics2D g2) {
-    g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-    g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-    g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
-    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-    g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-    g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-  }
-
-  protected void transform(GlyphVector v) {
-    int glyphNum = v.getNumGlyphs();
+  private void transform(GlyphVector vector) {
+    int glyphNum = vector.getNumGlyphs();
 
     Point2D prePos = null;
     Rectangle2D preBounds = null;
 
-    double rotateCur = (this.rnd.nextDouble() - 0.5) * Math.PI / 8;
-    double rotateStep = Math.signum(rotateCur) * (this.rnd.nextDouble() * 3 * Math.PI / 8 / glyphNum);
+    double rotateCur = (this.random.nextDouble() - 0.5) * Math.PI / 8;
+    double rotateStep = Math.signum(rotateCur) * (this.random.nextDouble() * 3 * Math.PI / 8 / glyphNum);
     boolean rotateEnabled = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_ROTATE;
 
-    for (int fi = 0; fi < glyphNum; ++fi) {
+    for (int i = 0; i < glyphNum; ++i) {
       if (rotateEnabled) {
-        AffineTransform tr = AffineTransform.getRotateInstance(rotateCur);
-        if (this.rnd.nextDouble() < 0.25) {
+        AffineTransform transform = AffineTransform.getRotateInstance(rotateCur);
+        if (this.random.nextDouble() < 0.25) {
           rotateStep *= -1;
         }
+
         rotateCur += rotateStep;
-        v.setGlyphTransform(fi, tr);
+        vector.setGlyphTransform(i, transform);
       }
-      Point2D pos = v.getGlyphPosition(fi);
-      Rectangle2D bounds = v.getGlyphVisualBounds(fi).getBounds2D();
+
+      Point2D pos = vector.getGlyphPosition(i);
+      double posX = pos.getX();
+      double posY = pos.getY();
+      Rectangle2D bounds = vector.getGlyphVisualBounds(i).getBounds2D();
+      double boundsX = bounds.getX();
+
       Point2D newPos;
       if (prePos == null) {
-        newPos = new Point2D.Double(pos.getX() - bounds.getX(), pos.getY());
+        newPos = new Point2D.Double(posX - boundsX, posY);
       } else {
         newPos = new Point2D.Double(
-            preBounds.getMaxX() + pos.getX() - bounds.getX() - Math.min(preBounds.getWidth(),
-            bounds.getWidth()) * (this.rnd.nextDouble() / 20 + (rotateEnabled ? 0.27 : 0.1)),
-            pos.getY()
+            preBounds.getMaxX() + posX - boundsX - Math.min(preBounds.getWidth(), bounds.getWidth())
+                * (this.random.nextDouble() / 20 + (rotateEnabled ? 0.27 : 0.1)),
+            posY
         );
       }
-      v.setGlyphPosition(fi, newPos);
+      vector.setGlyphPosition(i, newPos);
       prePos = newPos;
-      preBounds = v.getGlyphVisualBounds(fi).getBounds2D();
+      preBounds = vector.getGlyphVisualBounds(i).getBounds2D();
     }
   }
 
-  protected BufferedImage postProcess(BufferedImage img) {
+  private BufferedImage postProcess(BufferedImage image) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
       Rippler.AxisConfig vertical = new Rippler.AxisConfig(
-          this.rnd.nextDouble() * 2 * Math.PI, (1 + this.rnd.nextDouble() * 2) * Math.PI, img.getHeight() / 10.0
+          this.random.nextDouble() * 2 * Math.PI, (1 + this.random.nextDouble() * 2) * Math.PI, image.getHeight() / 10.0
       );
       Rippler.AxisConfig horizontal = new Rippler.AxisConfig(
-          this.rnd.nextDouble() * 2 * Math.PI, (2 + this.rnd.nextDouble() * 2) * Math.PI, img.getWidth() / 100.0
+          this.random.nextDouble() * 2 * Math.PI, (2 + this.random.nextDouble() * 2) * Math.PI, image.getWidth() / 100.0
       );
-      Rippler op = new Rippler(vertical, horizontal);
 
-      img = op.filter(img, this.createImage());
+      image = new Rippler(vertical, horizontal).filter(image, this.createImage());
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_BLUR) {
       float[] blurArray = new float[9];
       this.fillBlurArray(blurArray);
-      ConvolveOp op = new ConvolveOp(new Kernel(3, 3, blurArray), ConvolveOp.EDGE_NO_OP, null);
 
-      img = op.filter(img, this.createImage());
+      image = new ConvolveOp(new Kernel(3, 3, blurArray), ConvolveOp.EDGE_NO_OP, null).filter(image, this.createImage());
     }
 
-    return img;
+    return image;
   }
 
-  protected void fillBlurArray(float[] array) {
+  private BufferedImage createImage() {
+    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
+  }
+
+  private void fillBlurArray(float[] blurArray) {
     float sum = 0;
-    for (int fi = 0; fi < array.length; ++fi) {
-      array[fi] = this.rnd.nextFloat();
-      sum += array[fi];
+    for (int i = 0; i < blurArray.length; ++i) {
+      blurArray[i] = this.random.nextFloat();
+      sum += blurArray[i];
     }
 
-    for (int fi = 0; fi < array.length; ++fi) {
-      array[fi] /= sum;
+    for (int i = 0; i < blurArray.length; ++i) {
+      blurArray[i] /= sum;
+    }
+  }
+
+  private void addCurve(Graphics2D graphics) {
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVE_SIZE != 0) {
+      CubicCurve2D cubicCurve;
+
+      if (this.random.nextBoolean()) {
+        cubicCurve = new CubicCurve2D.Double(
+            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE,
+            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.random.nextDouble() * MapData.MAP_DIM_SIZE, (0.8 + 0.1 * this.random.nextDouble()) * MapData.MAP_DIM_SIZE
+        );
+      } else {
+        cubicCurve = new CubicCurve2D.Double(
+            this.random.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
+            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
+            (0.8 + 0.1 * this.random.nextDouble()) * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE
+        );
+      }
+
+      double[] coords = new double[6];
+      PathIterator pathIterator = cubicCurve.getPathIterator(null, 0.1);
+      pathIterator.currentSegment(coords);
+      Point2D.Double prev = new Point2D.Double(coords[0], coords[1]);
+      pathIterator.next();
+
+      graphics.setStroke(new BasicStroke(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVE_SIZE));
+
+      while (!pathIterator.isDone()) {
+        int currentSegment = pathIterator.currentSegment(coords);
+        if (currentSegment == PathIterator.SEG_MOVETO || currentSegment == PathIterator.SEG_LINETO) {
+          Point2D.Double point = new Point2D.Double(coords[0], coords[1]);
+          graphics.drawLine((int) prev.x, (int) prev.y, (int) point.x, (int) point.y);
+          prev = point;
+        }
+
+        pathIterator.next();
+      }
     }
   }
 }

@@ -26,9 +26,11 @@ import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
+import net.elytrium.limboapi.api.LimboSessionHandler;
 import net.elytrium.limboapi.api.chunk.VirtualChunk;
 import net.elytrium.limboapi.api.player.LimboPlayer;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
@@ -36,23 +38,38 @@ import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.cache.CachedPackets;
-import net.elytrium.limbofilter.cache.captcha.CaptchaHandler;
+import net.elytrium.limbofilter.captcha.CaptchaHolder;
 import net.elytrium.limbofilter.stats.Statistics;
-import org.slf4j.Logger;
 
-public class BotFilterSessionHandler extends FallingCheckHandler {
+public class BotFilterSessionHandler implements LimboSessionHandler {
 
+  private static final double[] LOADED_CHUNK_SPEED_CACHE = new double[Settings.IMP.MAIN.FALLING_CHECK_TICKS];
   private static long FALLING_CHECK_TOTAL_TIME;
 
   private final Player proxyPlayer;
+  private final ProtocolVersion version;
   private final LimboFilter plugin;
   private final Statistics statistics;
-  private final Logger logger;
   private final CachedPackets packets;
 
   private final MinecraftPacket fallingCheckPos;
   private final MinecraftPacket fallingCheckChunk;
   private final MinecraftPacket fallingCheckView;
+
+  private final int validX;
+  private final int validY;
+  private final int validZ;
+  private final int validTeleportId;
+
+  private double posX;
+  private double posY;
+  private double lastY;
+  private double posZ;
+  private int waitingTeleportId;
+  private boolean onGround;
+
+  private int ticks = 1;
+  private int ignoredTicks;
 
   private long joinTime;
   private ScheduledTask filterMainTask;
@@ -62,24 +79,33 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
   private Limbo server;
   private String captchaAnswer;
   private int attempts = Settings.IMP.MAIN.CAPTCHA_ATTEMPTS;
-  private int ignoredTicks = 0;
-  private int nonValidPacketsSize = 0;
-  private boolean startedListening = false;
-  private boolean checkedBySettings = false;
-  private boolean checkedByBrand = false;
+  private int nonValidPacketsSize;
+  private boolean startedListening;
+  private boolean checkedBySettings;
+  private boolean checkedByBrand;
 
   public BotFilterSessionHandler(Player proxyPlayer, LimboFilter plugin) {
-    super(proxyPlayer.getProtocolVersion());
-
     this.proxyPlayer = proxyPlayer;
+    this.version = this.proxyPlayer.getProtocolVersion();
     this.plugin = plugin;
 
     this.statistics = this.plugin.getStatistics();
-    this.logger = this.plugin.getLogger();
     this.packets = this.plugin.getPackets();
 
+    ThreadLocalRandom random = ThreadLocalRandom.current();
+    this.validX = random.nextInt(256, 16384);
+    // See https://media.discordapp.net/attachments/878241549857738793/915165038464098314/unknown.png
+    this.validY = random.nextInt(256 + (this.version.compareTo(ProtocolVersion.MINECRAFT_1_8) < 0 ? 250 : 0), 512);
+    this.validZ = random.nextInt(256, 16384);
+    this.validTeleportId = random.nextInt(65535);
+
+    this.posX = this.validX;
+    this.posY = this.validY;
+    this.posZ = this.validZ;
+
     this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
-        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE) : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
+        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE)
+        : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
 
     Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
     this.fallingCheckPos = this.createPlayerPosAndLook(
@@ -119,14 +145,39 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
 
     this.filterMainTask = this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
       // TODO: Maybe check for max ping?
-      if (System.currentTimeMillis() - BotFilterSessionHandler.this.joinTime > this.getTimeout()) {
-        BotFilterSessionHandler.this.disconnect(BotFilterSessionHandler.this.packets.getTimesUp(), true);
+      if (System.currentTimeMillis() - this.joinTime > this.getTimeout()) {
+        this.disconnect(this.packets.getTimesUp(), true);
       }
     }).delay(1, TimeUnit.SECONDS).repeat(1, TimeUnit.SECONDS).schedule();
   }
 
+  private void sendFallingCheckPackets() {
+    this.player.writePacket(this.fallingCheckPos);
+
+    ProtocolVersion playerVersion = this.proxyPlayer.getProtocolVersion();
+    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_14) >= 0) {
+      this.player.writePacket(this.fallingCheckView);
+    }
+
+    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_17) < 0) {
+      this.player.writePacket(this.fallingCheckChunk);
+    }
+  }
+
   @Override
-  public void onMove() {
+  public void onMove(double x, double y, double z) {
+    if (this.version.compareTo(ProtocolVersion.MINECRAFT_1_8) <= 0
+        && x == this.validX && y == this.validY && z == this.validZ && this.waitingTeleportId == this.validTeleportId) {
+      this.ticks = 1;
+      this.posY = -1;
+      this.waitingTeleportId = -1;
+    }
+
+    this.posX = x;
+    this.lastY = this.posY;
+    this.posY = y;
+    this.posZ = z;
+
     if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
       this.logPosition();
     }
@@ -181,18 +232,51 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     }
   }
 
+  private void fallingCheckFailed(String reason) {
+    if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
+      LimboFilter.getLogger().info(reason);
+      this.logPosition();
+    }
+
+    if (this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
+      List<PreparedPacket> expList = this.packets.getExperience();
+      this.player.writePacketAndFlush(expList.get(expList.size() - 1));
+      this.changeStateToCaptcha();
+    } else {
+      this.disconnect(this.packets.getFallingCheckFailed(), true);
+    }
+  }
+
   private void logPosition() {
-    this.logger.info(
-        "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY)
-            + "; need=" + getLoadedChunkSpeed(this.ticks) + "; ticks=" + this.ticks
-            + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX  + "; validY=" + this.validY + "; validZ=" + this.validZ
-            + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
+    LimboFilter.getLogger().info(
+        "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY) + "; need=" + getLoadedChunkSpeed(this.ticks)
+        + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX  + "; validY=" + this.validY + "; validZ=" + this.validZ
+        + "; ticks=" + this.ticks + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
     );
+  }
+
+  private boolean checkY() {
+    return Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE;
+  }
+
+  @Override
+  public void onGround(boolean onGround) {
+    this.onGround = onGround;
+  }
+
+  @Override
+  public void onTeleport(int teleportId) {
+    if (teleportId == this.waitingTeleportId) {
+      this.ticks = 1;
+      this.posY = -1;
+      this.lastY = -1;
+      this.waitingTeleportId = -1;
+    }
   }
 
   @Override
   public void onChat(String message) {
-    if ((this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA)) {
+    if (this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA) {
       if (message.equals(this.captchaAnswer)) {
         this.player.writePacketAndFlush(this.packets.getResetSlot());
         this.finishCheck();
@@ -210,7 +294,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
       PluginMessage pluginMessage = (PluginMessage) packet;
       if (PluginMessageUtil.isMcBrand(pluginMessage) && !this.checkedByBrand) {
         String brand = PluginMessageUtil.readBrandMessage(pluginMessage.content());
-        this.logger.info("{} has client brand {}", this.proxyPlayer, brand);
+        LimboFilter.getLogger().info("{} has client brand {}", this.proxyPlayer, brand);
         if (!Settings.IMP.MAIN.BLOCKED_CLIENT_BRANDS.contains(brand)) {
           this.checkedByBrand = true;
         }
@@ -244,6 +328,7 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
       this.disconnect(this.packets.getKickClientCheckSettings(), true);
     }
+
     if (Settings.IMP.MAIN.CHECK_CLIENT_BRAND && !this.checkedByBrand) {
       this.disconnect(this.packets.getKickClientCheckBrand(), true);
     }
@@ -260,24 +345,26 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     }
   }
 
-  private void sendFallingCheckPackets() {
-    this.player.writePacket(this.fallingCheckPos);
-
-    ProtocolVersion playerVersion = this.proxyPlayer.getProtocolVersion();
-    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_14) >= 0) {
-      this.player.writePacket(this.fallingCheckView);
+  private void changeStateToCaptcha() {
+    this.state = CheckState.ONLY_CAPTCHA;
+    //this.joinTime = System.currentTimeMillis() + this.fallingCheckTotalTime;
+    this.setCaptchaPositionAndDisableFalling();
+    if (this.captchaAnswer == null) {
+      this.sendCaptcha();
     }
+  }
 
-    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_17) < 0) {
-      this.player.writePacket(this.fallingCheckChunk);
-    }
+  private void setCaptchaPositionAndDisableFalling() {
+    this.server.respawnPlayer(this.proxyPlayer);
+    this.player.writePacketAndFlush(this.packets.getNoAbilities());
+
+    this.waitingTeleportId = this.validTeleportId;
   }
 
   private void sendCaptcha() {
     ProtocolVersion version = this.proxyPlayer.getProtocolVersion();
-    CaptchaHandler captchaHandler = this.plugin.getCachedCaptcha().randomCaptcha();
-    String captchaAnswer = captchaHandler.getAnswer();
-    this.setCaptchaAnswer(captchaAnswer);
+    CaptchaHolder captchaHolder = this.plugin.getCachedCaptcha().randomCaptcha();
+    this.captchaAnswer = captchaHolder.getAnswer();
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
     if (this.attempts == Settings.IMP.MAIN.CAPTCHA_ATTEMPTS) {
       this.player.writePacket(
@@ -300,27 +387,11 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
       );
     }
     this.player.writePacket(this.packets.getSetSlot());
-    for (Object packet : captchaHandler.getMapPacket(version)) {
+    for (Object packet : captchaHolder.getMapPacket(version)) {
       this.player.writePacket(packet);
     }
 
     this.player.flushPackets();
-  }
-
-  private void fallingCheckFailed(String reason) {
-    if (Settings.IMP.MAIN.FALLING_CHECK_DEBUG) {
-      this.logger.info(reason);
-      this.logPosition();
-    }
-
-    if (this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
-      List<PreparedPacket> expList = this.packets.getExperience();
-      this.player.writePacketAndFlush(expList.get(expList.size() - 1));
-      this.changeStateToCaptcha();
-      return;
-    }
-
-    this.disconnect(this.packets.getFallingCheckFailed(), true);
   }
 
   private void disconnect(PreparedPacket reason, boolean blocked) {
@@ -338,42 +409,33 @@ public class BotFilterSessionHandler extends FallingCheckHandler {
     }
   }
 
-  private boolean checkY() {
-    return Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE;
-  }
-
-  private void setCaptchaPositionAndDisableFalling() {
-    this.server.respawnPlayer(this.proxyPlayer);
-    this.player.writePacketAndFlush(this.packets.getNoAbilities());
-
-    this.waitingTeleportId = this.validTeleportId;
-  }
-
-  public void setCaptchaAnswer(String captchaAnswer) {
-    this.captchaAnswer = captchaAnswer;
-  }
-
-  private void changeStateToCaptcha() {
-    this.state = CheckState.ONLY_CAPTCHA;
-    //this.joinTime = System.currentTimeMillis() + this.fallingCheckTotalTime;
-    this.setCaptchaPositionAndDisableFalling();
-    if (this.captchaAnswer == null) {
-      this.sendCaptcha();
-    }
-  }
-
   private MinecraftPacket createChunkData(LimboFactory factory, VirtualChunk chunk) {
     chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
     return (MinecraftPacket) factory.instantiatePacket(
-        BuiltInPackets.ChunkData, chunk.getFullChunkSnapshot(), true, this.plugin.getFilterWorld().getDimension().getMaxSections());
+        BuiltInPackets.ChunkData, chunk.getFullChunkSnapshot(), true, this.plugin.getFilterWorld().getDimension().getMaxSections()
+    );
   }
 
   private MinecraftPacket createPlayerPosAndLook(LimboFactory factory, double x, double y, double z, float yaw, float pitch) {
-    return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.PlayerPositionAndLook, x, y, z, yaw, pitch, -133, false, true);
+    return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.PlayerPositionAndLook, x, y, z, yaw, pitch, 44, false, true);
   }
 
   private MinecraftPacket createUpdateViewPosition(LimboFactory factory, int x, int z) {
     return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.UpdateViewPosition, x >> 4, z >> 4);
+  }
+
+  static {
+    for (int i = 0; i < Settings.IMP.MAIN.FALLING_CHECK_TICKS; ++i) {
+      LOADED_CHUNK_SPEED_CACHE[i] = -((Math.pow(0.98, i) - 1) * 3.92);
+    }
+  }
+
+  public static double getLoadedChunkSpeed(int ticks) {
+    if (ticks == -1) {
+      return 0;
+    }
+
+    return LOADED_CHUNK_SPEED_CACHE[ticks];
   }
 
   public static void setFallingCheckTotalTime(long time) {

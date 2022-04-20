@@ -45,7 +45,7 @@ public class CraftMapCanvas {
     System.arraycopy(another.getCanvas(), 0, canvasBuf, 0, MapData.MAP_SIZE);
     this.canvas = canvasBuf;
 
-    this.canvas17 = Arrays.stream(another.get17Canvas()).map(byte[]::clone).toArray(byte[][]::new);
+    this.canvas17 = Arrays.stream(another.getCanvas17()).map(byte[]::clone).toArray(byte[][]::new);
   }
 
   public void setPixel(int x, int y, byte color) {
@@ -67,7 +67,7 @@ public class CraftMapCanvas {
     for (int x2 = 0; x2 < width; ++x2) {
       for (int y2 = 0; y2 < height; ++y2) {
         byte color = (byte) bytes[y2 * width + x2];
-        if ((image.getRGB(x2, y2) & 0xff000000) >>> 24 >= 128) {
+        if (this.getAlpha(image.getRGB(x2, y2)) >= 128) {
           if (colorify) {
             color -= randomizedColor;
             if (color < 0) {
@@ -81,11 +81,15 @@ public class CraftMapCanvas {
     }
   }
 
+  private int getAlpha(int rgb) {
+    return (rgb & 0xFF000000) >>> 24;
+  }
+
   public MapData getMapData() {
     return new MapData(this.canvas);
   }
 
-  public MapData[] get17MapsData() {
+  public MapData[] getMaps17Data() {
     MapData[] maps = new MapData[MapData.MAP_DIM_SIZE];
     for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
       maps[i] = new MapData(i, this.canvas17[i]);
@@ -98,7 +102,7 @@ public class CraftMapCanvas {
     return this.canvas;
   }
 
-  public byte[][] get17Canvas() {
+  public byte[][] getCanvas17() {
     return this.canvas17;
   }
 }

@@ -36,7 +36,6 @@ import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class LimboFilterCommand implements SimpleCommand {
 
@@ -52,7 +51,7 @@ public class LimboFilterCommand implements SimpleCommand {
         this.playersWithStats
             .stream()
             .map(server::getPlayer)
-            .forEach(player -> player.ifPresent(pl -> pl.sendActionBar(this.createStatsComponent(pl.getPing()))));
+            .forEach(optionalPlayer -> optionalPlayer.ifPresent(player -> player.sendActionBar(this.createStatsComponent(player.getPing()))));
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -66,16 +65,16 @@ public class LimboFilterCommand implements SimpleCommand {
 
     if (args.length == 0) {
       return this.getSubCommands()
-          .filter(cmd -> source.hasPermission("limbofilter." + cmd))
+          .filter(cmd -> source.hasPermission("limbofilter.commands." + cmd))
           .collect(Collectors.toList());
     } else if (args.length == 1) {
       return this.getSubCommands()
-          .filter(cmd -> source.hasPermission("limbofilter." + cmd))
+          .filter(cmd -> source.hasPermission("limbofilter.commands." + cmd))
           .filter(str -> str.regionMatches(true, 0, args[0], 0, args[0].length()))
           .collect(Collectors.toList());
+    } else {
+      return ImmutableList.of();
     }
-
-    return ImmutableList.of();
   }
 
   @Override
@@ -86,40 +85,43 @@ public class LimboFilterCommand implements SimpleCommand {
     if (args.length == 1) {
       switch (args[0].toLowerCase(Locale.ROOT)) {
         case "reload": {
-          if (source.hasPermission("limbofilter.reload")) {
+          if (source.hasPermission("limbofilter.commands.reload")) {
             try {
               this.plugin.reload();
-              source.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD));
+              source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD));
             } catch (Exception e) {
-              source.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD_FAILED));
+              source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD_FAILED));
               e.printStackTrace();
             }
           } else {
             this.showHelp(source);
           }
+
           return;
         }
         case "stats": {
           if (source instanceof Player) {
-            if (source.hasPermission("limbofilter.stats")) {
+            if (source.hasPermission("limbofilter.commands.stats")) {
               ConnectedPlayer player = (ConnectedPlayer) source;
               if (!this.playersWithStats.contains(player.getUniqueId())) {
-                source.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED));
+                source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED));
                 this.playersWithStats.add(player.getUniqueId());
               } else {
-                source.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.STATS_DISABLED));
+                source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_DISABLED));
                 this.playersWithStats.remove(player.getUniqueId());
               }
             } else {
               this.showHelp(source);
             }
           } else {
-            source.sendMessage(this.createStatsComponent(0));
+            source.sendMessage(this.createStatsComponent(-1));
           }
+
           return;
         }
         default: {
           this.showHelp(source);
+          return;
         }
       }
     }
@@ -135,12 +137,20 @@ public class LimboFilterCommand implements SimpleCommand {
     source.sendMessage(Component.text("§fAvailable subcommands:"));
     // Java moment
     this.getSubCommands()
-        .filter(cmd -> source.hasPermission("limbofilter." + cmd))
+        .filter(cmd -> source.hasPermission("limbofilter.commands." + cmd))
         .forEach(cmd -> {
-          if (cmd.equals("reload")) {
-            source.sendMessage(Component.text("    §a/limbofilter reload §8- §eReload config"));
-          } else if (cmd.equals("stats")) {
-            source.sendMessage(Component.text("    §a/limbofilter stats §8- §eEnable/Disable statistics of connections and blocked bots"));
+          switch (cmd) {
+            case "reload": {
+              source.sendMessage(Component.text("    §a/limbofilter reload §8- §eReload config."));
+              break;
+            }
+            case "stats": {
+              source.sendMessage(Component.text("    §a/limbofilter stats §8- §eEnable/Disable statistics of connections and blocked bots."));
+              break;
+            }
+            default: {
+              throw new AssertionError();
+            }
           }
         });
   }
@@ -151,8 +161,7 @@ public class LimboFilterCommand implements SimpleCommand {
 
   private Component createStatsComponent(long ping) {
     Statistics statistics = this.plugin.getStatistics();
-
-    return LegacyComponentSerializer.legacyAmpersand().deserialize(
+    return LimboFilter.getSerializer().deserialize(
         MessageFormat.format(
             Settings.IMP.MAIN.STRINGS.STATS_FORMAT,
             statistics.getBlockedConnections(),

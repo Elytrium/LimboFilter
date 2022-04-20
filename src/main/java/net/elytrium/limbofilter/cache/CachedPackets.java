@@ -30,11 +30,10 @@ import net.elytrium.limboapi.api.material.Item;
 import net.elytrium.limboapi.api.material.VirtualItem;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
+import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.IntBinaryTag;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class CachedPackets {
 
@@ -110,43 +109,39 @@ public class CachedPackets {
     return factory.createPreparedPacket()
         .prepare(new Chat(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINIMUM_VERSION).serialize(
-                LegacyComponentSerializer.legacyAmpersand().deserialize(text)
+                LimboFilter.getSerializer().deserialize(text)
             ), Chat.CHAT_TYPE, null
         ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_15_2)
         .prepare(new Chat(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINECRAFT_1_16).serialize(
-                LegacyComponentSerializer.legacyAmpersand().deserialize(text)
+                LimboFilter.getSerializer().deserialize(text)
             ), Chat.CHAT_TYPE, null
         ), ProtocolVersion.MINECRAFT_1_16);
   }
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {
-    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LegacyComponentSerializer.legacyAmpersand().deserialize(message), version));
+    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version));
   }
 
   public PreparedPacket createTitlePacket(LimboFactory factory, String title, String subtitle) {
     PreparedPacket preparedPacket = factory.createPreparedPacket();
 
-    Component titleComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(title);
-
-    preparedPacket.prepare((version) -> {
+    preparedPacket.prepare(version -> {
       GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_TITLE, version);
-      packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(titleComponent));
+      packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(LimboFilter.getSerializer().deserialize(title)));
       return packet;
     }, ProtocolVersion.MINECRAFT_1_8);
 
     if (!subtitle.isEmpty()) {
-      Component subtitleComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(subtitle);
-
-      preparedPacket.prepare((version) -> {
+      preparedPacket.prepare(version -> {
         GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_SUBTITLE, version);
-        packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(subtitleComponent));
+        packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(LimboFilter.getSerializer().deserialize(subtitle)));
         return packet;
       }, ProtocolVersion.MINECRAFT_1_8);
     }
 
     if (!subtitle.isEmpty() && !title.isEmpty()) {
-      preparedPacket.prepare((version) -> {
+      preparedPacket.prepare(version -> {
         GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_TIMES, version);
         packet.setFadeIn(10);
         packet.setStay(70);

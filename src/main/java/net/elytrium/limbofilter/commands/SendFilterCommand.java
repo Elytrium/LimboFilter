@@ -17,9 +17,11 @@
 
 package net.elytrium.limbofilter.commands;
 
+import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import java.text.MessageFormat;
 import java.util.Collection;
@@ -28,9 +30,9 @@ import java.util.Optional;
 import net.elytrium.java.commons.mc.velocity.commands.SuggestUtils;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class SendFilterCommand implements SimpleCommand {
+
   private final LimboFilter plugin;
 
   public SendFilterCommand(LimboFilter plugin) {
@@ -38,43 +40,43 @@ public class SendFilterCommand implements SimpleCommand {
   }
 
   @Override
-  public void execute(Invocation invocation) {
+  public void execute(SimpleCommand.Invocation invocation) {
+    CommandSource source = invocation.source();
     String[] args = invocation.arguments();
-    for (String arg : args) {
-      Optional<RegisteredServer> server = this.plugin.getServer().getServer(arg);
 
-      if (server.isPresent()) {
-        Collection<Player> players = server.get().getPlayersConnected();
+    for (String argument : args) {
+      ProxyServer server = this.plugin.getServer();
+      Optional<RegisteredServer> registeredServer = server.getServer(argument);
+      if (registeredServer.isPresent()) {
+        Collection<Player> players = registeredServer.get().getPlayersConnected();
         players.forEach(this.plugin::sendToFilterServer);
-        invocation.source().sendMessage(
-            LegacyComponentSerializer.legacyAmpersand().deserialize(
-                MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_SERVER_SUCCESS, players.size(), arg)));
+        source.sendMessage(
+            LimboFilter.getSerializer().deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_SERVER_SUCCESS, players.size(), argument))
+        );
       } else {
-        Optional<Player> player = this.plugin.getServer().getPlayer(arg);
-
+        Optional<Player> player = server.getPlayer(argument);
         if (player.isPresent()) {
           this.plugin.sendToFilterServer(player.get());
-          invocation.source().sendMessage(
-              LegacyComponentSerializer.legacyAmpersand().deserialize(
-                  MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_SUCCESS, player.get().getUsername())));
+          source.sendMessage(
+              LimboFilter.getSerializer().deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_SUCCESS, player.get().getUsername()))
+          );
         } else {
-          invocation.source().sendMessage(
-              LegacyComponentSerializer.legacyAmpersand().deserialize(
-                  MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_FAIL, arg)));
+          source.sendMessage(
+              LimboFilter.getSerializer().deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_FAIL, argument))
+          );
         }
       }
     }
   }
 
   @Override
-  public List<String> suggest(Invocation invocation) {
+  public List<String> suggest(SimpleCommand.Invocation invocation) {
     String[] args = invocation.arguments();
     return SuggestUtils.suggestServersAndPlayers(this.plugin.getServer(), args, args.length);
   }
 
   @Override
-  public boolean hasPermission(Invocation invocation) {
-    return invocation.source().getPermissionValue("limbofilter.sendcaptcha") == Tristate.TRUE;
+  public boolean hasPermission(SimpleCommand.Invocation invocation) {
+    return invocation.source().getPermissionValue("limbofilter.commands.sendfilter") == Tristate.TRUE;
   }
-
 }

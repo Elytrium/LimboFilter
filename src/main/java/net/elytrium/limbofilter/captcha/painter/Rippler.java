@@ -17,7 +17,6 @@
 
 package net.elytrium.limbofilter.captcha.painter;
 
-
 import java.awt.image.BufferedImage;
 
 /**
@@ -32,12 +31,8 @@ public class Rippler {
   private final AxisConfig horizontal;
 
   /**
-   * Constructor.
-   *
-   * @param vertical   config to calculate waving deltas from x axis (so to modify y
-   *                   values), not null
-   * @param horizontal config to calculate waving deltas from y axis (so to modify x
-   *                   values), not null
+   * @param vertical   config to calculate waving deltas from x axis (so to modify y values), not null
+   * @param horizontal config to calculate waving deltas from y axis (so to modify xvalues), not null
    */
   public Rippler(AxisConfig vertical, AxisConfig horizontal) {
     this.vertical = vertical;
@@ -84,8 +79,8 @@ public class Rippler {
     double period = axisConfig.getLength() / num;
     double amplitude = axisConfig.getAmplitude();
 
-    for (int fi = 0; fi < num; ++fi) {
-      delta[fi] = (int) Math.round(amplitude * Math.sin(start + fi * period));
+    for (int i = 0; i < num; ++i) {
+      delta[i] = (int) Math.round(amplitude * Math.sin(start + i * period));
     }
 
     return delta;
@@ -128,9 +123,8 @@ public class Rippler {
       double piMulti = multi * Math.PI;
 
       a = Math.abs(a);
-      double d = Math.floor(a / piMulti);
 
-      return a - d * piMulti;
+      return a - Math.floor(a / piMulti) * piMulti;
     }
 
     /**

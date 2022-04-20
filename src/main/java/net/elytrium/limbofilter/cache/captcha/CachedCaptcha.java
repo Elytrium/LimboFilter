@@ -25,11 +25,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.elytrium.limbofilter.captcha.CaptchaHolder;
 
 public class CachedCaptcha {
 
-  private final List<CaptchaHandler> captchas = new ArrayList<>();
-  private final AtomicInteger captchaCounter = new AtomicInteger(0);
+  private final List<CaptchaHolder> captchas = new ArrayList<>();
+  private final AtomicInteger captchaCounter = new AtomicInteger();
 
   private final LimboFilter plugin;
 
@@ -41,26 +42,32 @@ public class CachedCaptcha {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
       PreparedPacket prepared = this.plugin.getFactory().createPreparedPacket();
       this.captchas.add(
-          new CaptchaHandler(
-              prepared.prepare(
-                  mapDataPacket, ProtocolVersion.MINECRAFT_1_8
-              ).prepare(
-                  mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6
-              ), answer
+          new CaptchaHolder(
+              this.toArray(
+                  prepared
+                      .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
+                      .prepare(mapDataPacket, ProtocolVersion.MINECRAFT_1_8)
+              ),
+              answer
           )
       );
     } else {
-      this.captchas.add(new CaptchaHandler(mapDataPacket, mapDataPackets17, answer));
+      this.captchas.add(new CaptchaHolder(this.toArray(mapDataPacket), mapDataPackets17, answer));
     }
   }
 
-  public CaptchaHandler randomCaptcha() {
-    int counter = this.captchaCounter.incrementAndGet();
-    if (counter >= this.captchas.size()) {
-      counter = 0;
+  @SafeVarargs
+  private <V> V[] toArray(V... values) {
+    return values;
+  }
+
+  public CaptchaHolder randomCaptcha() {
+    int count = this.captchaCounter.getAndIncrement();
+    if (count >= this.captchas.size()) {
       this.captchaCounter.set(0);
+      count = 0;
     }
 
-    return this.captchas.get(counter);
+    return this.captchas.get(count);
   }
 }

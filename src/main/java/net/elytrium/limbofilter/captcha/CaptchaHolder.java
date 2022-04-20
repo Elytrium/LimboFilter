@@ -15,27 +15,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.elytrium.limbofilter.cache.captcha;
+package net.elytrium.limbofilter.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 
-public class CaptchaHandler {
+public class CaptchaHolder {
 
-  private final MinecraftPacket mapPacket;
+  private final MinecraftPacket[] mapPacket;
   private final MinecraftPacket[] mapPackets17;
-  private final PreparedPacket preparedMapPacket;
+  private final PreparedPacket[] preparedMapPacket;
   private final String answer;
 
-  public CaptchaHandler(MinecraftPacket mapPacket, MinecraftPacket[] mapPackets17, String answer) {
+  public CaptchaHolder(MinecraftPacket[] mapPacket, MinecraftPacket[] mapPackets17, String answer) {
     this.mapPacket = mapPacket;
     this.mapPackets17 = mapPackets17;
     this.preparedMapPacket = null;
     this.answer = answer;
   }
 
-  public CaptchaHandler(PreparedPacket preparedMapPacket, String answer) {
+  public CaptchaHolder(PreparedPacket[] preparedMapPacket, String answer) {
     this.mapPacket = null;
     this.mapPackets17 = null;
     this.preparedMapPacket = preparedMapPacket;
@@ -43,10 +43,10 @@ public class CaptchaHandler {
   }
 
   public Object[] getMapPacket(ProtocolVersion version) {
-    if (version.compareTo(ProtocolVersion.MINECRAFT_1_8) >= 0) {
-      return this.mapPacket == null ? new Object[] {this.preparedMapPacket} : new Object[] {this.mapPacket};
+    if (version.compareTo(ProtocolVersion.MINECRAFT_1_8) < 0) {
+      return this.mapPackets17 == null ? this.preparedMapPacket : this.mapPackets17;
     } else {
-      return this.mapPackets17 == null ? new Object[] {this.preparedMapPacket} : this.mapPackets17;
+      return this.mapPacket == null ? this.preparedMapPacket : this.mapPacket;
     }
   }
 

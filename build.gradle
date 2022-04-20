@@ -3,7 +3,7 @@
 plugins {
     id("java")
     id("checkstyle")
-    id("com.github.spotbugs").version("5.0.5")
+    id("com.github.spotbugs").version("5.0.6")
     id("org.cadixdev.licenser").version("0.6.1")
     id("com.github.johnrengelman.shadow").version("7.1.2")
 }
@@ -38,10 +38,10 @@ dependencies {
 
     compileOnly("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
-    compileOnly("com.velocitypowered:velocity-proxy:3.1.2-SNAPSHOT") // From Elytrium Repo
+    compileOnly("com.velocitypowered:velocity-proxy:3.1.2-SNAPSHOT") // From Elytrium Repo.
 
-    // Needs for some velocity methods
-    compileOnly("io.netty:netty-codec:4.1.75.Final")
+    // Needs for some velocity methods.
+    compileOnly("io.netty:netty-codec:4.1.76.Final")
 
     implementation("org.bstats:bstats-velocity:3.0.0")
 
@@ -51,9 +51,7 @@ dependencies {
 shadowJar {
     getArchiveClassifier().set("")
 
-    // Why are we increasing the size of the plugin if we can do that? :thinking:
-    relocate("org.bstats", "net.elytrium.limboapi.thirdparty.org.bstats")
-    exclude("org/bstats/**")
+    relocate("org.bstats", "net.elytrium.limbofilter.thirdparty.org.bstats")
 }
 
 license {
@@ -61,7 +59,7 @@ license {
 }
 
 checkstyle {
-    setToolVersion("9.2.1")
+    setToolVersion("10.1")
     setConfigFile(file("${this.getRootDir()}/config/checkstyle/checkstyle.xml"))
     setConfigProperties("configDirectory": "${this.getRootDir()}/config/checkstyle")
 

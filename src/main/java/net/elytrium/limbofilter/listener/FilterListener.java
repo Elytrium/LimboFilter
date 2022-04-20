@@ -22,6 +22,7 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.event.query.ProxyQueryEvent;
+import com.velocitypowered.api.proxy.Player;
 import net.elytrium.limboapi.api.event.LoginLimboRegisterEvent;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
@@ -37,6 +38,7 @@ public class FilterListener {
   @Subscribe(order = PostOrder.FIRST)
   public void onProxyConnect(PreLoginEvent event) {
     this.plugin.getStatistics().addConnection();
+
     if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
         && this.plugin.shouldCheck(event.getUsername(), event.getConnection().getRemoteAddress().getAddress())) {
       event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
@@ -45,8 +47,9 @@ public class FilterListener {
 
   @Subscribe(order = PostOrder.FIRST)
   public void onLogin(LoginLimboRegisterEvent event) {
-    if (this.plugin.shouldCheck(event.getPlayer())) {
-      event.addCallback(() -> this.plugin.sendToFilterServer(event.getPlayer()));
+    Player player = event.getPlayer();
+    if (this.plugin.shouldCheck(player)) {
+      event.addCallback(() -> this.plugin.sendToFilterServer(player));
     }
   }
 
@@ -61,6 +64,6 @@ public class FilterListener {
 
   @Subscribe
   public void onQuery(ProxyQueryEvent event) {
-    this.plugin.getStatistics().addPing();
+    this.plugin.getStatistics().addConnection();
   }
 }

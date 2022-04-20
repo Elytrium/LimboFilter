@@ -17,12 +17,11 @@
 
 package net.elytrium.limbofilter;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
-import net.elytrium.limbofilter.config.Config;
+import net.elytrium.java.commons.config.YamlConfig;
 
-public class Settings extends Config {
+public class Settings extends YamlConfig {
 
   @Ignore
   public static final Settings IMP = new Settings();
@@ -30,6 +29,15 @@ public class Settings extends Config {
   @Final
   public String VERSION = BuildConstants.FILTER_VERSION;
 
+  @Comment({
+      "Available serializers:",
+      "LEGACY_AMPERSAND - \"&c&lExample &c&9Text\".",
+      "LEGACY_SECTION - \"§c§lExample §c§9Text\".",
+      "MINIMESSAGE - \"<bold><red>Example</red> <blue>Text</blue></bold>\". (https://webui.adventure.kyori.net/)",
+      "GSON - \"[{\"text\":\"Example\",\"bold\":true,\"color\":\"red\"},{\"text\":\" \",\"bold\":true},{\"text\":\"Text\",\"bold\":true,\"color\":\"blue\"}]\". (https://minecraft.tools/en/json_text.php/)",
+      "GSON_COLOR_DOWNSAMPLING - Same as GSON, but uses downsampling."
+  })
+  public String SERIALIZER = "LEGACY_AMPERSAND";
   public String PREFIX = "LimboFilter &6>>&f";
 
   @Create
@@ -72,11 +80,11 @@ public class Settings extends Config {
     })
     public String CHECK_STATE = "CAPTCHA_POSITION";
 
-    @Comment("See filter-auto-toggle")
+    @Comment("See filter-auto-toggle.check-state-toggle")
     public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
 
     public boolean LOAD_WORLD = false;
-    @Comment("World file type: schematic (1.12.2 and lower), structure block .nbt (saved in the latest version)")
+    @Comment("World file type: \"schematic\" (1.12.2 and lower), \"structure\" block .nbt (saved in the latest version)")
     public String WORLD_FILE_TYPE = "structure";
     public String WORLD_FILE_PATH = "world.nbt";
 
@@ -123,10 +131,10 @@ public class Settings extends Config {
       public int ONLINE_MODE_VERIFY = 79;
 
       @Comment({
-          "Toggles CHECK_STATE/CHECK_STATE_NON_TOGGLED.",
+          "Toggles check-state/check-state-non-toggled.",
           "It is not recommended to enable it, if you want to protect your server from spam-bots.",
-          "If connections per unit of time amount is bigger than the limit: CHECK_STATE will be used",
-          "Else: CHECK_STATE_NON_TOGGLED will be used"
+          "If connections per unit of time amount is bigger than the limit: check-state will be used",
+          "Else: check-state-non-toggled will be used"
       })
       public int CHECK_STATE_TOGGLE = 0;
 
@@ -158,9 +166,9 @@ public class Settings extends Config {
 
       @Comment("Prepares Captcha packets, uses ~0.5GB RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
       public boolean PREPARE_CAPTCHA_PACKETS = false;
-      @Comment("List of paths to the background image to draw on captcha (any format, 128x128), [] if empty")
+      @Comment("List of paths to the background image to draw on captcha. Any format, 128x128 128x128 px (will be automatically resized and streched to the correct size). [] if empty.")
       public List<String> BACKPLATE_PATHS = List.of("");
-      @Comment("Path to the font files to draw on captcha (ttf), can be empty")
+      @Comment("Path to the font files to draw on captcha (ttf), can be empty.")
       public List<String> FONTS_PATH = List.of("");
       @Comment("Use standard fonts(SANS_SERIF/SERIF/MONOSPACED), use false only if you provide fonts path")
       public boolean USE_STANDARD_FONTS = true;
@@ -238,15 +246,6 @@ public class Settings extends Config {
       public double CAPTCHA_PITCH = 38;
       public double FALLING_CHECK_YAW = 90;
       public double FALLING_CHECK_PITCH = 10;
-    }
-  }
-
-  public void reload(File file) {
-    if (this.load(file, this.PREFIX)) {
-      this.save(file);
-    } else {
-      this.save(file);
-      this.load(file, this.PREFIX);
     }
   }
 }

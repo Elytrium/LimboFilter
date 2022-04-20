@@ -11,16 +11,16 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.1
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v2.5.0
+        uses: actions/setup-java@v3.1.1
         with:
           distribution: adopt
           java-version: ${{ matrix.java }}
       - name: Build LimboFilter
         run: ./gradlew build
       - name: Upload LimboFilter
-        uses: actions/upload-artifact@v2.3.1
+        uses: actions/upload-artifact@v3.0.0
         with:
           name: LimboFilter Built On ${{ matrix.java }} JDK
           path: "build/libs/limbofilter*.jar"
@@ -31,7 +31,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Release the build
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.10.0
         with:
           artifacts: "build/libs/limbofilter*.jar"
           body: ${{ join(github.event.commits.*.message, '\n') }}

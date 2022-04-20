@@ -27,15 +27,23 @@ import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOError;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import net.elytrium.java.commons.mc.serialization.Serializer;
+import net.elytrium.java.commons.mc.serialization.Serializers;
+import net.elytrium.java.commons.updates.UpdatesChecker;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.Dimension;
@@ -51,7 +59,8 @@ import net.elytrium.limbofilter.commands.SendFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
-import net.elytrium.limbofilter.utils.UpdatesChecker;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.ComponentSerializer;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bstats.velocity.Metrics;
@@ -72,10 +81,13 @@ import org.slf4j.Logger;
 )
 public class LimboFilter {
 
+  private static Logger logger;
+  private static Serializer serializer;
+
   private final Map<String, CachedUser> cachedFilterChecks = new ConcurrentHashMap<>();
 
   private final Path dataDirectory;
-  private final Logger logger;
+  private final File configFile;
   private final Metrics.Factory metricsFactory;
   private final ProxyServer server;
   private final CachedPackets packets;
@@ -85,15 +97,16 @@ public class LimboFilter {
 
   private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
-  private Metrics metrics;
   private VirtualWorld filterWorld;
 
   @Inject
-  public LimboFilter(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
+  public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
+    setLogger(logger);
+
     this.server = server;
-    this.logger = logger;
     this.metricsFactory = metricsFactory;
     this.dataDirectory = dataDirectory;
+    this.configFile = this.dataDirectory.resolve("config.yml").toFile();
     this.packets = new CachedPackets();
     this.generator = new CaptchaGenerator(this);
     this.statistics = new Statistics();
@@ -103,26 +116,40 @@ public class LimboFilter {
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    this.metrics = this.metricsFactory.make(this, 13699);
+    Metrics metrics = this.metricsFactory.make(this, 13699);
+
+    metrics.addCustomChart(new SimplePie("filter_type", () -> Settings.IMP.MAIN.CHECK_STATE));
+    metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
+    metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_BRAND)));
+    metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS)));
+    metrics.addCustomChart(new SimplePie("has_backplate", () -> String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty())));
+
+    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings())));
+    metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
+
+    Settings.IMP.setLogger(logger);
 
     this.reload();
 
-    this.metrics.addCustomChart(new SimplePie("filter_type", () -> Settings.IMP.MAIN.CHECK_STATE));
-    this.metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
-    this.metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_BRAND)));
-    this.metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS)));
-    this.metrics.addCustomChart(new SimplePie("has_backplate", () ->
-        String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty())));
-
-    this.metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings())));
-    this.metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
-
-    UpdatesChecker.checkForUpdates(this.getLogger());
+    if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
+      logger.error("****************************************");
+      logger.warn("The new LimboFilter update was found, please update.");
+      logger.error("https://github.com/Elytrium/LimboFilter/releases/");
+      logger.error("****************************************");
+    }
   }
 
-  @SuppressWarnings("SwitchStatementWithTooFewBranches")
+  @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
   public void reload() {
-    Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"));
+    Settings.IMP.reload(this.configFile, Settings.IMP.PREFIX);
+
+    ComponentSerializer<Component, Component, String> serializer = Serializers.valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
+    if (serializer == null) {
+      logger.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
+      setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
+    } else {
+      setSerializer(new Serializer(serializer));
+    }
 
     BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L);
 
@@ -164,7 +191,7 @@ public class LimboFilter {
             break;
           }
           default: {
-            this.logger.error("Incorrect world file type.");
+            logger.error("Incorrect world file type.");
             this.server.shutdown();
             return;
           }
@@ -191,8 +218,8 @@ public class LimboFilter {
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));
 
-    Executors.newScheduledThreadPool(1, task -> new Thread(task, "purge-cache")).scheduleAtFixedRate(() ->
-        this.checkCache(this.cachedFilterChecks),
+    Executors.newScheduledThreadPool(1, task -> new Thread(task, "purge-cache")).scheduleAtFixedRate(
+        () -> this.checkCache(this.cachedFilterChecks),
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         TimeUnit.MILLISECONDS
@@ -202,8 +229,10 @@ public class LimboFilter {
   public void cacheFilterUser(Player player) {
     String username = player.getUsername();
     this.cachedFilterChecks.remove(username);
-    this.cachedFilterChecks.put(username,
-        new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis() + Settings.IMP.MAIN.PURGE_CACHE_MILLIS));
+    this.cachedFilterChecks.put(
+        username,
+        new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis() + Settings.IMP.MAIN.PURGE_CACHE_MILLIS)
+    );
   }
 
   public boolean shouldCheck(Player player) {
@@ -230,39 +259,49 @@ public class LimboFilter {
     try {
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {
-      this.logger.error("Error", t);
+      logger.error("Error", t);
     }
   }
 
   private void checkCache(Map<String, CachedUser> userMap) {
     userMap.entrySet().stream()
-        .filter(u -> u.getValue().getCheckTime() <= System.currentTimeMillis())
+        .filter(user -> user.getValue().getCheckTime() <= System.currentTimeMillis())
         .map(Map.Entry::getKey)
         .forEach(userMap::remove);
   }
 
   public boolean checkCpsLimit(int limit) {
-    if (limit == -1) {
+    if (limit != -1) {
+      return limit <= this.statistics.getConnections();
+    } else {
       return false;
     }
-
-    return limit <= this.statistics.getConnections();
   }
 
   public boolean checkPpsLimit(int limit) {
-    if (limit == -1) {
+    if (limit != -1) {
+      return limit <= this.statistics.getPings();
+    } else {
       return false;
     }
+  }
 
-    return limit <= this.statistics.getPings();
+  public File getFile(String filename) {
+    File dataDirectoryFile = this.dataDirectory.resolve(filename).toFile();
+    if (dataDirectoryFile.exists()) {
+      return dataDirectoryFile;
+    } else {
+      File rootFile = new File(filename);
+      if (rootFile.exists()) {
+        return rootFile;
+      } else {
+        throw new IOError(new FileNotFoundException("File " + filename + "cannot be founded!"));
+      }
+    }
   }
 
   public ProxyServer getServer() {
     return this.server;
-  }
-
-  public Logger getLogger() {
-    return this.logger;
   }
 
   public LimboFactory getFactory() {
@@ -283,6 +322,22 @@ public class LimboFilter {
 
   public VirtualWorld getFilterWorld() {
     return this.filterWorld;
+  }
+
+  private static void setLogger(Logger logger) {
+    LimboFilter.logger = logger;
+  }
+
+  public static Logger getLogger() {
+    return logger;
+  }
+
+  private static void setSerializer(Serializer serializer) {
+    LimboFilter.serializer = serializer;
+  }
+
+  public static Serializer getSerializer() {
+    return serializer;
   }
 
   private static class CachedUser {
