@@ -64,6 +64,7 @@ import net.kyori.adventure.text.serializer.ComponentSerializer;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bstats.velocity.Metrics;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 
 @Plugin(
@@ -81,8 +82,10 @@ import org.slf4j.Logger;
 )
 public class LimboFilter {
 
-  private static Logger logger;
-  private static Serializer serializer;
+  @MonotonicNonNull
+  private static Logger LOGGER;
+  @MonotonicNonNull
+  private static Serializer SERIALIZER;
 
   private final Map<String, CachedUser> cachedFilterChecks = new ConcurrentHashMap<>();
 
@@ -127,15 +130,15 @@ public class LimboFilter {
     metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings())));
     metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
 
-    Settings.IMP.setLogger(logger);
+    Settings.IMP.setLogger(LOGGER);
 
     this.reload();
 
     if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
-      logger.error("****************************************");
-      logger.warn("The new LimboFilter update was found, please update.");
-      logger.error("https://github.com/Elytrium/LimboFilter/releases/");
-      logger.error("****************************************");
+      LOGGER.error("****************************************");
+      LOGGER.warn("The new LimboFilter update was found, please update.");
+      LOGGER.error("https://github.com/Elytrium/LimboFilter/releases/");
+      LOGGER.error("****************************************");
     }
   }
 
@@ -145,7 +148,7 @@ public class LimboFilter {
 
     ComponentSerializer<Component, Component, String> serializer = Serializers.valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
     if (serializer == null) {
-      logger.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
+      LOGGER.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
       setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
     } else {
       setSerializer(new Serializer(serializer));
@@ -191,7 +194,7 @@ public class LimboFilter {
             break;
           }
           default: {
-            logger.error("Incorrect world file type.");
+            LOGGER.error("Incorrect world file type.");
             this.server.shutdown();
             return;
           }
@@ -259,7 +262,7 @@ public class LimboFilter {
     try {
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {
-      logger.error("Error", t);
+      LOGGER.error("Error", t);
     }
   }
 
@@ -325,19 +328,19 @@ public class LimboFilter {
   }
 
   private static void setLogger(Logger logger) {
-    LimboFilter.logger = logger;
+    LOGGER = logger;
   }
 
   public static Logger getLogger() {
-    return logger;
+    return LOGGER;
   }
 
   private static void setSerializer(Serializer serializer) {
-    LimboFilter.serializer = serializer;
+    SERIALIZER = serializer;
   }
 
   public static Serializer getSerializer() {
-    return serializer;
+    return SERIALIZER;
   }
 
   private static class CachedUser {
