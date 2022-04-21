@@ -25,7 +25,6 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -40,7 +39,7 @@ import net.kyori.adventure.text.Component;
 public class LimboFilterCommand implements SimpleCommand {
 
   private final LimboFilter plugin;
-  private final List<UUID> playersWithStats = Collections.synchronizedList(new ArrayList<>());
+  private final List<UUID> playersWithStats = new ArrayList<>();
 
   public LimboFilterCommand(LimboFilter plugin) {
     this.plugin = plugin;
@@ -65,11 +64,11 @@ public class LimboFilterCommand implements SimpleCommand {
 
     if (args.length == 0) {
       return this.getSubCommands()
-          .filter(cmd -> source.hasPermission("limbofilter.commands." + cmd))
+          .filter(cmd -> source.hasPermission("limbofilter.admin." + cmd))
           .collect(Collectors.toList());
     } else if (args.length == 1) {
       return this.getSubCommands()
-          .filter(cmd -> source.hasPermission("limbofilter.commands." + cmd))
+          .filter(cmd -> source.hasPermission("limbofilter.admin." + cmd))
           .filter(str -> str.regionMatches(true, 0, args[0], 0, args[0].length()))
           .collect(Collectors.toList());
     } else {
@@ -85,7 +84,7 @@ public class LimboFilterCommand implements SimpleCommand {
     if (args.length == 1) {
       switch (args[0].toLowerCase(Locale.ROOT)) {
         case "reload": {
-          if (source.hasPermission("limbofilter.commands.reload")) {
+          if (source.hasPermission("limbofilter.admin.reload")) {
             try {
               this.plugin.reload();
               source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD));
@@ -101,7 +100,7 @@ public class LimboFilterCommand implements SimpleCommand {
         }
         case "stats": {
           if (source instanceof Player) {
-            if (source.hasPermission("limbofilter.commands.stats")) {
+            if (source.hasPermission("limbofilter.admin.stats")) {
               ConnectedPlayer player = (ConnectedPlayer) source;
               if (!this.playersWithStats.contains(player.getUniqueId())) {
                 source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED));
@@ -137,7 +136,7 @@ public class LimboFilterCommand implements SimpleCommand {
     source.sendMessage(Component.text("§fAvailable subcommands:"));
     // Java moment
     this.getSubCommands()
-        .filter(cmd -> source.hasPermission("limbofilter.commands." + cmd))
+        .filter(cmd -> source.hasPermission("limbofilter.admin." + cmd))
         .forEach(cmd -> {
           switch (cmd) {
             case "reload": {
