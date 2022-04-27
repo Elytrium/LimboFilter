@@ -38,8 +38,8 @@ import net.kyori.adventure.text.Component;
 
 public class LimboFilterCommand implements SimpleCommand {
 
+  private static final List<UUID> playersWithStats = new ArrayList<>();
   private final LimboFilter plugin;
-  private final List<UUID> playersWithStats = new ArrayList<>();
 
   public LimboFilterCommand(LimboFilter plugin) {
     this.plugin = plugin;
@@ -47,7 +47,7 @@ public class LimboFilterCommand implements SimpleCommand {
     ProxyServer server = plugin.getServer();
     server.getScheduler().buildTask(this.plugin, () -> {
       try {
-        this.playersWithStats
+        playersWithStats
             .stream()
             .map(server::getPlayer)
             .forEach(optionalPlayer -> optionalPlayer.ifPresent(player -> player.sendActionBar(this.createStatsComponent(player.getPing()))));
@@ -102,12 +102,12 @@ public class LimboFilterCommand implements SimpleCommand {
           if (source instanceof Player) {
             if (source.hasPermission("limbofilter.admin.stats")) {
               ConnectedPlayer player = (ConnectedPlayer) source;
-              if (!this.playersWithStats.contains(player.getUniqueId())) {
+              if (!playersWithStats.contains(player.getUniqueId())) {
                 source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED));
-                this.playersWithStats.add(player.getUniqueId());
+                playersWithStats.add(player.getUniqueId());
               } else {
                 source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_DISABLED));
-                this.playersWithStats.remove(player.getUniqueId());
+                playersWithStats.remove(player.getUniqueId());
               }
             } else {
               this.showHelp(source);
