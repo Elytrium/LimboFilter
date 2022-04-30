@@ -22,39 +22,73 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
+import com.velocitypowered.api.scheduler.ScheduledTask;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 public class LimboFilterCommand implements SimpleCommand {
 
-  private static final List<UUID> playersWithStats = new ArrayList<>();
+  private static final List<UUID> PLAYERS_WITH_STATS = new ArrayList<>();
+
+  private static final List<Component> HELP_MESSAGE = List.of(
+      Component.text("This server is using LimboFilter and LimboAPI.", NamedTextColor.YELLOW),
+      Component.text("(C) 2021 - 2022 Elytrium", NamedTextColor.YELLOW),
+      Component.text("https://elytrium.net/github/", NamedTextColor.GREEN),
+      Component.empty()
+  );
+  private static final Map<String, Component> SUBCOMMANDS = Map.of(
+      "stats", Component.textOfChildren(
+          Component.text("  /limbofilter stats", NamedTextColor.GREEN),
+          Component.text(" - ", NamedTextColor.DARK_GRAY),
+          Component.text("Enable/Disable statistics of connections and blocked bots.", NamedTextColor.YELLOW)
+      ),
+      "reload", Component.textOfChildren(
+          Component.text("  /limbofilter reload", NamedTextColor.GREEN),
+          Component.text(" - ", NamedTextColor.DARK_GRAY),
+          Component.text("Reload config.", NamedTextColor.YELLOW)
+      )
+  );
+  private static final Component AVAILABLE_SUBCOMMANDS_MESSAGE = Component.text("Available subcommands:", NamedTextColor.WHITE);
+  private static final Component NO_AVAILABLE_SUBCOMMANDS_MESSAGE = Component.text("There is no available subcommands for you.", NamedTextColor.WHITE);
+
+  private static ScheduledTask STATS_TASK;
+
   private final LimboFilter plugin;
+
+  private final Component reload;
+  private final Component reloadFailed;
+  private final Component statsEnabled;
+  private final Component statsDisabled;
 
   public LimboFilterCommand(LimboFilter plugin) {
     this.plugin = plugin;
 
-    ProxyServer server = plugin.getServer();
-    server.getScheduler().buildTask(this.plugin, () -> {
-      try {
-        playersWithStats
-            .stream()
-            .map(server::getPlayer)
-            .forEach(optionalPlayer -> optionalPlayer.ifPresent(player -> player.sendActionBar(this.createStatsComponent(player.getPing()))));
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }).repeat(1, TimeUnit.SECONDS).schedule();
+    if (STATS_TASK == null) {
+      ProxyServer server = this.plugin.getServer();
+      STATS_TASK = server.getScheduler().buildTask(
+          this.plugin,
+          () -> PLAYERS_WITH_STATS.stream()
+              .map(server::getPlayer)
+              .forEach(optionalPlayer -> optionalPlayer.ifPresent(player -> player.sendActionBar(this.createStatsComponent(player.getPing()))))
+      ).repeat(1, TimeUnit.SECONDS).schedule();
+    }
+
+    Serializer serializer = LimboFilter.getSerializer();
+    this.reload = serializer.deserialize(Settings.IMP.MAIN.STRINGS.RELOAD);
+    this.reloadFailed = serializer.deserialize(Settings.IMP.MAIN.STRINGS.RELOAD_FAILED);
+    this.statsEnabled = serializer.deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED);
+    this.statsDisabled = serializer.deserialize(Settings.IMP.MAIN.STRINGS.STATS_DISABLED);
   }
 
   @Override
@@ -63,13 +97,13 @@ public class LimboFilterCommand implements SimpleCommand {
     String[] args = invocation.arguments();
 
     if (args.length == 0) {
-      return this.getSubCommands()
-          .filter(cmd -> source.hasPermission("limbofilter.admin." + cmd))
+      return SUBCOMMANDS.keySet().stream()
+          .filter(command -> source.hasPermission("limbofilter.admin." + command))
           .collect(Collectors.toList());
     } else if (args.length == 1) {
-      return this.getSubCommands()
-          .filter(cmd -> source.hasPermission("limbofilter.admin." + cmd))
-          .filter(str -> str.regionMatches(true, 0, args[0], 0, args[0].length()))
+      return SUBCOMMANDS.keySet().stream()
+          .filter(command -> source.hasPermission("limbofilter.admin." + command))
+          .filter(command -> command.regionMatches(true, 0, args[0], 0, args[0].length()))
           .collect(Collectors.toList());
     } else {
       return ImmutableList.of();
@@ -82,46 +116,33 @@ public class LimboFilterCommand implements SimpleCommand {
     String[] args = invocation.arguments();
 
     if (args.length == 1) {
-      switch (args[0].toLowerCase(Locale.ROOT)) {
-        case "reload": {
-          if (source.hasPermission("limbofilter.admin.reload")) {
-            try {
-              this.plugin.reload();
-              source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD));
-            } catch (Exception e) {
-              source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.RELOAD_FAILED));
-              e.printStackTrace();
-            }
-          } else {
-            this.showHelp(source);
-          }
+      String command = args[0];
+      if (command.equalsIgnoreCase("reload") && source.hasPermission("limbofilter.admin.reload")) {
+        try {
+          this.plugin.reload();
+          source.sendMessage(this.reload);
+        } catch (Exception e) {
+          e.printStackTrace();
+          source.sendMessage(this.reloadFailed);
+        }
 
-          return;
-        }
-        case "stats": {
-          if (source instanceof Player) {
-            if (source.hasPermission("limbofilter.admin.stats")) {
-              ConnectedPlayer player = (ConnectedPlayer) source;
-              if (!playersWithStats.contains(player.getUniqueId())) {
-                source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED));
-                playersWithStats.add(player.getUniqueId());
-              } else {
-                source.sendMessage(LimboFilter.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.STATS_DISABLED));
-                playersWithStats.remove(player.getUniqueId());
-              }
-            } else {
-              this.showHelp(source);
-            }
+        return;
+      } else if (command.equalsIgnoreCase("stats") && source.hasPermission("limbofilter.admin.stats")) {
+        if (source instanceof Player) {
+          Player player = (Player) source;
+          UUID playerUuid = player.getUniqueId();
+          if (PLAYERS_WITH_STATS.contains(playerUuid)) {
+            PLAYERS_WITH_STATS.remove(playerUuid);
+            source.sendMessage(this.statsDisabled);
           } else {
-            source.sendMessage(this.createStatsComponent(-1));
+            PLAYERS_WITH_STATS.add(playerUuid);
+            source.sendMessage(this.statsEnabled);
           }
+        } else {
+          source.sendMessage(this.createStatsComponent(-1));
+        }
 
-          return;
-        }
-        default: {
-          this.showHelp(source);
-          return;
-        }
+        return;
       }
     }
 
@@ -129,33 +150,16 @@ public class LimboFilterCommand implements SimpleCommand {
   }
 
   private void showHelp(CommandSource source) {
-    source.sendMessage(Component.text("§eThis server is using LimboFilter and LimboAPI"));
-    source.sendMessage(Component.text("§e(C) 2021 - 2022 Elytrium"));
-    source.sendMessage(Component.text("§ahttps://ely.su/github/"));
-    source.sendMessage(Component.text("§r"));
-    source.sendMessage(Component.text("§fAvailable subcommands:"));
-    // Java moment
-    this.getSubCommands()
-        .filter(cmd -> source.hasPermission("limbofilter.admin." + cmd))
-        .forEach(cmd -> {
-          switch (cmd) {
-            case "reload": {
-              source.sendMessage(Component.text("    §a/limbofilter reload §8- §eReload config."));
-              break;
-            }
-            case "stats": {
-              source.sendMessage(Component.text("    §a/limbofilter stats §8- §eEnable/Disable statistics of connections and blocked bots."));
-              break;
-            }
-            default: {
-              throw new AssertionError();
-            }
-          }
-        });
-  }
-
-  private Stream<String> getSubCommands() {
-    return Stream.of("reload", "stats");
+    HELP_MESSAGE.forEach(source::sendMessage);
+    List<Map.Entry<String, Component>> availableSubcommands = SUBCOMMANDS.entrySet().stream()
+        .filter(command -> source.hasPermission("limbofilter.admin." + command.getKey()))
+        .collect(Collectors.toList());
+    if (availableSubcommands.size() > 0) {
+      source.sendMessage(AVAILABLE_SUBCOMMANDS_MESSAGE);
+      availableSubcommands.forEach(command -> source.sendMessage(command.getValue()));
+    } else {
+      source.sendMessage(NO_AVAILABLE_SUBCOMMANDS_MESSAGE);
+    }
   }
 
   private Component createStatsComponent(long ping) {
