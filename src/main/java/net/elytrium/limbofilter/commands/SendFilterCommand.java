@@ -42,13 +42,7 @@ public class SendFilterCommand implements SimpleCommand {
   @Override
   public List<String> suggest(SimpleCommand.Invocation invocation) {
     String[] args = invocation.arguments();
-    int argsAmount = args.length;
-    ProxyServer server = this.plugin.getServer();
-    if (argsAmount % 2 == 0) {
-      return SuggestUtils.suggestServersAndPlayers(server, args, argsAmount);
-    } else {
-      return SuggestUtils.suggestServersAndPlayers(server, args, argsAmount - 1);
-    }
+    return SuggestUtils.suggestServersAndPlayers(this.plugin.getServer(), args, args.length);
   }
 
   @Override

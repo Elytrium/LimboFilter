@@ -101,9 +101,10 @@ public class LimboFilterCommand implements SimpleCommand {
           .filter(command -> source.hasPermission("limbofilter.admin." + command))
           .collect(Collectors.toList());
     } else if (args.length == 1) {
+      String argument = args[0];
       return SUBCOMMANDS.keySet().stream()
           .filter(command -> source.hasPermission("limbofilter.admin." + command))
-          .filter(command -> command.regionMatches(true, 0, args[0], 0, args[0].length()))
+          .filter(command -> command.regionMatches(true, 0, argument, 0, argument.length()))
           .collect(Collectors.toList());
     } else {
       return ImmutableList.of();
