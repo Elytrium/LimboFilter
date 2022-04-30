@@ -81,68 +81,65 @@ public class Settings extends YamlConfig {
     })
     public String CHECK_STATE = "CAPTCHA_POSITION";
 
-    @Comment("See filter-auto-toggle.check-state-toggle")
+    @Comment("See \"filter-auto-toggle.check-state-toggle\".")
     public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
 
     public boolean LOAD_WORLD = false;
-    @Comment("World file type: \"schematic\" (1.12.2 and lower), \"structure\" block .nbt (saved in the latest version)")
+    @Comment("World file type: \"schematic\" (1.12.2 and lower), \"structure\" block .nbt (saved in the latest version).")
     public String WORLD_FILE_TYPE = "structure";
     public String WORLD_FILE_PATH = "world.nbt";
 
-    @Comment("Unit of time in seconds for the Auto Toggles the Statistics")
+    @Comment("Unit of time in seconds for the Auto Toggles the Statistics.")
     public int UNIT_OF_TIME_CPS = 300;
 
-    @Comment("Unit of time in seconds for the Auto Toggles and the Statistics")
+    @Comment("Unit of time in seconds for the Auto Toggles and the Statistics.")
     public int UNIT_OF_TIME_PPS = 5;
 
-    @Comment("A 'USERNAME:IP' map containing information about players who should join the server without verification")
-    public Map<String, String> WHITELISTED_PLAYERS = Map.of("TestBot1234", "127.0.0.1", "TestBot4321", "127.0.0.1");
+    @Comment("A \"USERNAME:IP\" map containing information about players who should join the server without verification.")
+    public Map<String, String> WHITELISTED_PLAYERS = Map.of(
+        "TestBot1234", "127.0.0.1",
+        "TestBot4321", "127.0.0.1"
+    );
 
     @Create
     public FILTER_AUTO_TOGGLE FILTER_AUTO_TOGGLE;
 
     @Comment({
-        "Minimum/maximum total connections amount per the unit of time to toggle anti-bot checks",
-        "-1 to disable the check",
-        "0 to enable on any connections per the unit of time"
+        "Minimum/maximum total connections amount per the unit of time to toggle anti-bot checks.",
+        "-1 to disable the check.",
+        "0 to enable on any connections per the unit of time."
     })
     public static class FILTER_AUTO_TOGGLE {
 
       // TODO: Норм комменты
-      @Comment({
-          "All players will bypass all anti-bot checks"
-      })
+      @Comment("All players will bypass all anti-bot checks")
       public int ALL_BYPASS = 0;
 
       @Comment({
-          "Online mode players will bypass all anti-bot checks",
+          "Online mode players will bypass all anti-bot checks.",
           "Doesn't work with online-mode-verify: -1"
       })
       public int ONLINE_MODE_BYPASS = 49;
 
       @Comment({
           "Verify Online Mode connection before AntiBot.",
-          "If connections per unit of time amount is bigger than the limit: online mode players will need to reconnect",
-          "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting"
+          "If connections per unit of time amount is bigger than the limit: online mode players will need to reconnect.",
+          "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting."
       })
       public int ONLINE_MODE_VERIFY = 79;
 
       @Comment({
           "Toggles check-state/check-state-non-toggled.",
           "It is not recommended to enable it, if you want to protect your server from spam-bots.",
-          "If connections per unit of time amount is bigger than the limit: check-state will be used",
-          "Else: check-state-non-toggled will be used"
+          "If connections per unit of time amount is bigger than the limit: check-state will be used.",
+          "Else: check-state-non-toggled will be used."
       })
       public int CHECK_STATE_TOGGLE = 0;
 
-      @Comment({
-          "The player will need to reconnect after passing AntiBot check.",
-      })
+      @Comment("The player will need to reconnect after passing AntiBot check.")
       public int NEED_TO_RECONNECT = 129;
 
-      @Comment({
-          "Picture in the MOTD Server Ping packet will be disabled.",
-      })
+      @Comment("Picture in the MOTD Server Ping packet will be disabled.")
       public int DISABLE_MOTD_PICTURE = 25;
     }
 
@@ -163,7 +160,7 @@ public class Settings extends YamlConfig {
 
       @Comment("Prepares Captcha packets, uses ~0.5GB RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
       public boolean PREPARE_CAPTCHA_PACKETS = false;
-      @Comment("List of paths to the background image to draw on captcha. Any format, 128x128 128x128 px (will be automatically resized and streched to the correct size). [] if empty.")
+      @Comment("List of paths to the background image to draw on captcha. Any format, 128x128 128x128 px (will be automatically resized and stretched to the correct size). [] if empty.")
       public List<String> BACKPLATE_PATHS = List.of("");
       @Comment("Path to the font files to draw on captcha (ttf), can be empty.")
       public List<String> FONTS_PATH = List.of("");
@@ -225,9 +222,9 @@ public class Settings extends YamlConfig {
       public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
       public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
 
-      public String SEND_COMMAND_SUCCESS = "{PRFX} Sent {0} to the filter limbo";
-      public String SEND_COMMAND_SERVER_SUCCESS = "{PRFX} Sent {0} players from {1} to the filter limbo";
-      public String SEND_COMMAND_FAIL = "{PRFX} Failed to send {0} to the filter limbo";
+      public String SEND_PLAYER_SUCCESSFUL = "{PRFX} Successfully sent {0} to the filter limbo.";
+      public String SEND_SERVER_SUCCESSFUL = "{PRFX} Successfully sent {0} players from {1} to the filter limbo.";
+      public String SEND_FAILED = "{PRFX} There is no registered servers or connected players named {0}.";
     }
 
     @Create

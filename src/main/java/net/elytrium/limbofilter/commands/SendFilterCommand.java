@@ -19,7 +19,6 @@ package net.elytrium.limbofilter.commands;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
-import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
@@ -27,6 +26,7 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.velocity.commands.SuggestUtils;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
@@ -40,29 +40,43 @@ public class SendFilterCommand implements SimpleCommand {
   }
 
   @Override
+  public List<String> suggest(SimpleCommand.Invocation invocation) {
+    String[] args = invocation.arguments();
+    int argsAmount = args.length;
+    ProxyServer server = this.plugin.getServer();
+    if (argsAmount % 2 == 0) {
+      return SuggestUtils.suggestServersAndPlayers(server, args, argsAmount);
+    } else {
+      return SuggestUtils.suggestServersAndPlayers(server, args, argsAmount - 1);
+    }
+  }
+
+  @Override
   public void execute(SimpleCommand.Invocation invocation) {
     CommandSource source = invocation.source();
     String[] args = invocation.arguments();
 
-    for (String argument : args) {
-      ProxyServer server = this.plugin.getServer();
-      Optional<RegisteredServer> registeredServer = server.getServer(argument);
+    ProxyServer server = this.plugin.getServer();
+    Serializer serializer = LimboFilter.getSerializer();
+    for (String target : args) {
+      Optional<RegisteredServer> registeredServer = server.getServer(target);
       if (registeredServer.isPresent()) {
         Collection<Player> players = registeredServer.get().getPlayersConnected();
         players.forEach(this.plugin::sendToFilterServer);
         source.sendMessage(
-            LimboFilter.getSerializer().deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_SERVER_SUCCESS, players.size(), argument))
+            serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_SERVER_SUCCESSFUL, players.size(), target))
         );
       } else {
-        Optional<Player> player = server.getPlayer(argument);
-        if (player.isPresent()) {
-          this.plugin.sendToFilterServer(player.get());
+        Optional<Player> optionalPlayer = server.getPlayer(target);
+        if (optionalPlayer.isPresent()) {
+          Player player = optionalPlayer.get();
+          this.plugin.sendToFilterServer(player);
           source.sendMessage(
-              LimboFilter.getSerializer().deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_SUCCESS, player.get().getUsername()))
+              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_PLAYER_SUCCESSFUL, player.getUsername()))
           );
         } else {
           source.sendMessage(
-              LimboFilter.getSerializer().deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_COMMAND_FAIL, argument))
+              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_FAILED, target))
           );
         }
       }
@@ -70,13 +84,7 @@ public class SendFilterCommand implements SimpleCommand {
   }
 
   @Override
-  public List<String> suggest(SimpleCommand.Invocation invocation) {
-    String[] args = invocation.arguments();
-    return SuggestUtils.suggestServersAndPlayers(this.plugin.getServer(), args, args.length);
-  }
-
-  @Override
   public boolean hasPermission(SimpleCommand.Invocation invocation) {
-    return invocation.source().getPermissionValue("limbofilter.commands.sendfilter") == Tristate.TRUE;
+    return invocation.source().hasPermission("limbofilter.commands.sendfilter");
   }
 }

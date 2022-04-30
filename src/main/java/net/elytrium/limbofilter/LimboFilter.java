@@ -262,7 +262,7 @@ public class LimboFilter {
     try {
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {
-      LOGGER.error("Error", t);
+      t.printStackTrace();
     }
   }
 
@@ -298,7 +298,7 @@ public class LimboFilter {
       if (rootFile.exists()) {
         return rootFile;
       } else {
-        throw new IOError(new FileNotFoundException("File " + filename + "cannot be founded!"));
+        throw new IOError(new FileNotFoundException("File \"" + filename + "\" cannot be founded!"));
       }
     }
   }
