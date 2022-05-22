@@ -63,7 +63,7 @@ public class Settings extends YamlConfig {
     @Comment("Same, but for Geyser users.")
     public int GEYSER_TIME_OUT = 45000;
     @Comment("The timeout for Netty. Max ping while being on the filter limbo. Used to remove useless buffers from RAM.")
-    public int MAX_PING = 2000;
+    public int MAX_PING = 3500;
     @Comment("Change the parameters below only if you know what they mean.")
     public int NON_VALID_POSITION_XZ_ATTEMPTS = 10;
     public int NON_VALID_POSITION_Y_ATTEMPTS = 10;
