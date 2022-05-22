@@ -119,20 +119,19 @@ public class LimboFilter {
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    Metrics metrics = this.metricsFactory.make(this, 13699);
+    Settings.IMP.setLogger(LOGGER);
 
+    this.reload();
+
+    Metrics metrics = this.metricsFactory.make(this, 13699);
     metrics.addCustomChart(new SimplePie("filter_type", () -> Settings.IMP.MAIN.CHECK_STATE));
     metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
     metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_BRAND)));
     metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS)));
+    System.out.println(Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty());
     metrics.addCustomChart(new SimplePie("has_backplate", () -> String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty())));
-
-    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings())));
+    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings()))); // Total pings
     metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
-
-    Settings.IMP.setLogger(LOGGER);
-
-    this.reload();
 
     if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
       LOGGER.error("****************************************");
@@ -161,7 +160,7 @@ public class LimboFilter {
     this.cachedCaptcha = new CachedCaptcha(this);
     this.generator.generateCaptcha();
 
-    this.packets.createPackets(this.getFactory());
+    this.packets.createPackets(this.factory);
 
     this.cachedFilterChecks.clear();
 
