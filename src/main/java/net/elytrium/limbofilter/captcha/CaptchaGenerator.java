@@ -130,7 +130,7 @@ public class CaptchaGenerator {
     }
 
     long start = System.currentTimeMillis();
-    while (executor.getActiveCount() != 0) {
+    while (executor.getCompletedTaskCount() != Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT) {
       // Busy wait.
     }
 
