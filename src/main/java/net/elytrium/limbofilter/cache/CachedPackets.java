@@ -20,8 +20,9 @@ package net.elytrium.limbofilter.cache;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
-import com.velocitypowered.proxy.protocol.packet.Chat;
 import com.velocitypowered.proxy.protocol.packet.Disconnect;
+import com.velocitypowered.proxy.protocol.packet.chat.LegacyChat;
+import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,16 +108,19 @@ public class CachedPackets {
 
   public PreparedPacket createChatPacket(LimboFactory factory, String text) {
     return factory.createPreparedPacket()
-        .prepare(new Chat(
+        .prepare(new LegacyChat(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINIMUM_VERSION).serialize(
                 LimboFilter.getSerializer().deserialize(text)
-            ), Chat.CHAT_TYPE, null
+            ), LegacyChat.CHAT_TYPE, null
         ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_15_2)
-        .prepare(new Chat(
+        .prepare(new LegacyChat(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINECRAFT_1_16).serialize(
                 LimboFilter.getSerializer().deserialize(text)
-            ), Chat.CHAT_TYPE, null
-        ), ProtocolVersion.MINECRAFT_1_16);
+            ), LegacyChat.CHAT_TYPE, null
+        ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
+        .prepare(new SystemChat(
+            LimboFilter.getSerializer().deserialize(text), 0
+        ), ProtocolVersion.MINECRAFT_1_19);
   }
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {

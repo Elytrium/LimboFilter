@@ -128,8 +128,9 @@ public class LimboFilter {
     metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
     metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_BRAND)));
     metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS)));
-    System.out.println(Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty());
-    metrics.addCustomChart(new SimplePie("has_backplate", () -> String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty())));
+    metrics.addCustomChart(new SimplePie("has_backplate",
+        () -> String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty()
+            && !Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.get(0).isEmpty())));
     metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings()))); // Total pings
     metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
 
@@ -208,7 +209,8 @@ public class LimboFilter {
 
     this.filterServer = this.factory.createLimbo(this.filterWorld)
         .setName("LimboFilter")
-        .setReadTimeout(Settings.IMP.MAIN.MAX_PING);
+        .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
+        .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS);
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
