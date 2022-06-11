@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
-import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
@@ -163,10 +162,10 @@ public class CaptchaGenerator {
 
     map.drawImage(0, 0, painter.drawCaptcha(fonts.get(fontNumber), this.randomColor(), answer), Settings.IMP.MAIN.CAPTCHA_GENERATOR.COLORIFY);
 
-    MinecraftPacket packet = (MinecraftPacket) this.plugin.getFactory().instantiatePacket(BuiltInPackets.MapData, 0, (byte) 0, map.getMapData());
+    MinecraftPacket packet = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData());
     MinecraftPacket[] packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE];
     for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
-      packets17[i] = (MinecraftPacket) this.plugin.getFactory().instantiatePacket(BuiltInPackets.MapData, 0, (byte) 0, map.getMaps17Data()[i]);
+      packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMaps17Data()[i]);
     }
 
     this.plugin.getCachedCaptcha().createCaptchaPacket(packet, packets17, answer);

@@ -20,8 +20,8 @@ package net.elytrium.limbofilter.captcha.map;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
-import net.elytrium.limboapi.api.protocol.map.MapPalette;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
+import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 
 public class CraftMapCanvas {
 

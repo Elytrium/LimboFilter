@@ -40,7 +40,7 @@ public class CachedCaptcha {
 
   public void createCaptchaPacket(MinecraftPacket mapDataPacket, MinecraftPacket[] mapDataPackets17, String answer) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
-      PreparedPacket prepared = this.plugin.getFactory().createPreparedPacket();
+      PreparedPacket prepared = this.plugin.getLimboFactory().createPreparedPacket();
       this.captchas.add(
           new CaptchaHolder(
               this.toArray(

@@ -29,12 +29,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
-import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.LimboSessionHandler;
 import net.elytrium.limboapi.api.chunk.VirtualChunk;
 import net.elytrium.limboapi.api.player.LimboPlayer;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
-import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
+import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.cache.CachedPackets;
@@ -109,15 +108,15 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
     this.fallingCheckPos = this.createPlayerPosAndLook(
-        this.plugin.getFactory(),
+        this.plugin.getPacketFactory(),
         this.validX, this.validY, this.validZ,
         (float) (this.state == CheckState.CAPTCHA_POSITION ? coords.CAPTCHA_YAW : coords.FALLING_CHECK_YAW),
         (float) (this.state == CheckState.CAPTCHA_POSITION ? coords.CAPTCHA_PITCH : coords.FALLING_CHECK_PITCH)
     );
     this.fallingCheckChunk = this.createChunkData(
-        this.plugin.getFactory(), this.plugin.getFactory().createVirtualChunk(this.validX >> 4, this.validZ >> 4)
+        this.plugin.getPacketFactory(), this.plugin.getLimboFactory().createVirtualChunk(this.validX >> 4, this.validZ >> 4)
     );
-    this.fallingCheckView = this.createUpdateViewPosition(this.plugin.getFactory(), this.validX, this.validZ);
+    this.fallingCheckView = this.createUpdateViewPosition(this.plugin.getPacketFactory(), this.validX, this.validZ);
   }
 
   @Override
@@ -369,13 +368,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
     if (this.attempts == Settings.IMP.MAIN.CAPTCHA_ATTEMPTS) {
       this.player.writePacket(
-          this.packets.createChatPacket(this.plugin.getFactory(), MessageFormat.format(strings.CHECKING_CAPTCHA_CHAT, this.attempts))
+          this.packets.createChatPacket(this.plugin.getLimboFactory(), MessageFormat.format(strings.CHECKING_CAPTCHA_CHAT, this.attempts))
       );
       if (version.compareTo(ProtocolVersion.MINECRAFT_1_8) >= 0) {
         if (!strings.CHECKING_CAPTCHA_TITLE.isEmpty() && !strings.CHECKING_CAPTCHA_SUBTITLE.isEmpty()) {
           this.player.writePacket(
               this.packets.createTitlePacket(
-                  this.plugin.getFactory(),
+                  this.plugin.getLimboFactory(),
                   MessageFormat.format(strings.CHECKING_CAPTCHA_TITLE, this.attempts),
                   MessageFormat.format(strings.CHECKING_CAPTCHA_SUBTITLE, this.attempts)
               )
@@ -384,7 +383,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       }
     } else {
       this.player.writePacket(
-          this.packets.createChatPacket(this.plugin.getFactory(), MessageFormat.format(strings.CHECKING_WRONG_CAPTCHA_CHAT, this.attempts))
+          this.packets.createChatPacket(this.plugin.getLimboFactory(), MessageFormat.format(strings.CHECKING_WRONG_CAPTCHA_CHAT, this.attempts))
       );
     }
     this.player.writePacket(this.packets.getSetSlot());
@@ -410,19 +409,18 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     }
   }
 
-  private MinecraftPacket createChunkData(LimboFactory factory, VirtualChunk chunk) {
+  private MinecraftPacket createChunkData(PacketFactory factory, VirtualChunk chunk) {
     chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
-    return (MinecraftPacket) factory.instantiatePacket(
-        BuiltInPackets.ChunkData, chunk.getFullChunkSnapshot(), true, this.plugin.getFilterWorld().getDimension().getMaxSections()
-    );
+    return (MinecraftPacket)
+        factory.createChunkDataPacket(chunk.getFullChunkSnapshot(), true, this.plugin.getFilterWorld().getDimension().getMaxSections());
   }
 
-  private MinecraftPacket createPlayerPosAndLook(LimboFactory factory, double x, double y, double z, float yaw, float pitch) {
-    return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.PlayerPositionAndLook, x, y, z, yaw, pitch, 44, false, true);
+  private MinecraftPacket createPlayerPosAndLook(PacketFactory factory, double x, double y, double z, float yaw, float pitch) {
+    return (MinecraftPacket) factory.createPositionRotationPacket(x, y, z, yaw, pitch, false, 44, true);
   }
 
-  private MinecraftPacket createUpdateViewPosition(LimboFactory factory, int x, int z) {
-    return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.UpdateViewPosition, x >> 4, z >> 4);
+  private MinecraftPacket createUpdateViewPosition(PacketFactory factory, int x, int z) {
+    return (MinecraftPacket) factory.createUpdateViewPositionPacket(x >> 4, z >> 4);
   }
 
   static {

@@ -30,7 +30,7 @@ import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.material.Item;
 import net.elytrium.limboapi.api.material.VirtualItem;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
-import net.elytrium.limboapi.api.protocol.packets.BuiltInPackets;
+import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
@@ -52,58 +52,58 @@ public class CachedPackets {
   private PreparedPacket noAbilities;
   private List<PreparedPacket> experience;
 
-  public void createPackets(LimboFactory factory) {
+  public void createPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
 
-    this.captchaFailed = this.createDisconnectPacket(factory, strings.CAPTCHA_FAILED_KICK);
-    this.fallingCheckFailed = this.createDisconnectPacket(factory, strings.FALLING_CHECK_FAILED_KICK);
-    this.timesUp = this.createDisconnectPacket(factory, strings.TIMES_UP);
+    this.captchaFailed = this.createDisconnectPacket(limboFactory, strings.CAPTCHA_FAILED_KICK);
+    this.fallingCheckFailed = this.createDisconnectPacket(limboFactory, strings.FALLING_CHECK_FAILED_KICK);
+    this.timesUp = this.createDisconnectPacket(limboFactory, strings.TIMES_UP);
 
-    this.setSlot = factory.createPreparedPacket()
+    this.setSlot = limboFactory.createPreparedPacket()
         .prepare(
             this.createSetSlotPacket(
-                factory, factory.getItem(Item.FILLED_MAP), 1, null
+                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
             ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_16_4
         ).prepare(
             this.createSetSlotPacket(
-                factory, factory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
+                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
             ), ProtocolVersion.MINECRAFT_1_17
         );
 
-    this.resetSlot = factory.createPreparedPacket().prepare(this.createSetSlotPacket(factory, factory.getItem(Item.AIR), 0, null));
-    this.checkingChat = this.createChatPacket(factory, strings.CHECKING_CHAT);
-    this.checkingTitle = this.createTitlePacket(factory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE);
+    this.resetSlot = limboFactory.createPreparedPacket().prepare(this.createSetSlotPacket(packetFactory, limboFactory.getItem(Item.AIR), 0, null));
+    this.checkingChat = this.createChatPacket(limboFactory, strings.CHECKING_CHAT);
+    this.checkingTitle = this.createTitlePacket(limboFactory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE);
 
-    this.kickClientCheckSettings = this.createDisconnectPacket(factory, strings.CLIENT_SETTINGS_KICK);
-    this.kickClientCheckBrand = this.createDisconnectPacket(factory, strings.CLIENT_BRAND_KICK);
+    this.kickClientCheckSettings = this.createDisconnectPacket(limboFactory, strings.CLIENT_SETTINGS_KICK);
+    this.kickClientCheckBrand = this.createDisconnectPacket(limboFactory, strings.CLIENT_BRAND_KICK);
 
-    this.successfulBotFilterChat = this.createChatPacket(factory, strings.SUCCESSFUL_CRACKED);
-    this.successfulBotFilterDisconnect = this.createDisconnectPacket(factory, strings.SUCCESSFUL_PREMIUM_KICK);
+    this.successfulBotFilterChat = this.createChatPacket(limboFactory, strings.SUCCESSFUL_CRACKED);
+    this.successfulBotFilterDisconnect = this.createDisconnectPacket(limboFactory, strings.SUCCESSFUL_PREMIUM_KICK);
 
-    this.noAbilities = this.createAbilitiesPacket(factory);
-    this.experience = this.createExpPackets(factory);
+    this.noAbilities = this.createAbilitiesPacket(limboFactory, packetFactory);
+    this.experience = this.createExpPackets(limboFactory, packetFactory);
   }
 
-  private PreparedPacket createAbilitiesPacket(LimboFactory factory) {
-    return factory.createPreparedPacket().prepare(factory.instantiatePacket(BuiltInPackets.PlayerAbilities, (byte) 6, 0f, 0f));
+  private PreparedPacket createAbilitiesPacket(LimboFactory limboFactory, PacketFactory packetFactory) {
+    return limboFactory.createPreparedPacket().prepare(packetFactory.createPlayerAbilitiesPacket((byte) 6, 0f, 0f));
   }
 
-  private List<PreparedPacket> createExpPackets(LimboFactory factory) {
+  private List<PreparedPacket> createExpPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     List<PreparedPacket> packets = new ArrayList<>();
     long ticks = Settings.IMP.MAIN.FALLING_CHECK_TICKS;
     float expInterval = 0.01F;
     for (int i = 0; i < ticks; ++i) {
       int percentage = (int) (i * 100 / ticks);
       packets.add(
-          factory.createPreparedPacket().prepare(factory.instantiatePacket(BuiltInPackets.SetExperience, percentage * expInterval, percentage, 0))
+          limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket(percentage * expInterval, percentage, 0))
       );
     }
 
     return packets;
   }
 
-  private MinecraftPacket createSetSlotPacket(LimboFactory factory, VirtualItem item, int count, CompoundBinaryTag nbt) {
-    return (MinecraftPacket) factory.instantiatePacket(BuiltInPackets.SetSlot, 0, 36, item, count, 0, nbt);
+  private MinecraftPacket createSetSlotPacket(PacketFactory packetFactory, VirtualItem item, int count, CompoundBinaryTag nbt) {
+    return (MinecraftPacket) packetFactory.createSetSlotPacket(0, 36, item, count, 0, nbt);
   }
 
   public PreparedPacket createChatPacket(LimboFactory factory, String text) {

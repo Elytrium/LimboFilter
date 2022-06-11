@@ -51,6 +51,7 @@ import net.elytrium.limboapi.api.chunk.VirtualWorld;
 import net.elytrium.limboapi.api.file.SchematicFile;
 import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
+import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
@@ -96,7 +97,8 @@ public class LimboFilter {
   private final CachedPackets packets;
   private final CaptchaGenerator generator;
   private final Statistics statistics;
-  private final LimboFactory factory;
+  private final LimboFactory limboFactory;
+  private final PacketFactory packetFactory;
 
   private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
@@ -114,7 +116,8 @@ public class LimboFilter {
     this.generator = new CaptchaGenerator(this);
     this.statistics = new Statistics();
 
-    this.factory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
+    this.limboFactory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
+    this.packetFactory = this.limboFactory.getPacketFactory();
   }
 
   @Subscribe
@@ -161,7 +164,7 @@ public class LimboFilter {
     this.cachedCaptcha = new CachedCaptcha(this);
     this.generator.generateCaptcha();
 
-    this.packets.createPackets(this.factory);
+    this.packets.createPackets(this.limboFactory, this.packetFactory);
 
     this.cachedFilterChecks.clear();
 
@@ -174,7 +177,7 @@ public class LimboFilter {
     });
 
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
-    this.filterWorld = this.factory.createVirtualWorld(
+    this.filterWorld = this.limboFactory.createVirtualWorld(
         Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION),
         captchaCoords.CAPTCHA_X, captchaCoords.CAPTCHA_Y, captchaCoords.CAPTCHA_Z,
         (float) captchaCoords.CAPTCHA_YAW, (float) captchaCoords.CAPTCHA_PITCH
@@ -201,13 +204,13 @@ public class LimboFilter {
         }
 
         Settings.MAIN.WORLD_COORDS coords = Settings.IMP.MAIN.WORLD_COORDS;
-        file.toWorld(this.factory, this.filterWorld, coords.X, coords.Y, coords.Z);
+        file.toWorld(this.limboFactory, this.filterWorld, coords.X, coords.Y, coords.Z);
       } catch (IOException e) {
         e.printStackTrace();
       }
     }
 
-    this.filterServer = this.factory.createLimbo(this.filterWorld)
+    this.filterServer = this.limboFactory.createLimbo(this.filterWorld)
         .setName("LimboFilter")
         .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS);
@@ -308,8 +311,12 @@ public class LimboFilter {
     return this.server;
   }
 
-  public LimboFactory getFactory() {
-    return this.factory;
+  public LimboFactory getLimboFactory() {
+    return this.limboFactory;
+  }
+
+  public PacketFactory getPacketFactory() {
+    return this.packetFactory;
   }
 
   public CachedPackets getPackets() {
