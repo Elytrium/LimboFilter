@@ -119,7 +119,7 @@ public class CachedPackets {
             ), LegacyChat.CHAT_TYPE, null
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
         .prepare(new SystemChat(
-            LimboFilter.getSerializer().deserialize(text), 0
+            LimboFilter.getSerializer().deserialize(text), 1
         ), ProtocolVersion.MINECRAFT_1_19);
   }
 
