@@ -92,6 +92,9 @@ public class Settings extends YamlConfig {
     @Comment("World time in ticks (24000 ticks == 1 in-game day)")
     public long WORLD_TICKS = 1000L;
 
+    @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
+    public String GAME_MODE = "ADVENTURE";
+
     @Comment("Unit of time in seconds for the Auto Toggles the Statistics.")
     public int UNIT_OF_TIME_CPS = 300;
 

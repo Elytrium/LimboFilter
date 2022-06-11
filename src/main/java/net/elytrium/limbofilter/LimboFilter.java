@@ -51,6 +51,7 @@ import net.elytrium.limboapi.api.chunk.VirtualWorld;
 import net.elytrium.limboapi.api.file.SchematicFile;
 import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
+import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
@@ -213,7 +214,8 @@ public class LimboFilter {
     this.filterServer = this.limboFactory.createLimbo(this.filterWorld)
         .setName("LimboFilter")
         .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
-        .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS);
+        .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
+        .setGameMode(GameMode.valueOf(Settings.IMP.MAIN.GAME_MODE));
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
