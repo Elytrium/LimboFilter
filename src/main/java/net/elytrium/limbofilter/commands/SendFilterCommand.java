@@ -30,6 +30,7 @@ import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.velocity.commands.SuggestUtils;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.kyori.adventure.audience.MessageType;
 
 public class SendFilterCommand implements SimpleCommand {
 
@@ -58,7 +59,8 @@ public class SendFilterCommand implements SimpleCommand {
         Collection<Player> players = registeredServer.get().getPlayersConnected();
         players.forEach(this.plugin::sendToFilterServer);
         source.sendMessage(
-            serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_SERVER_SUCCESSFUL, players.size(), target))
+            serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_SERVER_SUCCESSFUL, players.size(), target)),
+            MessageType.SYSTEM
         );
       } else {
         Optional<Player> optionalPlayer = server.getPlayer(target);
@@ -66,11 +68,13 @@ public class SendFilterCommand implements SimpleCommand {
           Player player = optionalPlayer.get();
           this.plugin.sendToFilterServer(player);
           source.sendMessage(
-              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_PLAYER_SUCCESSFUL, player.getUsername()))
+              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_PLAYER_SUCCESSFUL, player.getUsername())),
+              MessageType.SYSTEM
           );
         } else {
           source.sendMessage(
-              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_FAILED, target))
+              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_FAILED, target)),
+              MessageType.SYSTEM
           );
         }
       }

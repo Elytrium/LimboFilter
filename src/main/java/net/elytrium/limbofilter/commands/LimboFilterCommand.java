@@ -34,6 +34,7 @@ import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.stats.Statistics;
+import net.kyori.adventure.audience.MessageType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -121,10 +122,10 @@ public class LimboFilterCommand implements SimpleCommand {
       if (command.equalsIgnoreCase("reload") && source.hasPermission("limbofilter.admin.reload")) {
         try {
           this.plugin.reload();
-          source.sendMessage(this.reload);
+          source.sendMessage(this.reload, MessageType.SYSTEM);
         } catch (Exception e) {
           e.printStackTrace();
-          source.sendMessage(this.reloadFailed);
+          source.sendMessage(this.reloadFailed, MessageType.SYSTEM);
         }
 
         return;
@@ -134,13 +135,13 @@ public class LimboFilterCommand implements SimpleCommand {
           UUID playerUuid = player.getUniqueId();
           if (PLAYERS_WITH_STATS.contains(playerUuid)) {
             PLAYERS_WITH_STATS.remove(playerUuid);
-            source.sendMessage(this.statsDisabled);
+            source.sendMessage(this.statsDisabled, MessageType.SYSTEM);
           } else {
             PLAYERS_WITH_STATS.add(playerUuid);
-            source.sendMessage(this.statsEnabled);
+            source.sendMessage(this.statsEnabled, MessageType.SYSTEM);
           }
         } else {
-          source.sendMessage(this.createStatsComponent(-1));
+          source.sendMessage(this.createStatsComponent(-1), MessageType.SYSTEM);
         }
 
         return;
@@ -151,15 +152,15 @@ public class LimboFilterCommand implements SimpleCommand {
   }
 
   private void showHelp(CommandSource source) {
-    HELP_MESSAGE.forEach(source::sendMessage);
+    HELP_MESSAGE.forEach(message -> source.sendMessage(message, MessageType.SYSTEM));
     List<Map.Entry<String, Component>> availableSubcommands = SUBCOMMANDS.entrySet().stream()
         .filter(command -> source.hasPermission("limbofilter.admin." + command.getKey()))
         .collect(Collectors.toList());
     if (availableSubcommands.size() > 0) {
-      source.sendMessage(AVAILABLE_SUBCOMMANDS_MESSAGE);
-      availableSubcommands.forEach(command -> source.sendMessage(command.getValue()));
+      source.sendMessage(AVAILABLE_SUBCOMMANDS_MESSAGE, MessageType.SYSTEM);
+      availableSubcommands.forEach(command -> source.sendMessage(command.getValue(), MessageType.SYSTEM));
     } else {
-      source.sendMessage(NO_AVAILABLE_SUBCOMMANDS_MESSAGE);
+      source.sendMessage(NO_AVAILABLE_SUBCOMMANDS_MESSAGE, MessageType.SYSTEM);
     }
   }
 
