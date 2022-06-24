@@ -184,7 +184,6 @@ public class Settings extends YamlConfig {
       public int CURVES_AMOUNT = 3;
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
-      public boolean COLORIFY = false;
       public String PATTERN = "abcdefghijklmnopqrtuvwxyz1234567890";
       public int LENGTH = 3;
       public int IMAGES_COUNT = 1000;

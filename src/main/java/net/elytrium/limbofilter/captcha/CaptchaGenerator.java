@@ -61,7 +61,7 @@ public class CaptchaGenerator {
       for (String backplatePath : Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS) {
         if (!backplatePath.isEmpty()) {
           CraftMapCanvas craftMapCanvas = new CraftMapCanvas();
-          craftMapCanvas.drawImage(0, 0, this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath))), false);
+          craftMapCanvas.drawImage(0, 0, this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath))));
           cachedBackgroundMap.add(craftMapCanvas);
         }
       }
@@ -160,7 +160,7 @@ public class CaptchaGenerator {
       fontCounter.set(0);
     }
 
-    map.drawImage(0, 0, painter.drawCaptcha(fonts.get(fontNumber), this.randomColor(), answer), Settings.IMP.MAIN.CAPTCHA_GENERATOR.COLORIFY);
+    map.drawImage(0, 0, painter.drawCaptcha(fonts.get(fontNumber), this.randomColor(), answer));
 
     MinecraftPacket packet = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData());
     MinecraftPacket[] packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE];

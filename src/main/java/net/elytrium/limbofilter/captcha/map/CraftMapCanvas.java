@@ -19,7 +19,6 @@ package net.elytrium.limbofilter.captcha.map;
 
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 
@@ -55,34 +54,17 @@ public class CraftMapCanvas {
     }
   }
 
-  public void drawImage(int x, int y, BufferedImage image, boolean colorify) {
+  public void drawImage(int x, int y, BufferedImage image) {
     int[] bytes = MapPalette.imageToBytes(image);
     int width = image.getWidth(null);
     int height = image.getHeight(null);
-    byte randomizedColor = 0;
-    if (colorify) {
-      randomizedColor = (byte) ThreadLocalRandom.current().nextInt(MapPalette.getColors().length);
-    }
 
     for (int x2 = 0; x2 < width; ++x2) {
       for (int y2 = 0; y2 < height; ++y2) {
         byte color = (byte) bytes[y2 * width + x2];
-        if (this.getAlpha(image.getRGB(x2, y2)) >= 128) {
-          if (colorify) {
-            color -= randomizedColor;
-            if (color < 0) {
-              color += MapPalette.getColors().length;
-            }
-          }
-
-          this.setPixel(x + x2, y + y2, color);
-        }
+        this.setPixel(x + x2, y + y2, color);
       }
     }
-  }
-
-  private int getAlpha(int rgb) {
-    return (rgb & 0xFF000000) >>> 24;
   }
 
   public MapData getMapData() {
