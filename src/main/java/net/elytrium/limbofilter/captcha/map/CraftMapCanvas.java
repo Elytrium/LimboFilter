@@ -62,7 +62,9 @@ public class CraftMapCanvas {
     for (int x2 = 0; x2 < width; ++x2) {
       for (int y2 = 0; y2 < height; ++y2) {
         byte color = (byte) bytes[y2 * width + x2];
-        this.setPixel(x + x2, y + y2, color);
+        if (color != MapPalette.TRANSPARENT) {
+          this.setPixel(x + x2, y + y2, color);
+        }
       }
     }
   }
