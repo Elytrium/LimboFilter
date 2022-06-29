@@ -20,38 +20,39 @@ package net.elytrium.limbofilter.stats;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import net.elytrium.limbofilter.Settings;
 
 public class Statistics {
 
-  private final AtomicLong blockedConnections = new AtomicLong();
-  private final AtomicLong connections = new AtomicLong();
-  private final AtomicLong pings = new AtomicLong();
+  private final LongAdder blockedConnections = new LongAdder();
+  private final LongAdder connections = new LongAdder();
+  private final LongAdder pings = new LongAdder();
   private final AtomicLong interpolatedCpsBefore = new AtomicLong();
   private final AtomicLong interpolatedPpsBefore = new AtomicLong();
 
   public void addBlockedConnection() {
-    this.blockedConnections.incrementAndGet();
+    this.blockedConnections.increment();
   }
 
   public void addConnection() {
-    this.connections.addAndGet(Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 2L);
+    this.connections.add(Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 2L);
   }
 
   public void addPing() {
-    this.pings.addAndGet(Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 2L);
+    this.pings.add(Settings.IMP.MAIN.UNIT_OF_TIME_CPS * 2L);
   }
 
   public long getBlockedConnections() {
-    return this.blockedConnections.get();
+    return this.blockedConnections.longValue();
   }
 
   public long getConnections() {
-    return this.connections.get() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
+    return this.connections.longValue() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
   }
 
   public long getPings() {
-    return this.pings.get() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
+    return this.pings.longValue() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L;
   }
 
   public long getTotalConnection() {
@@ -68,7 +69,7 @@ public class Statistics {
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        Statistics.this.interpolatedCpsBefore.set(Statistics.this.connections.get() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L);
+        Statistics.this.interpolatedCpsBefore.set(Statistics.this.connections.longValue() / Settings.IMP.MAIN.UNIT_OF_TIME_CPS / 2L);
       }
     }, delayInterpolate, delayInterpolate);
 
@@ -76,11 +77,11 @@ public class Statistics {
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        long current = Statistics.this.connections.get();
+        long current = Statistics.this.connections.longValue();
         long before = Statistics.this.interpolatedCpsBefore.get();
 
         if (current >= before) {
-          Statistics.this.connections.set(current - before);
+          Statistics.this.connections.add(-before);
         }
       }
     }, delay, delay);
@@ -91,7 +92,7 @@ public class Statistics {
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        Statistics.this.interpolatedPpsBefore.set(Statistics.this.pings.get() / Settings.IMP.MAIN.UNIT_OF_TIME_PPS / 2L);
+        Statistics.this.interpolatedPpsBefore.set(Statistics.this.pings.longValue() / Settings.IMP.MAIN.UNIT_OF_TIME_PPS / 2L);
       }
     }, delayInterpolate, delayInterpolate);
 
@@ -99,11 +100,11 @@ public class Statistics {
 
     new Timer().scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        long current = Statistics.this.pings.get();
+        long current = Statistics.this.pings.longValue();
         long before = Statistics.this.interpolatedPpsBefore.get();
 
         if (current >= before) {
-          Statistics.this.pings.set(current - before);
+          Statistics.this.pings.add(-before);
         }
       }
     }, delay, delay);
