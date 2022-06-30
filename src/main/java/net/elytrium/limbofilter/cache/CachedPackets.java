@@ -68,9 +68,9 @@ public class CachedPackets {
             this.createSetSlotPacket(
                 packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
             ), ProtocolVersion.MINECRAFT_1_17
-        );
+        ).build();
 
-    this.resetSlot = limboFactory.createPreparedPacket().prepare(this.createSetSlotPacket(packetFactory, limboFactory.getItem(Item.AIR), 0, null));
+    this.resetSlot = limboFactory.createPreparedPacket().prepare(this.createSetSlotPacket(packetFactory, limboFactory.getItem(Item.AIR), 0, null)).build();
     this.checkingChat = this.createChatPacket(limboFactory, strings.CHECKING_CHAT);
     this.checkingTitle = this.createTitlePacket(limboFactory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE);
 
@@ -85,7 +85,7 @@ public class CachedPackets {
   }
 
   private PreparedPacket createAbilitiesPacket(LimboFactory limboFactory, PacketFactory packetFactory) {
-    return limboFactory.createPreparedPacket().prepare(packetFactory.createPlayerAbilitiesPacket((byte) 6, 0f, 0f));
+    return limboFactory.createPreparedPacket().prepare(packetFactory.createPlayerAbilitiesPacket((byte) 6, 0f, 0f)).build();
   }
 
   private List<PreparedPacket> createExpPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
@@ -95,7 +95,7 @@ public class CachedPackets {
     for (int i = 0; i < ticks; ++i) {
       int percentage = (int) (i * 100 / ticks);
       packets.add(
-          limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket(percentage * expInterval, percentage, 0))
+          limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket(percentage * expInterval, percentage, 0)).build()
       );
     }
 
@@ -120,11 +120,11 @@ public class CachedPackets {
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
         .prepare(new SystemChat(
             LimboFilter.getSerializer().deserialize(text), 1
-        ), ProtocolVersion.MINECRAFT_1_19);
+        ), ProtocolVersion.MINECRAFT_1_19).build();
   }
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {
-    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version));
+    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version)).build();
   }
 
   public PreparedPacket createTitlePacket(LimboFactory factory, String title, String subtitle) {
@@ -154,7 +154,7 @@ public class CachedPackets {
       }, ProtocolVersion.MINECRAFT_1_8);
     }
 
-    return preparedPacket;
+    return preparedPacket.build();
   }
 
   public PreparedPacket getCaptchaFailed() {

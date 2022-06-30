@@ -47,6 +47,7 @@ public class CachedCaptcha {
                   prepared
                       .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
                       .prepare(mapDataPacket, ProtocolVersion.MINECRAFT_1_8)
+                      .build()
               ),
               answer
           )
