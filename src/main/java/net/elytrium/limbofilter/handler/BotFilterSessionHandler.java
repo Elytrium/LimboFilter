@@ -104,6 +104,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.joinTime = System.currentTimeMillis();
     if (this.state == CheckState.ONLY_CAPTCHA) {
+      this.server.respawnPlayer(this.proxyPlayer);
       this.sendCaptcha();
     } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED
         || this.state == CheckState.CAPTCHA_POSITION) {
