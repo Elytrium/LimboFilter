@@ -27,6 +27,7 @@ import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.scheduler.ScheduledTask;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -104,6 +105,7 @@ public class LimboFilter {
   private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
   private VirtualWorld filterWorld;
+  private ScheduledTask refreshCaptchaTask;
 
   @Inject
   public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -162,8 +164,16 @@ public class LimboFilter {
 
     this.statistics.startUpdating();
 
+    if (this.refreshCaptchaTask != null) {
+      this.refreshCaptchaTask.cancel();
+    }
+
     this.cachedCaptcha = new CachedCaptcha(this);
     this.generator.generateCaptcha();
+    this.refreshCaptchaTask = this.server.getScheduler()
+        .buildTask(this, LimboFilter.this.generator::generateImages)
+        .repeat(Settings.IMP.MAIN.CAPTCHA_REGENERATE_RATE, TimeUnit.SECONDS)
+        .schedule();
 
     this.packets.createPackets(this.limboFactory, this.packetFactory);
 

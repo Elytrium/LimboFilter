@@ -101,6 +101,9 @@ public class Settings extends YamlConfig {
     @Comment("Unit of time in seconds for the Auto Toggles and the Statistics.")
     public int UNIT_OF_TIME_PPS = 5;
 
+    @Comment("Duration (in seconds) between regeneration of captchas")
+    public long CAPTCHA_REGENERATE_RATE = 3600;
+
     @Comment("Coordinates for the falling check")
     @Create
     public Settings.MAIN.FALLING_COORDS FALLING_COORDS;

@@ -103,8 +103,6 @@ public class CaptchaGenerator {
         }
       });
     }
-
-    new Thread(this::generateImages).start();
   }
 
   private BufferedImage resizeIfNeeded(BufferedImage image) {
