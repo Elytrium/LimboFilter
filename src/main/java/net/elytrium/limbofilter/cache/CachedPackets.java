@@ -70,7 +70,10 @@ public class CachedPackets {
     this.kickClientCheckSettings = this.createDisconnectPacket(limboFactory, strings.CLIENT_SETTINGS_KICK);
     this.kickClientCheckBrand = this.createDisconnectPacket(limboFactory, strings.CLIENT_BRAND_KICK);
 
-    this.successfulBotFilterChat = this.createChatPacket(limboFactory, strings.SUCCESSFUL_CRACKED);
+    this.successfulBotFilterChat = limboFactory.createPreparedPacket();
+    this.createChatPacket(this.successfulBotFilterChat, limboFactory, strings.SUCCESSFUL_CRACKED);
+    this.successfulBotFilterChat.build();
+
     this.successfulBotFilterDisconnect = this.createDisconnectPacket(limboFactory, strings.SUCCESSFUL_PREMIUM_KICK);
 
     this.noAbilities = this.createAbilitiesPacket(limboFactory, packetFactory);
@@ -79,12 +82,14 @@ public class CachedPackets {
 
   private List<PreparedPacket> createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
                                                            String checkingChat, String checkingTitle, String checkingSubtitle, String wrongCaptcha) {
-    List<PreparedPacket> packets = new ArrayList<>(Settings.IMP.MAIN.CAPTCHA_ATTEMPTS);
+    List<PreparedPacket> packets = new ArrayList<>(Settings.IMP.MAIN.CAPTCHA_ATTEMPTS + 1);
 
-    int lastId = Settings.IMP.MAIN.CAPTCHA_ATTEMPTS - 1;
-    for (int i = 0; i < lastId; ++i) {
-      packets.add(i, limboFactory.createPreparedPacket()
-          .prepare(this.createChatPacket(limboFactory, MessageFormat.format(wrongCaptcha, i)))
+    for (int i = 1; i < Settings.IMP.MAIN.CAPTCHA_ATTEMPTS; ++i) {
+      PreparedPacket packet = limboFactory.createPreparedPacket();
+      this.createChatPacket(packet, limboFactory, MessageFormat.format(wrongCaptcha, i));
+
+      packets.add(0, null);
+      packets.add(i, packet
           .prepare(
               this.createSetSlotPacket(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
@@ -98,8 +103,8 @@ public class CachedPackets {
       );
     }
 
-    packets.add(lastId, limboFactory.createPreparedPacket()
-        .prepare(this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat))
+    packets.add(Settings.IMP.MAIN.CAPTCHA_ATTEMPTS,
+        this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat)
         .prepare(
             this.createSetSlotPacket(
                 packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
@@ -115,20 +120,19 @@ public class CachedPackets {
   }
 
   private PreparedPacket createCaptchaFirstAttemptPacket(LimboFactory factory, String checkingTitle, String checkingSubtitle, String checkingChat) {
-    PreparedPacket preparedPacket = factory.createPreparedPacket()
-        .prepare(this.createChatPacket(factory, MessageFormat.format(checkingChat, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS)));
+    PreparedPacket preparedPacket = factory.createPreparedPacket();
+    this.createChatPacket(preparedPacket, factory, MessageFormat.format(checkingChat, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS));
 
     if (!checkingTitle.isEmpty() && !checkingSubtitle.isEmpty()) {
-      preparedPacket.prepare(
-          this.createTitlePacket(
-              factory,
-              MessageFormat.format(checkingTitle, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS),
-              MessageFormat.format(checkingSubtitle, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS)
-          )
+      this.createTitlePacket(
+          preparedPacket,
+          factory,
+          MessageFormat.format(checkingTitle, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS),
+          MessageFormat.format(checkingSubtitle, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS)
       );
     }
 
-    return preparedPacket.build();
+    return preparedPacket;
   }
 
   private PreparedPacket createFallingCheckPackets(LimboFactory limboFactory, PacketFactory packetFactory,
@@ -147,11 +151,11 @@ public class CachedPackets {
     )).prepare(this.createUpdateViewPosition(packetFactory, fallingCoords.X, fallingCoords.Z), ProtocolVersion.MINECRAFT_1_14);
 
     if (!Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() && !Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) {
-      preparedPacket.prepare(this.createTitlePacket(limboFactory, checkingTitle, checkingSubtitle), ProtocolVersion.MINECRAFT_1_8);
+      this.createTitlePacket(preparedPacket, limboFactory, checkingTitle, checkingSubtitle);
     }
 
     if (!checkingChat.isEmpty()) {
-      preparedPacket.prepare(this.createChatPacket(limboFactory, checkingChat));
+      this.createChatPacket(preparedPacket, limboFactory, checkingChat);
     }
 
     return preparedPacket.build();
@@ -193,8 +197,8 @@ public class CachedPackets {
     return (MinecraftPacket) packetFactory.createSetSlotPacket(0, 36, item, count, 0, nbt);
   }
 
-  public PreparedPacket createChatPacket(LimboFactory factory, String text) {
-    return factory.createPreparedPacket()
+  public PreparedPacket createChatPacket(PreparedPacket packet, LimboFactory factory, String text) {
+    return packet
         .prepare(new LegacyChat(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINIMUM_VERSION).serialize(
                 LimboFilter.getSerializer().deserialize(text)
@@ -207,16 +211,14 @@ public class CachedPackets {
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
         .prepare(new SystemChat(
             LimboFilter.getSerializer().deserialize(text), 1
-        ), ProtocolVersion.MINECRAFT_1_19).build();
+        ), ProtocolVersion.MINECRAFT_1_19);
   }
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {
     return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version)).build();
   }
 
-  public PreparedPacket createTitlePacket(LimboFactory factory, String title, String subtitle) {
-    PreparedPacket preparedPacket = factory.createPreparedPacket();
-
+  public void createTitlePacket(PreparedPacket preparedPacket, LimboFactory factory, String title, String subtitle) {
     preparedPacket.prepare(version -> {
       GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_TITLE, version);
       packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(LimboFilter.getSerializer().deserialize(title)));
@@ -240,8 +242,6 @@ public class CachedPackets {
         return packet;
       }, ProtocolVersion.MINECRAFT_1_8);
     }
-
-    return preparedPacket.build();
   }
 
   public PreparedPacket getCaptchaFailed() {
