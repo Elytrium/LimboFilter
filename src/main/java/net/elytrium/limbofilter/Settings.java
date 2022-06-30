@@ -101,6 +101,17 @@ public class Settings extends YamlConfig {
     @Comment("Unit of time in seconds for the Auto Toggles and the Statistics.")
     public int UNIT_OF_TIME_PPS = 5;
 
+    @Comment("Coordinates for the falling check")
+    @Create
+    public Settings.MAIN.FALLING_COORDS FALLING_COORDS;
+
+    public static class FALLING_COORDS {
+      public int X = 0;
+      public int Y = 512;
+      public int Z = 0;
+      public int TELEPORT_ID = 44;
+    }
+
     @Comment("A \"USERNAME:IP\" map containing information about players who should join the server without verification.")
     public Map<String, String> WHITELISTED_PLAYERS = Map.of(
         "TestBot1234", "127.0.0.1",

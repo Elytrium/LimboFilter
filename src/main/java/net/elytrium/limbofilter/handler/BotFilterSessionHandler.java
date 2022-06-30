@@ -20,20 +20,15 @@ package net.elytrium.limbofilter.handler;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.scheduler.ScheduledTask;
-import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
 import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
-import java.text.MessageFormat;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboSessionHandler;
-import net.elytrium.limboapi.api.chunk.VirtualChunk;
 import net.elytrium.limboapi.api.player.LimboPlayer;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
-import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.cache.CachedPackets;
@@ -50,10 +45,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private final LimboFilter plugin;
   private final Statistics statistics;
   private final CachedPackets packets;
-
-  private final MinecraftPacket fallingCheckPos;
-  private final MinecraftPacket fallingCheckChunk;
-  private final MinecraftPacket fallingCheckView;
 
   private final int validX;
   private final int validY;
@@ -91,12 +82,11 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.statistics = this.plugin.getStatistics();
     this.packets = this.plugin.getPackets();
 
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    this.validX = random.nextInt(256, 16384);
-    // See https://media.discordapp.net/attachments/878241549857738793/915165038464098314/unknown.png
-    this.validY = random.nextInt(256 + (this.version.compareTo(ProtocolVersion.MINECRAFT_1_8) < 0 ? 250 : 0), 512);
-    this.validZ = random.nextInt(256, 16384);
-    this.validTeleportId = random.nextInt(65535);
+    Settings.MAIN.FALLING_COORDS fallingCoords = Settings.IMP.MAIN.FALLING_COORDS;
+    this.validX = fallingCoords.X;
+    this.validY = fallingCoords.Y;
+    this.validZ = fallingCoords.Z;
+    this.validTeleportId = fallingCoords.TELEPORT_ID;
 
     this.posX = this.validX;
     this.posY = this.validY;
@@ -105,18 +95,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
         ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE)
         : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
-
-    Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
-    this.fallingCheckPos = this.createPlayerPosAndLook(
-        this.plugin.getPacketFactory(),
-        this.validX, this.validY, this.validZ,
-        (float) (this.state == CheckState.CAPTCHA_POSITION ? coords.CAPTCHA_YAW : coords.FALLING_CHECK_YAW),
-        (float) (this.state == CheckState.CAPTCHA_POSITION ? coords.CAPTCHA_PITCH : coords.FALLING_CHECK_PITCH)
-    );
-    this.fallingCheckChunk = this.createChunkData(
-        this.plugin.getPacketFactory(), this.plugin.getLimboFactory().createVirtualChunk(this.validX >> 4, this.validZ >> 4)
-    );
-    this.fallingCheckView = this.createUpdateViewPosition(this.plugin.getPacketFactory(), this.validX, this.validZ);
   }
 
   @Override
@@ -131,12 +109,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       this.sendFallingCheckPackets();
       this.sendCaptcha();
     } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
-      if (this.proxyPlayer.getProtocolVersion().compareTo(ProtocolVersion.MINECRAFT_1_8) >= 0) {
-        if (!Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() && !Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) {
-          this.player.writePacket(this.packets.getCheckingTitle());
-        }
-      }
-      this.player.writePacket(this.packets.getCheckingChat());
       this.sendFallingCheckPackets();
     }
 
@@ -150,16 +122,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private void sendFallingCheckPackets() {
-    this.player.writePacket(this.fallingCheckPos);
-
-    ProtocolVersion playerVersion = this.proxyPlayer.getProtocolVersion();
-    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_14) >= 0) {
-      this.player.writePacket(this.fallingCheckView);
-    }
-
-    if (playerVersion.compareTo(ProtocolVersion.MINECRAFT_1_17) < 0) {
-      this.player.writePacket(this.fallingCheckChunk);
-    }
+    this.player.writePacket(this.packets.getFallingCheckPackets());
   }
 
   @Override
@@ -217,7 +180,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
         this.fallingCheckFailed("A lot of non-valid Y attempts");
         return;
       }
-      if ((this.posX != this.validX && this.posZ != this.validZ) || this.checkY()) {
+      if (this.checkY()) {
         this.fallingCheckFailed("Non-valid X, Z or Velocity");
         return;
       }
@@ -365,28 +328,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     ProtocolVersion version = this.proxyPlayer.getProtocolVersion();
     CaptchaHolder captchaHolder = this.plugin.getCachedCaptcha().randomCaptcha();
     this.captchaAnswer = captchaHolder.getAnswer();
-    Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
-    if (this.attempts == Settings.IMP.MAIN.CAPTCHA_ATTEMPTS) {
-      this.player.writePacket(
-          this.packets.createChatPacket(this.plugin.getLimboFactory(), MessageFormat.format(strings.CHECKING_CAPTCHA_CHAT, this.attempts))
-      );
-      if (version.compareTo(ProtocolVersion.MINECRAFT_1_8) >= 0) {
-        if (!strings.CHECKING_CAPTCHA_TITLE.isEmpty() && !strings.CHECKING_CAPTCHA_SUBTITLE.isEmpty()) {
-          this.player.writePacket(
-              this.packets.createTitlePacket(
-                  this.plugin.getLimboFactory(),
-                  MessageFormat.format(strings.CHECKING_CAPTCHA_TITLE, this.attempts),
-                  MessageFormat.format(strings.CHECKING_CAPTCHA_SUBTITLE, this.attempts)
-              )
-          );
-        }
-      }
-    } else {
-      this.player.writePacket(
-          this.packets.createChatPacket(this.plugin.getLimboFactory(), MessageFormat.format(strings.CHECKING_WRONG_CAPTCHA_CHAT, this.attempts))
-      );
-    }
-    this.player.writePacket(this.packets.getSetSlot());
+    this.player.writePacket(this.packets.getCaptchaAttemptsPacket(this.attempts));
     for (Object packet : captchaHolder.getMapPacket(version)) {
       this.player.writePacket(packet);
     }
@@ -407,20 +349,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     } else {
       return Settings.IMP.MAIN.TIME_OUT;
     }
-  }
-
-  private MinecraftPacket createChunkData(PacketFactory factory, VirtualChunk chunk) {
-    chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
-    return (MinecraftPacket)
-        factory.createChunkDataPacket(chunk.getFullChunkSnapshot(), true, this.plugin.getFilterWorld().getDimension().getMaxSections());
-  }
-
-  private MinecraftPacket createPlayerPosAndLook(PacketFactory factory, double x, double y, double z, float yaw, float pitch) {
-    return (MinecraftPacket) factory.createPositionRotationPacket(x, y, z, yaw, pitch, false, 44, true);
-  }
-
-  private MinecraftPacket createUpdateViewPosition(PacketFactory factory, int x, int z) {
-    return (MinecraftPacket) factory.createUpdateViewPositionPacket(x >> 4, z >> 4);
   }
 
   static {

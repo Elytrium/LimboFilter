@@ -24,9 +24,12 @@ import com.velocitypowered.proxy.protocol.packet.Disconnect;
 import com.velocitypowered.proxy.protocol.packet.chat.LegacyChat;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import net.elytrium.limboapi.api.LimboFactory;
+import net.elytrium.limboapi.api.chunk.Dimension;
+import net.elytrium.limboapi.api.chunk.VirtualChunk;
 import net.elytrium.limboapi.api.material.Item;
 import net.elytrium.limboapi.api.material.VirtualItem;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
@@ -38,13 +41,12 @@ import net.kyori.adventure.nbt.IntBinaryTag;
 
 public class CachedPackets {
 
+  private PreparedPacket fallingCheckPackets;
+  private List<PreparedPacket> captchaAttemptsPacket;
   private PreparedPacket captchaFailed;
   private PreparedPacket fallingCheckFailed;
   private PreparedPacket timesUp;
-  private PreparedPacket setSlot;
   private PreparedPacket resetSlot;
-  private PreparedPacket checkingChat;
-  private PreparedPacket checkingTitle;
   private PreparedPacket kickClientCheckSettings;
   private PreparedPacket kickClientCheckBrand;
   private PreparedPacket successfulBotFilterChat;
@@ -55,24 +57,15 @@ public class CachedPackets {
   public void createPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
 
+    this.captchaAttemptsPacket = this.createCaptchaAttemptsPacket(limboFactory, packetFactory, strings.CHECKING_CAPTCHA_TITLE,
+        strings.CHECKING_CAPTCHA_SUBTITLE, strings.CHECKING_CAPTCHA_CHAT, strings.CHECKING_WRONG_CAPTCHA_CHAT);
+    this.fallingCheckPackets =
+        this.createFallingCheckPackets(limboFactory, packetFactory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE, strings.CHECKING_CHAT);
     this.captchaFailed = this.createDisconnectPacket(limboFactory, strings.CAPTCHA_FAILED_KICK);
     this.fallingCheckFailed = this.createDisconnectPacket(limboFactory, strings.FALLING_CHECK_FAILED_KICK);
     this.timesUp = this.createDisconnectPacket(limboFactory, strings.TIMES_UP);
 
-    this.setSlot = limboFactory.createPreparedPacket()
-        .prepare(
-            this.createSetSlotPacket(
-                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
-            ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_16_4
-        ).prepare(
-            this.createSetSlotPacket(
-                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
-            ), ProtocolVersion.MINECRAFT_1_17
-        ).build();
-
     this.resetSlot = limboFactory.createPreparedPacket().prepare(this.createSetSlotPacket(packetFactory, limboFactory.getItem(Item.AIR), 0, null)).build();
-    this.checkingChat = this.createChatPacket(limboFactory, strings.CHECKING_CHAT);
-    this.checkingTitle = this.createTitlePacket(limboFactory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE);
 
     this.kickClientCheckSettings = this.createDisconnectPacket(limboFactory, strings.CLIENT_SETTINGS_KICK);
     this.kickClientCheckBrand = this.createDisconnectPacket(limboFactory, strings.CLIENT_BRAND_KICK);
@@ -82,6 +75,100 @@ public class CachedPackets {
 
     this.noAbilities = this.createAbilitiesPacket(limboFactory, packetFactory);
     this.experience = this.createExpPackets(limboFactory, packetFactory);
+  }
+
+  private List<PreparedPacket> createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
+                                                           String checkingChat, String checkingTitle, String checkingSubtitle, String wrongCaptcha) {
+    List<PreparedPacket> packets = new ArrayList<>(Settings.IMP.MAIN.CAPTCHA_ATTEMPTS);
+
+    int lastId = Settings.IMP.MAIN.CAPTCHA_ATTEMPTS - 1;
+    for (int i = 0; i < lastId; ++i) {
+      packets.add(i, limboFactory.createPreparedPacket()
+          .prepare(this.createChatPacket(limboFactory, MessageFormat.format(wrongCaptcha, i)))
+          .prepare(
+              this.createSetSlotPacket(
+                  packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
+              ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_16_4
+          ).prepare(
+              this.createSetSlotPacket(
+                  packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
+              ), ProtocolVersion.MINECRAFT_1_17
+          )
+          .build()
+      );
+    }
+
+    packets.add(lastId, limboFactory.createPreparedPacket()
+        .prepare(this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat))
+        .prepare(
+            this.createSetSlotPacket(
+                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
+            ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_16_4
+        ).prepare(
+            this.createSetSlotPacket(
+                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
+            ), ProtocolVersion.MINECRAFT_1_17
+        )
+        .build());
+
+    return packets;
+  }
+
+  private PreparedPacket createCaptchaFirstAttemptPacket(LimboFactory factory, String checkingTitle, String checkingSubtitle, String checkingChat) {
+    PreparedPacket preparedPacket = factory.createPreparedPacket()
+        .prepare(this.createChatPacket(factory, MessageFormat.format(checkingChat, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS)));
+
+    if (!checkingTitle.isEmpty() && !checkingSubtitle.isEmpty()) {
+      preparedPacket.prepare(
+          this.createTitlePacket(
+              factory,
+              MessageFormat.format(checkingTitle, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS),
+              MessageFormat.format(checkingSubtitle, Settings.IMP.MAIN.CAPTCHA_ATTEMPTS)
+          )
+      );
+    }
+
+    return preparedPacket.build();
+  }
+
+  private PreparedPacket createFallingCheckPackets(LimboFactory limboFactory, PacketFactory packetFactory,
+                                                   String checkingTitle, String checkingSubtitle, String checkingChat) {
+    Settings.MAIN.FALLING_COORDS fallingCoords = Settings.IMP.MAIN.FALLING_COORDS;
+
+    Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
+    PreparedPacket preparedPacket = limboFactory.createPreparedPacket().prepare(
+        this.createPlayerPosAndLook(
+            packetFactory,
+            fallingCoords.X, fallingCoords.Y, fallingCoords.Z,
+            (float) coords.FALLING_CHECK_YAW, (float) coords.FALLING_CHECK_PITCH
+        )
+    ).prepare(this.createChunkData(
+        packetFactory, limboFactory.createVirtualChunk(fallingCoords.X >> 4, fallingCoords.Z >> 4)
+    )).prepare(this.createUpdateViewPosition(packetFactory, fallingCoords.X, fallingCoords.Z), ProtocolVersion.MINECRAFT_1_14);
+
+    if (!Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() && !Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) {
+      preparedPacket.prepare(this.createTitlePacket(limboFactory, checkingTitle, checkingSubtitle), ProtocolVersion.MINECRAFT_1_8);
+    }
+
+    if (!checkingChat.isEmpty()) {
+      preparedPacket.prepare(this.createChatPacket(limboFactory, checkingChat));
+    }
+
+    return preparedPacket.build();
+  }
+
+  private MinecraftPacket createChunkData(PacketFactory factory, VirtualChunk chunk) {
+    chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
+    return (MinecraftPacket)
+        factory.createChunkDataPacket(chunk.getFullChunkSnapshot(), true, Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION).getMaxSections());
+  }
+
+  private MinecraftPacket createPlayerPosAndLook(PacketFactory factory, double x, double y, double z, float yaw, float pitch) {
+    return (MinecraftPacket) factory.createPositionRotationPacket(x, y, z, yaw, pitch, false, 44, true);
+  }
+
+  private MinecraftPacket createUpdateViewPosition(PacketFactory factory, int x, int z) {
+    return (MinecraftPacket) factory.createUpdateViewPositionPacket(x >> 4, z >> 4);
   }
 
   private PreparedPacket createAbilitiesPacket(LimboFactory limboFactory, PacketFactory packetFactory) {
@@ -169,20 +256,8 @@ public class CachedPackets {
     return this.timesUp;
   }
 
-  public PreparedPacket getSetSlot() {
-    return this.setSlot;
-  }
-
   public PreparedPacket getResetSlot() {
     return this.resetSlot;
-  }
-
-  public PreparedPacket getCheckingChat() {
-    return this.checkingChat;
-  }
-
-  public PreparedPacket getCheckingTitle() {
-    return this.checkingTitle;
   }
 
   public PreparedPacket getKickClientCheckSettings() {
@@ -207,5 +282,13 @@ public class CachedPackets {
 
   public List<PreparedPacket> getExperience() {
     return this.experience;
+  }
+
+  public PreparedPacket getFallingCheckPackets() {
+    return this.fallingCheckPackets;
+  }
+
+  public PreparedPacket getCaptchaAttemptsPacket(int attempt) {
+    return this.captchaAttemptsPacket.get(attempt);
   }
 }
