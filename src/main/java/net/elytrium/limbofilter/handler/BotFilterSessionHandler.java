@@ -105,10 +105,8 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.joinTime = System.currentTimeMillis();
     if (this.state == CheckState.ONLY_CAPTCHA) {
       this.sendCaptcha();
-    } else if (this.state == CheckState.CAPTCHA_POSITION) {
-      this.sendFallingCheckPackets();
-      this.sendCaptcha();
-    } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
+    } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED
+        || this.state == CheckState.CAPTCHA_POSITION) {
       this.sendFallingCheckPackets();
     }
 
@@ -145,6 +143,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     if (!this.startedListening && this.state != CheckState.ONLY_CAPTCHA) {
       if (this.posX == this.validX && this.posZ == this.validZ) {
         this.startedListening = true;
+
+        if (this.state == CheckState.CAPTCHA_POSITION) {
+          this.sendCaptcha();
+        }
       }
       if (this.nonValidPacketsSize > Settings.IMP.MAIN.NON_VALID_POSITION_XZ_ATTEMPTS) {
         this.fallingCheckFailed("A lot of non-valid XZ attempts");
