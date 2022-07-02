@@ -126,18 +126,30 @@ public class CachedPackets {
   }
 
   public void dispose() {
-    this.fallingCheckPackets.release();
-    this.captchaAttemptsPacket.forEach(PreparedPacket::release);
-    this.captchaFailed.release();
-    this.fallingCheckFailed.release();
-    this.timesUp.release();
-    this.resetSlot.release();
-    this.kickClientCheckBrand.release();
-    this.kickClientCheckSettings.release();
-    this.successfulBotFilterChat.release();
-    this.successfulBotFilterDisconnect.release();
-    this.noAbilities.release();
-    this.experience.forEach(PreparedPacket::release);
+    this.singleDispose(this.fallingCheckPackets);
+    this.singleDispose(this.captchaAttemptsPacket);
+    this.singleDispose(this.captchaFailed);
+    this.singleDispose(this.fallingCheckFailed);
+    this.singleDispose(this.timesUp);
+    this.singleDispose(this.resetSlot);
+    this.singleDispose(this.kickClientCheckBrand);
+    this.singleDispose(this.kickClientCheckSettings);
+    this.singleDispose(this.successfulBotFilterChat);
+    this.singleDispose(this.successfulBotFilterDisconnect);
+    this.singleDispose(this.noAbilities);
+    this.singleDispose(this.experience);
+  }
+
+  private void singleDispose(PreparedPacket packet) {
+    if (packet != null) {
+      packet.release();
+    }
+  }
+
+  private void singleDispose(List<PreparedPacket> packets) {
+    if (packets != null) {
+      packets.forEach(PreparedPacket::release);
+    }
   }
 
   private PreparedPacket createCaptchaFirstAttemptPacket(LimboFactory factory, String checkingTitle, String checkingSubtitle, String checkingChat) {
