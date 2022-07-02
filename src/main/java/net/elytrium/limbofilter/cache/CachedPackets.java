@@ -148,7 +148,9 @@ public class CachedPackets {
 
   private void singleDispose(List<PreparedPacket> packets) {
     if (packets != null) {
-      packets.forEach(PreparedPacket::release);
+      for (PreparedPacket packet : packets) {
+        this.singleDispose(packet);
+      }
     }
   }
 

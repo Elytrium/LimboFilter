@@ -73,6 +73,8 @@ public class CachedCaptcha {
   }
 
   public void dispose() {
-    this.captchas.forEach(CaptchaHolder::release);
+    for (CaptchaHolder captcha : this.captchas) {
+      captcha.release();
+    }
   }
 }
