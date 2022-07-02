@@ -121,6 +121,8 @@ public class CaptchaGenerator {
 
   @SuppressWarnings("StatementWithEmptyBody")
   public void generateImages() {
+    this.plugin.getCachedCaptcha().dispose();
+
     ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT; ++i) {
       executor.execute(this::genNewPacket);
