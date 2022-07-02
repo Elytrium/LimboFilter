@@ -20,6 +20,7 @@ package net.elytrium.limbofilter.cache.captcha;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
@@ -29,10 +30,9 @@ import net.elytrium.limbofilter.captcha.CaptchaHolder;
 
 public class CachedCaptcha {
 
-  private final List<CaptchaHolder> captchas = new ArrayList<>();
   private final AtomicInteger captchaCounter = new AtomicInteger();
-
   private final LimboFilter plugin;
+  private List<CaptchaHolder> captchas = new ArrayList<>();
 
   public CachedCaptcha(LimboFilter plugin) {
     this.plugin = plugin;
@@ -55,6 +55,14 @@ public class CachedCaptcha {
     } else {
       this.captchas.add(new CaptchaHolder(this.toArray(mapDataPacket), mapDataPackets17, answer));
     }
+  }
+
+  public void build() {
+    this.captchas = Collections.unmodifiableList(this.captchas);
+  }
+
+  public void clear() {
+    this.captchas = new ArrayList<>();
   }
 
   @SafeVarargs

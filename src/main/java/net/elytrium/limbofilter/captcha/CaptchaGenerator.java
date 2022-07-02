@@ -122,6 +122,7 @@ public class CaptchaGenerator {
   @SuppressWarnings("StatementWithEmptyBody")
   public void generateImages() {
     this.plugin.getCachedCaptcha().dispose();
+    this.plugin.getCachedCaptcha().clear();
 
     ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT; ++i) {
@@ -134,6 +135,7 @@ public class CaptchaGenerator {
     }
 
     LimboFilter.getLogger().info("Captcha generated in " + (System.currentTimeMillis() - start) + " ms.");
+    this.plugin.getCachedCaptcha().build();
     executor.shutdownNow();
     System.gc();
   }
