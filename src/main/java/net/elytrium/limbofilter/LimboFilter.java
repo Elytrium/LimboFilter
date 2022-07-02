@@ -168,6 +168,10 @@ public class LimboFilter {
       this.refreshCaptchaTask.cancel();
     }
 
+    if (this.cachedCaptcha != null) {
+      this.cachedCaptcha.dispose();
+    }
+
     this.cachedCaptcha = new CachedCaptcha(this);
     this.generator.generateCaptcha();
     this.refreshCaptchaTask = this.server.getScheduler()
@@ -219,6 +223,10 @@ public class LimboFilter {
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+
+    if (this.filterServer != null) {
+      this.filterServer.dispose();
     }
 
     this.filterServer = this.limboFactory.createLimbo(this.filterWorld)

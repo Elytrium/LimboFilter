@@ -71,4 +71,8 @@ public class CachedCaptcha {
 
     return this.captchas.get(count);
   }
+
+  public void dispose() {
+    this.captchas.forEach(CaptchaHolder::release);
+  }
 }

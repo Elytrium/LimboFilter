@@ -53,4 +53,12 @@ public class CaptchaHolder {
   public String getAnswer() {
     return this.answer;
   }
+
+  public void release() {
+    if (this.preparedMapPacket != null) {
+      for (PreparedPacket preparedPacket : this.preparedMapPacket) {
+        preparedPacket.release();
+      }
+    }
+  }
 }
