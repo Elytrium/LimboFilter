@@ -38,6 +38,7 @@ import javax.imageio.ImageIO;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
 import net.elytrium.limbofilter.captcha.map.CraftMapCanvas;
 import net.elytrium.limbofilter.captcha.painter.CaptchaPainter;
 
@@ -51,12 +52,15 @@ public class CaptchaGenerator {
   private static final AtomicInteger colorCounter = new AtomicInteger();
 
   private final LimboFilter plugin;
+  private ThreadPoolExecutor executor;
+  private boolean shouldStop;
+  private CachedCaptcha cachedCaptcha;
 
   public CaptchaGenerator(LimboFilter plugin) {
     this.plugin = plugin;
   }
 
-  public void generateCaptcha() {
+  public void initializeGenerator() {
     try {
       for (String backplatePath : Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS) {
         if (!backplatePath.isEmpty()) {
@@ -121,26 +125,41 @@ public class CaptchaGenerator {
 
   @SuppressWarnings("StatementWithEmptyBody")
   public void generateImages() {
-    this.plugin.getCachedCaptcha().dispose();
-    this.plugin.getCachedCaptcha().clear();
+    if (this.shouldStop) {
+      return;
+    }
 
-    ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    CachedCaptcha cachedCaptcha = new CachedCaptcha(this.plugin);
+    this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
+    this.executor.setThreadFactory(runnable -> {
+      Thread thread = new Thread(threadGroup, runnable, "CaptchaGeneratorThread");
+      thread.setPriority(Thread.MIN_PRIORITY);
+      return thread;
+    });
+
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT; ++i) {
-      executor.execute(this::genNewPacket);
+      this.executor.execute(() -> this.genNewPacket(cachedCaptcha));
     }
 
     long start = System.currentTimeMillis();
-    while (executor.getCompletedTaskCount() != Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT) {
-      // Busy wait.
-    }
+    this.executor.execute(() -> {
+      while (this.executor.getCompletedTaskCount() != Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT) {
+        // Busy wait.
+      }
 
-    LimboFilter.getLogger().info("Captcha generated in " + (System.currentTimeMillis() - start) + " ms.");
-    this.plugin.getCachedCaptcha().build();
-    executor.shutdownNow();
-    System.gc();
+      LimboFilter.getLogger().info("Captcha generated in " + (System.currentTimeMillis() - start) + " ms.");
+
+      if (this.cachedCaptcha != null) {
+        this.cachedCaptcha.dispose();
+      }
+
+      this.cachedCaptcha = cachedCaptcha;
+      this.cachedCaptcha.build();
+    });
   }
 
-  public void genNewPacket() {
+  public void genNewPacket(CachedCaptcha cachedCaptcha) {
     String answer = this.randomAnswer();
 
     CraftMapCanvas map;
@@ -170,7 +189,20 @@ public class CaptchaGenerator {
       packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMaps17Data()[i]);
     }
 
-    this.plugin.getCachedCaptcha().createCaptchaPacket(packet, packets17, answer);
+    cachedCaptcha.createCaptchaPacket(packet, packets17, answer);
+  }
+
+  public void shutdown() {
+    this.shouldStop = true;
+    this.executor.shutdownNow();
+  }
+
+  public CaptchaHolder getRandomCaptcha() {
+    if (this.cachedCaptcha == null) {
+      return null;
+    } else {
+      return this.cachedCaptcha.getRandomCaptcha();
+    }
   }
 
   private String randomAnswer() {

@@ -61,16 +61,12 @@ public class CachedCaptcha {
     this.captchas = Collections.unmodifiableList(this.captchas);
   }
 
-  public void clear() {
-    this.captchas = new ArrayList<>();
-  }
-
   @SafeVarargs
   private <V> V[] toArray(V... values) {
     return values;
   }
 
-  public CaptchaHolder randomCaptcha() {
+  public CaptchaHolder getRandomCaptcha() {
     int count = this.captchaCounter.getAndIncrement();
     if (count >= this.captchas.size()) {
       this.captchaCounter.set(0);
@@ -80,8 +76,11 @@ public class CachedCaptcha {
     return this.captchas.get(count);
   }
 
+  @SuppressWarnings("ForLoopReplaceableByForEach")
   public void dispose() {
-    for (CaptchaHolder captcha : this.captchas) {
+    List<CaptchaHolder> captchaHolders = this.captchas;
+    for (int i = 0, captchaHoldersSize = captchaHolders.size(); i < captchaHoldersSize; i++) {
+      CaptchaHolder captcha = captchaHolders.get(i);
       captcha.release();
     }
   }

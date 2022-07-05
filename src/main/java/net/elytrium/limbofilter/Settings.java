@@ -244,6 +244,8 @@ public class Settings extends YamlConfig {
       public String SEND_PLAYER_SUCCESSFUL = "{PRFX} Successfully sent {0} to the filter limbo.";
       public String SEND_SERVER_SUCCESSFUL = "{PRFX} Successfully sent {0} players from {1} to the filter limbo.";
       public String SEND_FAILED = "{PRFX} There is no registered servers or connected players named {0}.";
+
+      public String CAPTCHA_NOT_READY_YET = "{PRFX} Captcha is not ready yet. Try again in a few seconds";
     }
 
     @Create

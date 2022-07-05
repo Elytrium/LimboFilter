@@ -328,11 +328,15 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private void sendCaptcha() {
-    ProtocolVersion version = this.proxyPlayer.getProtocolVersion();
-    CaptchaHolder captchaHolder = this.plugin.getCachedCaptcha().randomCaptcha();
+    CaptchaHolder captchaHolder = this.plugin.getRandomCaptcha();
     this.captchaAnswer = captchaHolder.getAnswer();
+
+    if (this.captchaAnswer == null) {
+      this.player.closeWith(this.packets.getCaptchaNotReadyYet());
+    }
+
     this.player.writePacket(this.packets.getCaptchaAttemptsPacket(this.attempts));
-    for (Object packet : captchaHolder.getMapPacket(version)) {
+    for (Object packet : captchaHolder.getMapPacket(this.version)) {
       this.player.writePacket(packet);
     }
 

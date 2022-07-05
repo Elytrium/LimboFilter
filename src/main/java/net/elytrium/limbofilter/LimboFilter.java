@@ -55,8 +55,8 @@ import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.cache.CachedPackets;
-import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
+import net.elytrium.limbofilter.captcha.CaptchaHolder;
 import net.elytrium.limbofilter.commands.LimboFilterCommand;
 import net.elytrium.limbofilter.commands.SendFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
@@ -96,16 +96,15 @@ public class LimboFilter {
   private final File configFile;
   private final Metrics.Factory metricsFactory;
   private final ProxyServer server;
-  private final CachedPackets packets;
-  private final CaptchaGenerator generator;
   private final Statistics statistics;
   private final LimboFactory limboFactory;
   private final PacketFactory packetFactory;
 
-  private CachedCaptcha cachedCaptcha;
   private Limbo filterServer;
   private VirtualWorld filterWorld;
   private ScheduledTask refreshCaptchaTask;
+  private CaptchaGenerator generator;
+  private CachedPackets packets;
 
   @Inject
   public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -115,8 +114,6 @@ public class LimboFilter {
     this.metricsFactory = metricsFactory;
     this.dataDirectory = dataDirectory;
     this.configFile = this.dataDirectory.resolve("config.yml").toFile();
-    this.packets = new CachedPackets();
-    this.generator = new CaptchaGenerator(this);
     this.statistics = new Statistics();
 
     this.limboFactory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
@@ -168,18 +165,26 @@ public class LimboFilter {
       this.refreshCaptchaTask.cancel();
     }
 
-    if (this.cachedCaptcha != null) {
-      this.cachedCaptcha.dispose();
+    if (this.generator != null) {
+      this.generator.shutdown();
     }
 
-    this.cachedCaptcha = new CachedCaptcha(this);
-    this.generator.generateCaptcha();
+    this.generator = new CaptchaGenerator(this);
+    this.generator.initializeGenerator();
+
     this.refreshCaptchaTask = this.server.getScheduler()
-        .buildTask(this, LimboFilter.this.generator::generateImages)
+        .buildTask(this, this.generator::generateImages)
         .repeat(Settings.IMP.MAIN.CAPTCHA_REGENERATE_RATE, TimeUnit.SECONDS)
         .schedule();
 
-    this.packets.createPackets(this.limboFactory, this.packetFactory);
+    CachedPackets cachedPackets = new CachedPackets();
+    cachedPackets.createPackets(this.limboFactory, this.packetFactory);
+
+    if (this.packets != null) {
+      this.packets.dispose();
+    }
+
+    this.packets = cachedPackets;
 
     this.cachedFilterChecks.clear();
 
@@ -348,8 +353,8 @@ public class LimboFilter {
     return this.statistics;
   }
 
-  public CachedCaptcha getCachedCaptcha() {
-    return this.cachedCaptcha;
+  public CaptchaHolder getRandomCaptcha() {
+    return this.generator.getRandomCaptcha();
   }
 
   public VirtualWorld getFilterWorld() {

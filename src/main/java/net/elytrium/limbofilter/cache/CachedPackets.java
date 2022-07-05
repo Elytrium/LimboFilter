@@ -52,14 +52,10 @@ public class CachedPackets {
   private PreparedPacket successfulBotFilterChat;
   private PreparedPacket successfulBotFilterDisconnect;
   private PreparedPacket noAbilities;
-  private boolean cached;
   private List<PreparedPacket> experience;
+  private PreparedPacket captchaNotReadyYet;
 
   public void createPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
-    if (this.cached) {
-      this.dispose();
-    }
-
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
 
     this.captchaAttemptsPacket = this.createCaptchaAttemptsPacket(limboFactory, packetFactory, strings.CHECKING_CAPTCHA_TITLE,
@@ -84,7 +80,8 @@ public class CachedPackets {
     this.noAbilities = this.createAbilitiesPacket(limboFactory, packetFactory);
     this.experience = this.createExpPackets(limboFactory, packetFactory);
 
-    this.cached = true;
+    this.captchaNotReadyYet = limboFactory.createPreparedPacket();
+    this.createChatPacket(this.captchaNotReadyYet, strings.CAPTCHA_NOT_READY_YET);
   }
 
   private List<PreparedPacket> createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
@@ -138,6 +135,7 @@ public class CachedPackets {
     this.singleDispose(this.successfulBotFilterDisconnect);
     this.singleDispose(this.noAbilities);
     this.singleDispose(this.experience);
+    this.singleDispose(this.captchaNotReadyYet);
   }
 
   private void singleDispose(PreparedPacket packet) {
@@ -324,5 +322,9 @@ public class CachedPackets {
 
   public PreparedPacket getCaptchaAttemptsPacket(int attempt) {
     return this.captchaAttemptsPacket.get(attempt);
+  }
+
+  public PreparedPacket getCaptchaNotReadyYet() {
+    return this.captchaNotReadyYet;
   }
 }
