@@ -55,6 +55,7 @@ public class CaptchaGenerator {
   private ThreadPoolExecutor executor;
   private boolean shouldStop;
   private CachedCaptcha cachedCaptcha;
+  private CachedCaptcha tempCachedCaptcha;
 
   public CaptchaGenerator(LimboFilter plugin) {
     this.plugin = plugin;
@@ -129,7 +130,11 @@ public class CaptchaGenerator {
       return;
     }
 
-    CachedCaptcha cachedCaptcha = new CachedCaptcha(this.plugin);
+    if (this.tempCachedCaptcha != null) {
+      this.tempCachedCaptcha.dispose();
+    }
+
+    this.tempCachedCaptcha = new CachedCaptcha(this.plugin);
     this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
     this.executor.setThreadFactory(runnable -> {
@@ -139,7 +144,7 @@ public class CaptchaGenerator {
     });
 
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT; ++i) {
-      this.executor.execute(() -> this.genNewPacket(cachedCaptcha));
+      this.executor.execute(() -> this.genNewPacket(this.tempCachedCaptcha));
     }
 
     long start = System.currentTimeMillis();
@@ -154,7 +159,8 @@ public class CaptchaGenerator {
         this.cachedCaptcha.dispose();
       }
 
-      this.cachedCaptcha = cachedCaptcha;
+      this.cachedCaptcha = this.tempCachedCaptcha;
+      this.tempCachedCaptcha = null;
       this.cachedCaptcha.build();
     });
   }
@@ -194,7 +200,17 @@ public class CaptchaGenerator {
 
   public void shutdown() {
     this.shouldStop = true;
-    this.executor.shutdownNow();
+    if (this.executor != null) {
+      this.executor.shutdownNow();
+    }
+
+    if (this.tempCachedCaptcha != null) {
+      this.tempCachedCaptcha.dispose();
+    }
+
+    if (this.cachedCaptcha != null) {
+      this.cachedCaptcha.dispose();
+    }
   }
 
   public CaptchaHolder getRandomCaptcha() {
