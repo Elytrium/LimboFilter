@@ -328,7 +328,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private void sendCaptcha() {
-    CaptchaHolder captchaHolder = this.plugin.getRandomCaptcha();
+    CaptchaHolder captchaHolder = this.plugin.getNextCaptcha();
     this.captchaAnswer = captchaHolder.getAnswer();
 
     if (this.captchaAnswer == null) {

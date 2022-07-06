@@ -19,69 +19,94 @@ package net.elytrium.limbofilter.cache.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 public class CachedCaptcha {
-
-  private final AtomicInteger captchaCounter = new AtomicInteger();
   private final LimboFilter plugin;
-  private List<CaptchaHolder> captchas = new ArrayList<>();
+  private final AtomicInteger threadIdCounter = new AtomicInteger(0);
+  private final ThreadLocal<Integer> threadId = ThreadLocal.withInitial(this.threadIdCounter::getAndIncrement);
+  private final CaptchaHolder[] firstHolders;
+  private final CaptchaHolder[] lastHolders;
 
-  public CachedCaptcha(LimboFilter plugin) {
+  private CaptchaHolder firstHolder;
+  @MonotonicNonNull
+  private CaptchaHolder lastHolder;
+  private ThreadLocal<CaptchaHolder> captchaIterator;
+  private boolean disposed;
+
+  public CachedCaptcha(LimboFilter plugin, int threadsCount) {
     this.plugin = plugin;
+    this.firstHolders = new CaptchaHolder[threadsCount];
+    this.lastHolders = new CaptchaHolder[threadsCount];
   }
 
-  public void createCaptchaPacket(MinecraftPacket mapDataPacket, MinecraftPacket[] mapDataPackets17, String answer) {
+  public void addCaptchaPacket(String answer, MinecraftPacket[] mapDataPackets17, MinecraftPacket mapDataPacket) {
+    // It takes time to stop the generator thread, so we're stopping adding new packets there too.
+    if (this.disposed) {
+      return;
+    }
+
+    int threadId = this.threadId.get();
+
+    boolean isFirst = this.firstHolders[threadId] == null;
+    CaptchaHolder holder = this.getCaptchaHolder(answer, this.firstHolders[threadId], mapDataPackets17, mapDataPacket);
+    this.firstHolders[threadId] = holder;
+
+    if (isFirst) {
+      this.lastHolders[threadId] = holder;
+    }
+  }
+
+  private CaptchaHolder getCaptchaHolder(String answer, CaptchaHolder next, MinecraftPacket[] mapDataPackets17, MinecraftPacket mapDataPacket) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
       PreparedPacket prepared = this.plugin.getLimboFactory().createPreparedPacket();
-      this.captchas.add(
-          new CaptchaHolder(
-              this.toArray(
-                  prepared
-                      .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
-                      .prepare(mapDataPacket, ProtocolVersion.MINECRAFT_1_8)
-                      .build()
-              ),
-              answer
-          )
+      return new CaptchaHolder(answer, next, prepared
+          .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
+          .prepare(mapDataPacket, ProtocolVersion.MINECRAFT_1_8)
+          .build()
       );
     } else {
-      this.captchas.add(new CaptchaHolder(this.toArray(mapDataPacket), mapDataPackets17, answer));
+      return new CaptchaHolder(answer, next, mapDataPackets17, mapDataPacket);
     }
   }
 
   public void build() {
-    this.captchas = Collections.unmodifiableList(this.captchas);
-  }
-
-  @SafeVarargs
-  private <V> V[] toArray(V... values) {
-    return values;
-  }
-
-  public CaptchaHolder getRandomCaptcha() {
-    int count = this.captchaCounter.getAndIncrement();
-    if (count >= this.captchas.size()) {
-      this.captchaCounter.set(0);
-      count = 0;
+    int lastHolderIndex = this.firstHolders.length - 1;
+    for (int i = 0; i < lastHolderIndex;) {
+      this.lastHolders[i].setNext(this.firstHolders[++i]);
     }
 
-    return this.captchas.get(count);
+    this.firstHolder = this.firstHolders[0];
+    this.lastHolder = this.lastHolders[lastHolderIndex];
+    this.lastHolder.setNext(this.firstHolder);
+    this.threadIdCounter.set(0);
+
+    this.captchaIterator = ThreadLocal.withInitial(() -> new CaptchaHolder(this.firstHolders[this.threadId.get() % this.firstHolders.length]));
   }
 
-  @SuppressWarnings("ForLoopReplaceableByForEach")
+  public CaptchaHolder getNextCaptcha() {
+    if (this.captchaIterator == null) {
+      return null;
+    } else {
+      CaptchaHolder holder = this.captchaIterator.get();
+      this.captchaIterator.set(holder.getNext());
+      return holder;
+    }
+  }
+
   public void dispose() {
-    List<CaptchaHolder> captchaHolders = this.captchas;
-    for (int i = 0, captchaHoldersSize = captchaHolders.size(); i < captchaHoldersSize; i++) {
-      CaptchaHolder captcha = captchaHolders.get(i);
-      captcha.release();
-    }
+    this.disposed = true;
+    CaptchaHolder next = this.firstHolder;
+
+    do {
+      CaptchaHolder currentHolder = next;
+      next = next.getNext();
+      currentHolder.release();
+    } while (next != this.lastHolder);
   }
 }

@@ -28,12 +28,13 @@ import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.LimboFilter;
@@ -44,18 +45,20 @@ import net.elytrium.limbofilter.captcha.painter.CaptchaPainter;
 
 public class CaptchaGenerator {
 
-  private static final List<CraftMapCanvas> cachedBackgroundMap = new ArrayList<>();
   private static final CaptchaPainter painter = new CaptchaPainter();
-  private static final List<Font> fonts = new ArrayList<>();
-  private static final AtomicInteger backplatesCounter = new AtomicInteger();
-  private static final AtomicInteger fontCounter = new AtomicInteger();
-  private static final AtomicInteger colorCounter = new AtomicInteger();
 
+  private final List<CraftMapCanvas> backplates = new ArrayList<>();
+  private final List<Font> fonts = new LinkedList<>();
+  private final List<Color> colors = new LinkedList<>();
   private final LimboFilter plugin;
+
   private ThreadPoolExecutor executor;
   private boolean shouldStop;
   private CachedCaptcha cachedCaptcha;
   private CachedCaptcha tempCachedCaptcha;
+  private ThreadLocal<Iterator<CraftMapCanvas>> backplatesIterator;
+  private ThreadLocal<Iterator<Font>> fontIterator;
+  private ThreadLocal<Iterator<Color>> colorIterator;
 
   public CaptchaGenerator(LimboFilter plugin) {
     this.plugin = plugin;
@@ -67,14 +70,14 @@ public class CaptchaGenerator {
         if (!backplatePath.isEmpty()) {
           CraftMapCanvas craftMapCanvas = new CraftMapCanvas();
           craftMapCanvas.drawImage(0, 0, this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath))));
-          cachedBackgroundMap.add(craftMapCanvas);
+          this.backplates.add(craftMapCanvas);
         }
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
 
-    fonts.clear();
+    this.fonts.clear();
 
     int fontSize = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_SIZE;
     Map<TextAttribute, Object> textSettings = Map.of(
@@ -89,9 +92,9 @@ public class CaptchaGenerator {
     );
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.USE_STANDARD_FONTS) {
-      fonts.add(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
-      fonts.add(new Font(Font.SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
-      fonts.add(new Font(Font.MONOSPACED, Font.PLAIN, fontSize).deriveFont(textSettings));
+      this.fonts.add(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
+      this.fonts.add(new Font(Font.SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
+      this.fonts.add(new Font(Font.MONOSPACED, Font.PLAIN, fontSize).deriveFont(textSettings));
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONTS_PATH != null) {
@@ -101,13 +104,19 @@ public class CaptchaGenerator {
             LimboFilter.getLogger().info("Loading font " + fontFile + ".");
             Font font = Font.createFont(Font.TRUETYPE_FONT, this.plugin.getFile(fontFile));
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
-            fonts.add(font.deriveFont(textSettings));
+            this.fonts.add(font.deriveFont(textSettings));
           }
         } catch (FontFormatException | IOException e) {
           e.printStackTrace();
         }
       });
     }
+
+    Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.forEach(e -> this.colors.add(new Color(Integer.parseInt(e, 16))));
+
+    this.backplatesIterator = ThreadLocal.withInitial(this.backplates::listIterator);
+    this.fontIterator = ThreadLocal.withInitial(this.fonts::listIterator);
+    this.colorIterator = ThreadLocal.withInitial(this.colors::listIterator);
   }
 
   private BufferedImage resizeIfNeeded(BufferedImage image) {
@@ -134,8 +143,9 @@ public class CaptchaGenerator {
       this.tempCachedCaptcha.dispose();
     }
 
-    this.tempCachedCaptcha = new CachedCaptcha(this.plugin);
-    this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    int threadsCount = Runtime.getRuntime().availableProcessors();
+    this.tempCachedCaptcha = new CachedCaptcha(this.plugin, threadsCount);
+    this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadsCount);
     ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
     this.executor.setThreadFactory(runnable -> {
       Thread thread = new Thread(threadGroup, runnable, "CaptchaGeneratorThread");
@@ -162,6 +172,7 @@ public class CaptchaGenerator {
       this.cachedCaptcha = this.tempCachedCaptcha;
       this.tempCachedCaptcha = null;
       this.cachedCaptcha.build();
+      this.executor.shutdown();
     });
   }
 
@@ -169,25 +180,21 @@ public class CaptchaGenerator {
     String answer = this.randomAnswer();
 
     CraftMapCanvas map;
-    if (cachedBackgroundMap.isEmpty()) {
+    if (this.backplates.isEmpty()) {
       map = new CraftMapCanvas();
     } else {
-      int backplateNumber = backplatesCounter.getAndIncrement();
-      if (backplateNumber >= cachedBackgroundMap.size()) {
-        backplateNumber = 0;
-        backplatesCounter.set(0);
+      if (!this.backplatesIterator.get().hasNext()) {
+        this.backplatesIterator.set(this.backplates.listIterator());
       }
 
-      map = new CraftMapCanvas(cachedBackgroundMap.get(backplateNumber));
+      map = this.backplatesIterator.get().next();
     }
 
-    int fontNumber = fontCounter.getAndIncrement();
-    if (fontNumber >= fonts.size()) {
-      fontNumber = 0;
-      fontCounter.set(0);
+    if (!this.fontIterator.get().hasNext()) {
+      this.fontIterator.set(this.fonts.listIterator());
     }
 
-    map.drawImage(0, 0, painter.drawCaptcha(fonts.get(fontNumber), this.randomColor(), answer));
+    map.drawImage(0, 0, painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
 
     MinecraftPacket packet = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData());
     MinecraftPacket[] packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE];
@@ -195,7 +202,7 @@ public class CaptchaGenerator {
       packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMaps17Data()[i]);
     }
 
-    cachedCaptcha.createCaptchaPacket(packet, packets17, answer);
+    cachedCaptcha.addCaptchaPacket(answer, packets17, packet);
   }
 
   public void shutdown() {
@@ -213,11 +220,11 @@ public class CaptchaGenerator {
     }
   }
 
-  public CaptchaHolder getRandomCaptcha() {
+  public CaptchaHolder getNextCaptcha() {
     if (this.cachedCaptcha == null) {
       return null;
     } else {
-      return this.cachedCaptcha.getRandomCaptcha();
+      return this.cachedCaptcha.getNextCaptcha();
     }
   }
 
@@ -233,21 +240,11 @@ public class CaptchaGenerator {
     return new String(text);
   }
 
-  private Color randomColor() {
-    int index = colorCounter.getAndIncrement();
-    if (index >= Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.size()) {
-      colorCounter.set(0);
-      index = 0;
+  private Color nextColor() {
+    if (!this.colorIterator.get().hasNext()) {
+      this.colorIterator.set(this.colors.listIterator());
     }
 
-    return this.downscaleRGB(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.get(index), 16));
-  }
-
-  private Color downscaleRGB(int rgb) {
-    int r = ((rgb & 0xFF0000) >>> 16) & ~15;
-    int g = ((rgb & 0xFF00) >>> 8) & ~15;
-    int b = (rgb & 0xFF) & ~15;
-
-    return new Color(r, g, b);
+    return this.colorIterator.get().next();
   }
 }

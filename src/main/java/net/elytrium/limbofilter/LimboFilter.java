@@ -127,13 +127,15 @@ public class LimboFilter {
     this.reload();
 
     Metrics metrics = this.metricsFactory.make(this, 13699);
-    metrics.addCustomChart(new SimplePie("filter_type", () -> Settings.IMP.MAIN.CHECK_STATE));
-    metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
-    metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_BRAND)));
-    metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS)));
-    metrics.addCustomChart(new SimplePie("has_backplate",
-        () -> String.valueOf(!Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty()
-            && !Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS.get(0).isEmpty())));
+    Settings.MAIN main = Settings.IMP.MAIN;
+    metrics.addCustomChart(new SimplePie("filter_type", () -> main.CHECK_STATE));
+    metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(main.LOAD_WORLD)));
+    metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(main.CHECK_CLIENT_BRAND)));
+    metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(main.CHECK_CLIENT_SETTINGS)));
+    metrics.addCustomChart(
+        new SimplePie("has_backplate",
+            () -> String.valueOf(!main.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty() && !main.CAPTCHA_GENERATOR.BACKPLATE_PATHS.get(0).isEmpty()))
+    );
     metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings()))); // Total pings
     metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
 
@@ -157,7 +159,7 @@ public class LimboFilter {
       setSerializer(new Serializer(serializer));
     }
 
-    BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L);
+    BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L); // One tick == 50 millis
 
     this.statistics.startUpdating();
 
@@ -353,8 +355,8 @@ public class LimboFilter {
     return this.statistics;
   }
 
-  public CaptchaHolder getRandomCaptcha() {
-    return this.generator.getRandomCaptcha();
+  public CaptchaHolder getNextCaptcha() {
+    return this.generator.getNextCaptcha();
   }
 
   public VirtualWorld getFilterWorld() {

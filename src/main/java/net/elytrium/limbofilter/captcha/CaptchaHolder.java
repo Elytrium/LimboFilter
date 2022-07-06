@@ -23,30 +23,41 @@ import net.elytrium.limboapi.api.protocol.PreparedPacket;
 
 public class CaptchaHolder {
 
-  private final MinecraftPacket[] mapPacket;
-  private final MinecraftPacket[] mapPackets17;
-  private final PreparedPacket[] preparedMapPacket;
   private final String answer;
+  private final MinecraftPacket[] mapDataPackets17;
+  private final MinecraftPacket[] mapDataPacket;
+  private final PreparedPacket[] preparedMapPacket;
+  private CaptchaHolder next;
 
-  public CaptchaHolder(MinecraftPacket[] mapPacket, MinecraftPacket[] mapPackets17, String answer) {
-    this.mapPacket = mapPacket;
-    this.mapPackets17 = mapPackets17;
-    this.preparedMapPacket = null;
-    this.answer = answer;
+  public CaptchaHolder(CaptchaHolder another) {
+    this.answer = another.answer;
+    this.mapDataPackets17 = another.mapDataPackets17;
+    this.mapDataPacket = another.mapDataPacket;
+    this.preparedMapPacket = another.preparedMapPacket;
+    this.next = another.next;
   }
 
-  public CaptchaHolder(PreparedPacket[] preparedMapPacket, String answer) {
-    this.mapPacket = null;
-    this.mapPackets17 = null;
-    this.preparedMapPacket = preparedMapPacket;
+  public CaptchaHolder(String answer, CaptchaHolder next, MinecraftPacket[] mapDataPackets17, MinecraftPacket... mapDataPacket) {
     this.answer = answer;
+    this.next = next;
+    this.mapDataPackets17 = mapDataPackets17;
+    this.mapDataPacket = mapDataPacket;
+    this.preparedMapPacket = null;
+  }
+
+  public CaptchaHolder(String answer, CaptchaHolder next, PreparedPacket... preparedMapPacket) {
+    this.answer = answer;
+    this.next = next;
+    this.mapDataPackets17 = null;
+    this.mapDataPacket = null;
+    this.preparedMapPacket = preparedMapPacket;
   }
 
   public Object[] getMapPacket(ProtocolVersion version) {
     if (version.compareTo(ProtocolVersion.MINECRAFT_1_8) < 0) {
-      return this.mapPackets17 == null ? this.preparedMapPacket : this.mapPackets17;
+      return this.mapDataPackets17 == null ? this.preparedMapPacket : this.mapDataPackets17;
     } else {
-      return this.mapPacket == null ? this.preparedMapPacket : this.mapPacket;
+      return this.mapDataPacket == null ? this.preparedMapPacket : this.mapDataPacket;
     }
   }
 
@@ -54,7 +65,16 @@ public class CaptchaHolder {
     return this.answer;
   }
 
+  public CaptchaHolder getNext() {
+    return this.next;
+  }
+
+  public void setNext(CaptchaHolder next) {
+    this.next = next;
+  }
+
   public void release() {
+    this.next = null;
     if (this.preparedMapPacket != null) {
       for (PreparedPacket preparedPacket : this.preparedMapPacket) {
         preparedPacket.release();
