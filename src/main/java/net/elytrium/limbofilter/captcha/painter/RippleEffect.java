@@ -17,15 +17,13 @@
 
 package net.elytrium.limbofilter.captcha.painter;
 
-import java.awt.image.BufferedImage;
-
 /**
  * A filter to generate ripple (wave) effected images. Uses a transformed sinus
  * wave for this. This class is thread safe.
  *
  * @author akiraly
  */
-public class Rippler {
+public class RippleEffect implements CaptchaEffect {
 
   private final AxisConfig vertical;
   private final AxisConfig horizontal;
@@ -34,7 +32,7 @@ public class Rippler {
    * @param vertical   config to calculate waving deltas from x axis (so to modify y values), not null
    * @param horizontal config to calculate waving deltas from y axis (so to modify xvalues), not null
    */
-  public Rippler(AxisConfig vertical, AxisConfig horizontal) {
+  public RippleEffect(AxisConfig vertical, AxisConfig horizontal) {
     this.vertical = vertical;
     this.horizontal = horizontal;
   }
@@ -44,25 +42,18 @@ public class Rippler {
    *
    * @param src  to be transformed, not null
    * @param dest to hold the result, not null
-   * @return dest is returned
    */
-  public BufferedImage filter(BufferedImage src, BufferedImage dest) {
-    int width = src.getWidth();
-    int height = src.getHeight();
-
+  public void filter(int width, int height, int[] src, int[] dest) {
     int[] verticalDelta = this.calcDeltaArray(this.vertical, width);
-
     int[] horizontalDelta = this.calcDeltaArray(this.horizontal, height);
 
     for (int x = 0; x < width; ++x) {
       for (int y = 0; y < height; ++y) {
         int ny = (y + verticalDelta[x] + height) % height;
         int nx = (x + horizontalDelta[ny] + width) % width;
-        dest.setRGB(nx, ny, src.getRGB(x, y));
+        dest[ny * width + nx] = src[y * width + x];
       }
     }
-
-    return dest;
   }
 
   /**

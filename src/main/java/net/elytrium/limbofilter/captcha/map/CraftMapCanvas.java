@@ -17,6 +17,7 @@
 
 package net.elytrium.limbofilter.captcha.map;
 
+import com.velocitypowered.api.network.ProtocolVersion;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
@@ -24,44 +25,40 @@ import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 
 public class CraftMapCanvas {
 
-  private final byte[] canvas;
-  private final byte[][] canvas17; // 1.7.x canvas
+  private final int[] canvas;
 
   public CraftMapCanvas() {
-    this.canvas = new byte[MapData.MAP_SIZE];
-    Arrays.fill(this.canvas, (byte) 0);
-
-    this.canvas17 = new byte[MapData.MAP_DIM_SIZE][MapData.MAP_DIM_SIZE];
-    for (int x = 0; x < MapData.MAP_DIM_SIZE; ++x) {
-      for (int y = 0; y < MapData.MAP_DIM_SIZE; ++y) {
-        this.canvas17[x][y] = 0;
-      }
-    }
+    this.canvas = new int[MapData.MAP_SIZE];
+    Arrays.fill(this.canvas, 0);
   }
 
   public CraftMapCanvas(CraftMapCanvas another) {
-    byte[] canvasBuf = new byte[MapData.MAP_SIZE];
+    int[] canvasBuf = new int[MapData.MAP_SIZE];
     System.arraycopy(another.getCanvas(), 0, canvasBuf, 0, MapData.MAP_SIZE);
     this.canvas = canvasBuf;
-
-    this.canvas17 = Arrays.stream(another.getCanvas17()).map(byte[]::clone).toArray(byte[][]::new);
   }
 
-  public void setPixel(int x, int y, byte color) {
+  public void setPixel(int x, int y, int color) {
     if (x >= 0 && y >= 0 && x < MapData.MAP_DIM_SIZE && y < MapData.MAP_DIM_SIZE) {
       this.canvas[y * MapData.MAP_DIM_SIZE + x] = color;
-      this.canvas17[x][y] = color;
     }
   }
 
   public void drawImage(int x, int y, BufferedImage image) {
-    int[] bytes = MapPalette.imageToBytes(image);
-    int width = image.getWidth(null);
-    int height = image.getHeight(null);
+    this.drawImageCraft(x, y, MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION));
+  }
+
+  public void drawImage(int x, int y, int[] image) {
+    this.drawImageCraft(x, y, MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION));
+  }
+
+  private void drawImageCraft(int x, int y, int[] craftBytes) {
+    int width = MapData.MAP_DIM_SIZE;
+    int height = MapData.MAP_DIM_SIZE;
 
     for (int x2 = 0; x2 < width; ++x2) {
       for (int y2 = 0; y2 < height; ++y2) {
-        byte color = (byte) bytes[y2 * width + x2];
+        int color = craftBytes[y2 * width + x2];
         if (color != MapPalette.TRANSPARENT) {
           this.setPixel(x + x2, y + y2, color);
         }
@@ -69,24 +66,33 @@ public class CraftMapCanvas {
     }
   }
 
-  public MapData getMapData() {
-    return new MapData(this.canvas);
+  public MapData getMapData(MapPalette.MapVersion version) {
+    int[] fixedCanvas = MapPalette.convertImage(this.canvas, version);
+    byte[] canvas = new byte[MapData.MAP_SIZE];
+    for (int i = 0; i < MapData.MAP_SIZE; ++i) {
+      canvas[i] = (byte) fixedCanvas[i];
+    }
+
+    return new MapData(canvas);
   }
 
   public MapData[] getMaps17Data() {
     MapData[] maps = new MapData[MapData.MAP_DIM_SIZE];
+    int[] fixedCanvas = MapPalette.convertImage(this.canvas, MapPalette.MapVersion.MINIMUM_VERSION);
+
     for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
-      maps[i] = new MapData(i, this.canvas17[i]);
+      byte[] canvas = new byte[MapData.MAP_DIM_SIZE];
+      for (int j = 0; j < MapData.MAP_DIM_SIZE; ++j) {
+        canvas[j] = (byte) fixedCanvas[i * MapData.MAP_DIM_SIZE + j];
+      }
+
+      maps[i] = new MapData(i, canvas);
     }
 
     return maps;
   }
 
-  public byte[] getCanvas() {
+  public int[] getCanvas() {
     return this.canvas;
-  }
-
-  public byte[][] getCanvas17() {
-    return this.canvas17;
   }
 }

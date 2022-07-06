@@ -30,8 +30,9 @@ import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.ConvolveOp;
-import java.awt.image.Kernel;
+import java.awt.image.DataBufferInt;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.Settings;
@@ -41,26 +42,66 @@ public class CaptchaPainter {
   private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
 
   private final ThreadLocalRandom random = ThreadLocalRandom.current();
+  private final List<CaptchaEffect> effects = new LinkedList<>();
+  private final Color curveColor = new Color(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLOR, 16));
 
-  public BufferedImage drawCaptcha(Font font, Color foreground, String text) {
-    BufferedImage image = this.createImage();
-    Graphics2D graphics = (Graphics2D) image.getGraphics();
+  public CaptchaPainter() {
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
+      RippleEffect.AxisConfig vertical = new RippleEffect.AxisConfig(
+          this.random.nextDouble() * 2 * Math.PI, (1 + this.random.nextDouble() * 2) * Math.PI,
+          MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_HEIGHT
+      );
+      RippleEffect.AxisConfig horizontal = new RippleEffect.AxisConfig(
+          this.random.nextDouble() * 2 * Math.PI, (2 + this.random.nextDouble() * 2) * Math.PI,
+          MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_WIDTH
+      );
+      this.effects.add(new RippleEffect(vertical, horizontal));
+    }
+
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE) {
+      this.effects.add(new OutlineOverrideEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));
+    }
+  }
+
+  public int[] drawCaptcha(Font font, Color foreground, String text) {
+    BufferedImage bufferedImage = this.createImage();
+    Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
 
     this.drawText(this.configureGraphics(graphics, font, foreground), text);
-
     graphics.dispose();
 
-    image = this.postProcess(image);
-    graphics = (Graphics2D) image.getGraphics();
+    int[] image = ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
+    for (CaptchaEffect e : this.effects) {
+      int[] newImage = new int[image.length];
+      e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, newImage);
+      image = newImage;
+    }
 
-    graphics.setColor(foreground);
+    return image;
+  }
+
+  public int[] drawCurves() {
+    BufferedImage bufferedImage = this.createImage();
+    Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
+    graphics.setColor(this.curveColor);
+
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; ++i) {
       this.addCurve(graphics);
     }
 
-    graphics.dispose();
+    return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
+  }
 
-    return image;
+  private void fillBlurArray(float[] blurArray) {
+    float sum = 0;
+    for (int i = 0; i < blurArray.length; ++i) {
+      blurArray[i] = this.random.nextFloat();
+      sum += blurArray[i];
+    }
+
+    for (int i = 0; i < blurArray.length; ++i) {
+      blurArray[i] /= sum;
+    }
   }
 
   private Graphics2D configureGraphics(Graphics2D graphics, Font font, Color foreground) {
@@ -69,7 +110,6 @@ public class CaptchaPainter {
     graphics.setColor(foreground);
     graphics.setBackground(TRANSPARENT);
     graphics.setFont(font);
-
     graphics.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);
 
     return graphics;
@@ -159,42 +199,8 @@ public class CaptchaPainter {
     }
   }
 
-  private BufferedImage postProcess(BufferedImage image) {
-    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
-      Rippler.AxisConfig vertical = new Rippler.AxisConfig(
-          this.random.nextDouble() * 2 * Math.PI, (1 + this.random.nextDouble() * 2) * Math.PI, image.getHeight() / 10.0
-      );
-      Rippler.AxisConfig horizontal = new Rippler.AxisConfig(
-          this.random.nextDouble() * 2 * Math.PI, (2 + this.random.nextDouble() * 2) * Math.PI, image.getWidth() / 100.0
-      );
-
-      image = new Rippler(vertical, horizontal).filter(image, this.createImage());
-    }
-
-    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_BLUR) {
-      float[] blurArray = new float[9];
-      this.fillBlurArray(blurArray);
-
-      image = new ConvolveOp(new Kernel(3, 3, blurArray), ConvolveOp.EDGE_NO_OP, null).filter(image, this.createImage());
-    }
-
-    return image;
-  }
-
   private BufferedImage createImage() {
     return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
-  }
-
-  private void fillBlurArray(float[] blurArray) {
-    float sum = 0;
-    for (int i = 0; i < blurArray.length; ++i) {
-      blurArray[i] = this.random.nextFloat();
-      sum += blurArray[i];
-    }
-
-    for (int i = 0; i < blurArray.length; ++i) {
-      blurArray[i] /= sum;
-    }
   }
 
   private void addCurve(Graphics2D graphics) {

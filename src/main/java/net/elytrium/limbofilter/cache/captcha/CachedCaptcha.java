@@ -19,8 +19,12 @@ package net.elytrium.limbofilter.cache.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
+import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
+import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
@@ -45,7 +49,7 @@ public class CachedCaptcha {
     this.lastHolders = new CaptchaHolder[threadsCount];
   }
 
-  public void addCaptchaPacket(String answer, MinecraftPacket[] mapDataPackets17, MinecraftPacket mapDataPacket) {
+  public void addCaptchaPacket(String answer, MinecraftPacket[] mapDataPackets17, Function<MapPalette.MapVersion, MinecraftPacket> mapDataPacket) {
     // It takes time to stop the generator thread, so we're stopping adding new packets there too.
     if (this.disposed) {
       return;
@@ -62,22 +66,33 @@ public class CachedCaptcha {
     }
   }
 
-  private CaptchaHolder getCaptchaHolder(String answer, CaptchaHolder next, MinecraftPacket[] mapDataPackets17, MinecraftPacket mapDataPacket) {
+  private CaptchaHolder getCaptchaHolder(String answer, CaptchaHolder next, MinecraftPacket[] mapDataPackets17,
+                                         Function<MapPalette.MapVersion, MinecraftPacket> mapDataPacket) {
+    EnumMap<ProtocolVersion, MinecraftPacket[]> mapDataPacketEnum = new EnumMap<>(ProtocolVersion.class);
+    LimboFactory limboFactory = this.plugin.getLimboFactory();
+    for (MapPalette.MapVersion version : MapPalette.MapVersion.values()) {
+      if (version.getVersions().stream().anyMatch(protocolVersion ->
+          limboFactory.getPrepareMinVersion().compareTo(protocolVersion) <= 0 && limboFactory.getPrepareMaxVersion().compareTo(protocolVersion) >= 0)) {
+        MinecraftPacket packet = mapDataPacket.apply(version);
+        version.getVersions().forEach(protocolVersion -> mapDataPacketEnum.put(protocolVersion, new MinecraftPacket[]{packet}));
+      }
+    }
+
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
       PreparedPacket prepared = this.plugin.getLimboFactory().createPreparedPacket();
       return new CaptchaHolder(answer, next, prepared
           .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
-          .prepare(mapDataPacket, ProtocolVersion.MINECRAFT_1_8)
+          .prepare(key -> mapDataPacketEnum.get(key)[0], ProtocolVersion.MINECRAFT_1_8)
           .build()
       );
     } else {
-      return new CaptchaHolder(answer, next, mapDataPackets17, mapDataPacket);
+      return new CaptchaHolder(answer, next, mapDataPackets17, mapDataPacketEnum);
     }
   }
 
   public void build() {
     int lastHolderIndex = this.firstHolders.length - 1;
-    for (int i = 0; i < lastHolderIndex;) {
+    for (int i = 0; i < lastHolderIndex; ) {
       this.lastHolders[i].setNext(this.firstHolders[++i]);
     }
 
@@ -101,12 +116,22 @@ public class CachedCaptcha {
 
   public void dispose() {
     this.disposed = true;
-    CaptchaHolder next = this.firstHolder;
-
-    do {
-      CaptchaHolder currentHolder = next;
-      next = next.getNext();
-      currentHolder.release();
-    } while (next != this.lastHolder);
+    if (this.firstHolder == null) {
+      for (CaptchaHolder holder : this.firstHolders) {
+        CaptchaHolder next = holder;
+        do {
+          CaptchaHolder currentHolder = next;
+          next = next.getNext();
+          currentHolder.release();
+        } while (next != null);
+      }
+    } else {
+      CaptchaHolder next = this.firstHolder;
+      do {
+        CaptchaHolder currentHolder = next;
+        next = next.getNext();
+        currentHolder.release();
+      } while (next != this.lastHolder);
+    }
   }
 }

@@ -188,14 +188,18 @@ public class Settings extends YamlConfig {
       public boolean USE_STANDARD_FONTS = true;
       public double LETTER_SPACING = 1.5;
       public int FONT_SIZE = 50;
-      public boolean FONT_OUTLINE = false;
+      public boolean FONT_OUTLINE = true;
       public boolean FONT_ROTATE = true;
       public boolean FONT_RIPPLE = true;
-      public boolean FONT_BLUR = true;
+      public boolean FONT_OUTLINE_OVERRIDE = true;
+      public double FONT_RIPPLE_AMPLITUDE_WIDTH = 100.0;
+      public double FONT_RIPPLE_AMPLITUDE_HEIGHT = 10.0;
+      public int FONT_OUTLINE_OVERRIDE_RADIUS = 1;
       @Comment("Set 0 to disable")
-      public int CURVE_SIZE = 1;
+      public int CURVE_SIZE = 2;
       @Comment("Set 0 to disable")
       public int CURVES_AMOUNT = 3;
+      public String CURVES_COLOR = "000000";
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
       public String PATTERN = "abcdefghijklmnopqrtuvwxyz1234567890";

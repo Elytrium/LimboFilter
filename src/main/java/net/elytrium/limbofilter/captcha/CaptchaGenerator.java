@@ -17,6 +17,7 @@
 
 package net.elytrium.limbofilter.captcha;
 
+import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import java.awt.Color;
 import java.awt.Font;
@@ -35,8 +36,10 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Function;
 import javax.imageio.ImageIO;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
+import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
@@ -45,8 +48,7 @@ import net.elytrium.limbofilter.captcha.painter.CaptchaPainter;
 
 public class CaptchaGenerator {
 
-  private static final CaptchaPainter painter = new CaptchaPainter();
-
+  private final CaptchaPainter painter = new CaptchaPainter();
   private final List<CraftMapCanvas> backplates = new ArrayList<>();
   private final List<Font> fonts = new LinkedList<>();
   private final List<Color> colors = new LinkedList<>();
@@ -138,6 +140,7 @@ public class CaptchaGenerator {
     if (this.shouldStop) {
       return;
     }
+    this.shouldStop = true;
 
     if (this.tempCachedCaptcha != null) {
       this.tempCachedCaptcha.dispose();
@@ -173,6 +176,7 @@ public class CaptchaGenerator {
       this.tempCachedCaptcha = null;
       this.cachedCaptcha.build();
       this.executor.shutdown();
+      this.shouldStop = false;
     });
   }
 
@@ -187,19 +191,27 @@ public class CaptchaGenerator {
         this.backplatesIterator.set(this.backplates.listIterator());
       }
 
-      map = this.backplatesIterator.get().next();
+      map = new CraftMapCanvas(this.backplatesIterator.get().next());
     }
 
     if (!this.fontIterator.get().hasNext()) {
       this.fontIterator.set(this.fonts.listIterator());
     }
 
-    map.drawImage(0, 0, painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
+    map.drawImage(0, 0, this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
+    map.drawImage(0, 0, this.painter.drawCurves());
 
-    MinecraftPacket packet = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData());
-    MinecraftPacket[] packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE];
-    for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
-      packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMaps17Data()[i]);
+    Function<MapPalette.MapVersion, MinecraftPacket> packet
+        = mapVersion -> (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData(mapVersion));
+    MinecraftPacket[] packets17;
+    if (this.plugin.getLimboFactory().getPrepareMinVersion().compareTo(ProtocolVersion.MINECRAFT_1_7_6) <= 0) {
+      packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE];
+      MapData[] maps17Data = map.getMaps17Data();
+      for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
+        packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, maps17Data[i]);
+      }
+    } else {
+      packets17 = null;
     }
 
     cachedCaptcha.addCaptchaPacket(answer, packets17, packet);
