@@ -211,7 +211,7 @@ public class CaptchaGenerator {
         packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, maps17Data[i]);
       }
     } else {
-      packets17 = null;
+      packets17 = new MinecraftPacket[0];
     }
 
     cachedCaptcha.addCaptchaPacket(answer, packets17, packet);
