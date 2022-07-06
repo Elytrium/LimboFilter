@@ -37,6 +37,7 @@ public class CachedCaptcha {
   private final CaptchaHolder[] firstHolders;
   private final CaptchaHolder[] lastHolders;
 
+  @MonotonicNonNull
   private CaptchaHolder firstHolder;
   @MonotonicNonNull
   private CaptchaHolder lastHolder;
@@ -118,20 +119,18 @@ public class CachedCaptcha {
     this.disposed = true;
     if (this.firstHolder == null) {
       for (CaptchaHolder holder : this.firstHolders) {
-        CaptchaHolder next = holder;
-        do {
-          CaptchaHolder currentHolder = next;
-          next = next.getNext();
-          currentHolder.release();
-        } while (next != null);
+        this.dispose(holder);
       }
     } else {
-      CaptchaHolder next = this.firstHolder;
-      do {
-        CaptchaHolder currentHolder = next;
-        next = next.getNext();
-        currentHolder.release();
-      } while (next != this.lastHolder);
+      this.dispose(this.firstHolder);
     }
+  }
+
+  private void dispose(CaptchaHolder next) {
+    do {
+      CaptchaHolder currentHolder = next;
+      next = next.getNext();
+      currentHolder.release();
+    } while (next != null);
   }
 }
