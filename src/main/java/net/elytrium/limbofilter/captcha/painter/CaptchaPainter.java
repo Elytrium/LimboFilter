@@ -19,16 +19,10 @@ package net.elytrium.limbofilter.captcha.painter;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.font.GlyphVector;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.CubicCurve2D;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.LinkedList;
@@ -38,8 +32,6 @@ import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limbofilter.Settings;
 
 public class CaptchaPainter {
-
-  private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
 
   private final ThreadLocalRandom random = ThreadLocalRandom.current();
   private final List<CaptchaEffect> effects = new LinkedList<>();
@@ -58,19 +50,13 @@ public class CaptchaPainter {
       this.effects.add(new RippleEffect(vertical, horizontal));
     }
 
-    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE) {
-      this.effects.add(new OutlineOverrideEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));
-    }
+    this.effects.add(new OutlineEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));
   }
 
-  public int[] drawCaptcha(Font font, Color foreground, String text) {
-    BufferedImage bufferedImage = this.createImage();
-    Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
+  public int[] drawCaptcha(RenderedFont font, byte foreground, String text) {
+    int[] image = new int[MapData.MAP_SIZE];
+    this.drawText(image, font, foreground, text);
 
-    this.drawText(this.configureGraphics(graphics, font, foreground), text);
-    graphics.dispose();
-
-    int[] image = ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
     for (CaptchaEffect e : this.effects) {
       int[] newImage = new int[image.length];
       e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, newImage);
@@ -92,110 +78,38 @@ public class CaptchaPainter {
     return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
   }
 
-  private void fillBlurArray(float[] blurArray) {
-    float sum = 0;
-    for (int i = 0; i < blurArray.length; ++i) {
-      blurArray[i] = this.random.nextFloat();
-      sum += blurArray[i];
-    }
+  private void drawText(int[] image, RenderedFont font, byte color, String text) {
+    int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X;
+    int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y;
+    int x = offsetX;
+    int y = offsetY;
+    int spacingX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_X;
+    int spacingY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_Y;
 
-    for (int i = 0; i < blurArray.length; ++i) {
-      blurArray[i] /= sum;
-    }
-  }
+    for (char c : text.toCharArray()) {
+      RenderedFont.Glyph glyph = font.getGlyph(c);
+      boolean[] data = glyph.getGlyphData();
 
-  private Graphics2D configureGraphics(Graphics2D graphics, Font font, Color foreground) {
-    this.configureGraphicsQuality(graphics);
+      int width = glyph.getWidth();
+      int height = glyph.getHeight();
 
-    graphics.setColor(foreground);
-    graphics.setBackground(TRANSPARENT);
-    graphics.setFont(font);
-    graphics.clearRect(0, 0, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);
-
-    return graphics;
-  }
-
-  private void configureGraphicsQuality(Graphics2D graphics) {
-    graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-    graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-    graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    graphics.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-    graphics.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
-    graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-    graphics.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-    graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-  }
-
-  private void drawText(Graphics2D graphics, String text) {
-    GlyphVector vector = graphics.getFont().createGlyphVector(graphics.getFontRenderContext(), text);
-
-    this.transform(vector);
-
-    Rectangle bounds = vector.getPixelBounds(null, 0, MapData.MAP_DIM_SIZE);
-    float boundsWidth = (float) bounds.getWidth();
-    float boundsHeight = (float) bounds.getHeight();
-
-    boolean outlineEnabled = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE;
-
-    float wr = MapData.MAP_DIM_SIZE / boundsWidth * (this.random.nextFloat() / 20 + (outlineEnabled ? 0.89f : 0.92f)) * 1;
-    float hr = MapData.MAP_DIM_SIZE / boundsHeight * (this.random.nextFloat() / 20 + (outlineEnabled ? 0.68f : 0.75f)) * 1;
-    graphics.translate((MapData.MAP_DIM_SIZE - boundsWidth * wr) / 2, (MapData.MAP_DIM_SIZE - boundsHeight * hr) / 2);
-    graphics.scale(wr, hr);
-
-    float boundsX = (float) bounds.getX();
-    float boundsY = (float) bounds.getY();
-    if (outlineEnabled) {
-      graphics.draw(
-          vector.getOutline(
-              Math.signum(this.random.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 200 - boundsX,
-              Math.signum(this.random.nextFloat() - 0.5f) * 1 * MapData.MAP_DIM_SIZE / 70 + MapData.MAP_DIM_SIZE - boundsY
-          )
-      );
-    }
-
-    graphics.drawGlyphVector(vector, -boundsX, MapData.MAP_DIM_SIZE - boundsY);
-  }
-
-  private void transform(GlyphVector vector) {
-    int glyphNum = vector.getNumGlyphs();
-
-    Point2D prePos = null;
-    Rectangle2D preBounds = null;
-
-    double rotateCur = (this.random.nextDouble() - 0.5) * Math.PI / 8;
-    double rotateStep = Math.signum(rotateCur) * (this.random.nextDouble() * 3 * Math.PI / 8 / glyphNum);
-    boolean rotateEnabled = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_ROTATE;
-
-    for (int i = 0; i < glyphNum; ++i) {
-      if (rotateEnabled) {
-        AffineTransform transform = AffineTransform.getRotateInstance(rotateCur);
-        if (this.random.nextDouble() < 0.25) {
-          rotateStep *= -1;
+      for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+          if (data[j * width + i]) {
+            int localX = i + x;
+            int localY = j + y;
+            if (localX >= 0 && localY >= y && localX < MapData.MAP_DIM_SIZE && localY < MapData.MAP_DIM_SIZE) {
+              image[localY * MapData.MAP_DIM_SIZE + localX] = color;
+            }
+          }
         }
-
-        rotateCur += rotateStep;
-        vector.setGlyphTransform(i, transform);
       }
 
-      Point2D pos = vector.getGlyphPosition(i);
-      double posX = pos.getX();
-      double posY = pos.getY();
-      Rectangle2D bounds = vector.getGlyphVisualBounds(i).getBounds2D();
-      double boundsX = bounds.getX();
-
-      Point2D newPos;
-      if (prePos == null) {
-        newPos = new Point2D.Double(posX - boundsX, posY);
-      } else {
-        newPos = new Point2D.Double(
-            preBounds.getMaxX() + posX - boundsX - Math.min(preBounds.getWidth(), bounds.getWidth())
-                * (this.random.nextDouble() / 20 + (rotateEnabled ? 0.27 : 0.1)),
-            posY
-        );
+      x += spacingX + width;
+      if (x > MapData.MAP_DIM_SIZE - offsetX) {
+        x = offsetX;
+        y += spacingY + (height / 2);
       }
-      vector.setGlyphPosition(i, newPos);
-      prePos = newPos;
-      preBounds = vector.getGlyphVisualBounds(i).getBounds2D();
     }
   }
 

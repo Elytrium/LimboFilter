@@ -19,12 +19,12 @@ package net.elytrium.limbofilter.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.font.FontRenderContext;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -45,13 +45,14 @@ import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.cache.captcha.CachedCaptcha;
 import net.elytrium.limbofilter.captcha.map.CraftMapCanvas;
 import net.elytrium.limbofilter.captcha.painter.CaptchaPainter;
+import net.elytrium.limbofilter.captcha.painter.RenderedFont;
 
 public class CaptchaGenerator {
 
   private final CaptchaPainter painter = new CaptchaPainter();
   private final List<CraftMapCanvas> backplates = new ArrayList<>();
-  private final List<Font> fonts = new LinkedList<>();
-  private final List<Color> colors = new LinkedList<>();
+  private final List<RenderedFont> fonts = new LinkedList<>();
+  private final List<Byte> colors = new LinkedList<>();
   private final LimboFilter plugin;
 
   private ThreadPoolExecutor executor;
@@ -59,8 +60,8 @@ public class CaptchaGenerator {
   private CachedCaptcha cachedCaptcha;
   private CachedCaptcha tempCachedCaptcha;
   private ThreadLocal<Iterator<CraftMapCanvas>> backplatesIterator;
-  private ThreadLocal<Iterator<Font>> fontIterator;
-  private ThreadLocal<Iterator<Color>> colorIterator;
+  private ThreadLocal<Iterator<RenderedFont>> fontIterator;
+  private ThreadLocal<Iterator<Byte>> colorIterator;
 
   public CaptchaGenerator(LimboFilter plugin) {
     this.plugin = plugin;
@@ -81,12 +82,7 @@ public class CaptchaGenerator {
 
     this.fonts.clear();
 
-    int fontSize = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_SIZE;
     Map<TextAttribute, Object> textSettings = Map.of(
-        TextAttribute.TRACKING,
-        Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_SPACING,
-        TextAttribute.SIZE,
-        (float) fontSize,
         TextAttribute.STRIKETHROUGH,
         Settings.IMP.MAIN.CAPTCHA_GENERATOR.STRIKETHROUGH,
         TextAttribute.UNDERLINE,
@@ -94,9 +90,9 @@ public class CaptchaGenerator {
     );
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.USE_STANDARD_FONTS) {
-      this.fonts.add(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
-      this.fonts.add(new Font(Font.SERIF, Font.PLAIN, fontSize).deriveFont(textSettings));
-      this.fonts.add(new Font(Font.MONOSPACED, Font.PLAIN, fontSize).deriveFont(textSettings));
+      this.fonts.add(this.getRenderedFont(new Font(Font.SANS_SERIF, Font.PLAIN, 56).deriveFont(textSettings)));
+      this.fonts.add(this.getRenderedFont(new Font(Font.SERIF, Font.PLAIN, 56).deriveFont(textSettings)));
+      this.fonts.add(this.getRenderedFont(new Font(Font.MONOSPACED, Font.PLAIN, 56).deriveFont(textSettings)));
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONTS_PATH != null) {
@@ -106,7 +102,7 @@ public class CaptchaGenerator {
             LimboFilter.getLogger().info("Loading font " + fontFile + ".");
             Font font = Font.createFont(Font.TRUETYPE_FONT, this.plugin.getFile(fontFile));
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
-            this.fonts.add(font.deriveFont(textSettings));
+            this.fonts.add(this.getRenderedFont(font.deriveFont(textSettings)));
           }
         } catch (FontFormatException | IOException e) {
           e.printStackTrace();
@@ -114,11 +110,26 @@ public class CaptchaGenerator {
       });
     }
 
-    Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.forEach(e -> this.colors.add(new Color(Integer.parseInt(e, 16))));
+    Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.forEach(e ->
+        this.colors.add(MapPalette.tryFastMatchColor(Integer.parseInt(e, 16) | 0xFF000000, ProtocolVersion.MAXIMUM_VERSION)));
 
     this.backplatesIterator = ThreadLocal.withInitial(this.backplates::listIterator);
     this.fontIterator = ThreadLocal.withInitial(this.fonts::listIterator);
     this.colorIterator = ThreadLocal.withInitial(this.colors::listIterator);
+  }
+
+  private RenderedFont getRenderedFont(Font font) {
+    return new RenderedFont(font,
+        new FontRenderContext(null, true, true),
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.PATTERN.toCharArray(),
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_WIDTH,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_HEIGHT,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE,
+        (float) Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_RATE,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OFFSET_X,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OFFSET_Y,
+        1.35
+    );
   }
 
   private BufferedImage resizeIfNeeded(BufferedImage image) {
@@ -198,7 +209,7 @@ public class CaptchaGenerator {
       this.fontIterator.set(this.fonts.listIterator());
     }
 
-    map.drawImage(0, 0, this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
+    map.drawImageCraft(0, 0, this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
     map.drawImage(0, 0, this.painter.drawCurves());
 
     Function<MapPalette.MapVersion, MinecraftPacket> packet
@@ -252,7 +263,7 @@ public class CaptchaGenerator {
     return new String(text);
   }
 
-  private Color nextColor() {
+  private Byte nextColor() {
     if (!this.colorIterator.get().hasNext()) {
       this.colorIterator.set(this.colors.listIterator());
     }

@@ -186,14 +186,20 @@ public class Settings extends YamlConfig {
       public List<String> FONTS_PATH = List.of("");
       @Comment("Use standard fonts(SANS_SERIF/SERIF/MONOSPACED), use false only if you provide fonts path")
       public boolean USE_STANDARD_FONTS = true;
-      public double LETTER_SPACING = 1.5;
-      public int FONT_SIZE = 50;
+      public int LETTER_OFFSET_X = 8;
+      public int LETTER_OFFSET_Y = 0;
+      public int FONT_LETTER_SPACING_X = 4;
+      public int FONT_LETTER_SPACING_Y = 0;
+      public int FONT_LETTER_WIDTH = 34;
+      public int FONT_LETTER_HEIGHT = 128;
       public boolean FONT_OUTLINE = true;
       public boolean FONT_ROTATE = true;
       public boolean FONT_RIPPLE = true;
-      public boolean FONT_OUTLINE_OVERRIDE = true;
       public double FONT_RIPPLE_AMPLITUDE_WIDTH = 100.0;
       public double FONT_RIPPLE_AMPLITUDE_HEIGHT = 10.0;
+      public double FONT_OUTLINE_RATE = 1.25;
+      public int FONT_OUTLINE_OFFSET_X = -4;
+      public int FONT_OUTLINE_OFFSET_Y = 4;
       public int FONT_OUTLINE_OVERRIDE_RADIUS = 1;
       @Comment("Set 0 to disable")
       public int CURVE_SIZE = 2;

@@ -52,7 +52,7 @@ public class CraftMapCanvas {
     this.drawImageCraft(x, y, MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION));
   }
 
-  private void drawImageCraft(int x, int y, int[] craftBytes) {
+  public void drawImageCraft(int x, int y, int[] craftBytes) {
     int width = MapData.MAP_DIM_SIZE;
     int height = MapData.MAP_DIM_SIZE;
 

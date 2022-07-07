@@ -17,20 +17,20 @@
 
 package net.elytrium.limbofilter.captcha.painter;
 
-public class OutlineOverrideEffect implements CaptchaEffect {
-  private final int blurRadius;
+public class OutlineEffect implements CaptchaEffect {
+  private final int borderRadius;
 
-  public OutlineOverrideEffect(int blurRadius) {
-    this.blurRadius = blurRadius;
+  public OutlineEffect(int borderRadius) {
+    this.borderRadius = borderRadius;
   }
 
   public void filter(int width, int height, int[] src, int[] dest) {
-    for (int x = this.blurRadius; x < height - this.blurRadius; x++) {
-      for (int y = this.blurRadius; y < width - this.blurRadius; y++) {
+    for (int x = this.borderRadius; x < height - this.borderRadius; x++) {
+      for (int y = this.borderRadius; y < width - this.borderRadius; y++) {
         if (src[y * width + x] != 0) {
           boolean found = false;
-          for (int blurX = x - this.blurRadius; blurX <= x + this.blurRadius; blurX++) {
-            for (int blurY = y - this.blurRadius; blurY <= y + this.blurRadius; blurY++) {
+          for (int blurX = x - this.borderRadius; blurX <= x + this.borderRadius; blurX++) {
+            for (int blurY = y - this.borderRadius; blurY <= y + this.borderRadius; blurY++) {
               if (src[blurY * width + blurX] == 0) {
                 found = true;
                 break;
@@ -42,7 +42,7 @@ public class OutlineOverrideEffect implements CaptchaEffect {
           }
 
           if (found) {
-            dest[y * width + x] = src[y * width + x] & 0x80808080;
+            dest[y * width + x] = src[y * width + x] & ~0b11;
           } else {
             dest[y * width + x] = src[y * width + x];
           }
