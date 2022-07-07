@@ -47,7 +47,7 @@ public class CaptchaPainter {
           this.random.nextDouble() * 2 * Math.PI, (2 + this.random.nextDouble() * 2) * Math.PI,
           MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_WIDTH
       );
-      this.effects.add(new RippleEffect(vertical, horizontal));
+      this.effects.add(new RippleEffect(vertical, horizontal, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE));
     }
 
     this.effects.add(new OutlineEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));

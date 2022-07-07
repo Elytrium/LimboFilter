@@ -25,16 +25,16 @@ package net.elytrium.limbofilter.captcha.painter;
  */
 public class RippleEffect implements CaptchaEffect {
 
-  private final AxisConfig vertical;
-  private final AxisConfig horizontal;
+  private final int[] verticalDelta;
+  private final int[] horizontalDelta;
 
   /**
    * @param vertical   config to calculate waving deltas from x axis (so to modify y values), not null
    * @param horizontal config to calculate waving deltas from y axis (so to modify xvalues), not null
    */
-  public RippleEffect(AxisConfig vertical, AxisConfig horizontal) {
-    this.vertical = vertical;
-    this.horizontal = horizontal;
+  public RippleEffect(AxisConfig vertical, AxisConfig horizontal, int width, int height) {
+    this.verticalDelta = this.calcDeltaArray(vertical, width);
+    this.horizontalDelta = this.calcDeltaArray(horizontal, height);
   }
 
   /**
@@ -44,13 +44,10 @@ public class RippleEffect implements CaptchaEffect {
    * @param dest to hold the result, not null
    */
   public void filter(int width, int height, int[] src, int[] dest) {
-    int[] verticalDelta = this.calcDeltaArray(this.vertical, width);
-    int[] horizontalDelta = this.calcDeltaArray(this.horizontal, height);
-
     for (int x = 0; x < width; ++x) {
       for (int y = 0; y < height; ++y) {
-        int ny = (y + verticalDelta[x] + height) % height;
-        int nx = (x + horizontalDelta[ny] + width) % width;
+        int ny = (y + this.verticalDelta[x] + height) % height;
+        int nx = (x + this.horizontalDelta[ny] + width) % width;
         dest[ny * width + nx] = src[y * width + x];
       }
     }
