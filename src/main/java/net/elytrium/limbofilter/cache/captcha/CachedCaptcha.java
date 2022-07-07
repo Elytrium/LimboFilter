@@ -19,7 +19,6 @@ package net.elytrium.limbofilter.cache.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
-import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import net.elytrium.limboapi.api.LimboFactory;
@@ -69,13 +68,13 @@ public class CachedCaptcha {
 
   private CaptchaHolder getCaptchaHolder(String answer, CaptchaHolder next, MinecraftPacket[] mapDataPackets17,
                                          Function<MapPalette.MapVersion, MinecraftPacket> mapDataPacket) {
-    EnumMap<ProtocolVersion, MinecraftPacket[]> mapDataPacketEnum = new EnumMap<>(ProtocolVersion.class);
+    MinecraftPacket[][] mapDataPacketEnum = new MinecraftPacket[ProtocolVersion.values().length][1];
     LimboFactory limboFactory = this.plugin.getLimboFactory();
     for (MapPalette.MapVersion version : MapPalette.MapVersion.values()) {
       if (version.getVersions().stream().anyMatch(protocolVersion ->
           limboFactory.getPrepareMinVersion().compareTo(protocolVersion) <= 0 && limboFactory.getPrepareMaxVersion().compareTo(protocolVersion) >= 0)) {
         MinecraftPacket packet = mapDataPacket.apply(version);
-        version.getVersions().forEach(protocolVersion -> mapDataPacketEnum.put(protocolVersion, new MinecraftPacket[]{packet}));
+        version.getVersions().forEach(protocolVersion -> mapDataPacketEnum[protocolVersion.ordinal()][0] = packet);
       }
     }
 
@@ -83,7 +82,7 @@ public class CachedCaptcha {
       PreparedPacket prepared = this.plugin.getLimboFactory().createPreparedPacket();
       return new CaptchaHolder(answer, next, prepared
           .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
-          .prepare(key -> mapDataPacketEnum.get(key)[0], ProtocolVersion.MINECRAFT_1_8)
+          .prepare(version -> mapDataPacketEnum[version.ordinal()][0], ProtocolVersion.MINECRAFT_1_8)
           .build()
       );
     } else {
