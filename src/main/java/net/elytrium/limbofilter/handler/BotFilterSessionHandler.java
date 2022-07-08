@@ -101,8 +101,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     if (this.state == CheckState.ONLY_CAPTCHA) {
       this.server.respawnPlayer(this.proxyPlayer);
       this.sendCaptcha();
-    } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED
-        || this.state == CheckState.CAPTCHA_POSITION) {
+    } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
+      this.sendFallingCheckPackets();
+      this.sendFallingCheckTitleAndChat();
+    } else if (this.state == CheckState.CAPTCHA_POSITION) {
       this.sendFallingCheckPackets();
     }
 
@@ -117,6 +119,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private void sendFallingCheckPackets() {
     this.player.writePacket(this.plugin.getPackets().getFallingCheckPackets());
+  }
+
+  private void sendFallingCheckTitleAndChat() {
+    this.player.writePacket(this.plugin.getPackets().getFallingCheckTitleAndChat());
   }
 
   @Override

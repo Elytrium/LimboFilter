@@ -40,6 +40,7 @@ import net.kyori.adventure.nbt.IntBinaryTag;
 public class CachedPackets {
 
   private PreparedPacket fallingCheckPackets;
+  private PreparedPacket fallingCheckTitleAndChat;
   private PreparedPacket[] captchaAttemptsPacket;
   private PreparedPacket captchaFailed;
   private PreparedPacket fallingCheckFailed;
@@ -58,8 +59,9 @@ public class CachedPackets {
 
     this.captchaAttemptsPacket = this.createCaptchaAttemptsPacket(limboFactory, packetFactory, strings.CHECKING_CAPTCHA_TITLE,
         strings.CHECKING_CAPTCHA_SUBTITLE, strings.CHECKING_CAPTCHA_CHAT, strings.CHECKING_WRONG_CAPTCHA_CHAT);
-    this.fallingCheckPackets =
-        this.createFallingCheckPackets(limboFactory, packetFactory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE, strings.CHECKING_CHAT);
+    this.fallingCheckPackets = this.createFallingCheckPackets(limboFactory, packetFactory);
+    this.fallingCheckTitleAndChat =
+        this.createFallingCheckTitleAndChatPackets(limboFactory, strings.CHECKING_TITLE, strings.CHECKING_SUBTITLE, strings.CHECKING_CHAT);
     this.captchaFailed = this.createDisconnectPacket(limboFactory, strings.CAPTCHA_FAILED_KICK);
     this.fallingCheckFailed = this.createDisconnectPacket(limboFactory, strings.FALLING_CHECK_FAILED_KICK);
     this.timesUp = this.createDisconnectPacket(limboFactory, strings.TIMES_UP);
@@ -163,8 +165,7 @@ public class CachedPackets {
     return preparedPacket;
   }
 
-  private PreparedPacket createFallingCheckPackets(LimboFactory limboFactory, PacketFactory packetFactory,
-                                                   String checkingTitle, String checkingSubtitle, String checkingChat) {
+  private PreparedPacket createFallingCheckPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     Settings.MAIN.FALLING_COORDS fallingCoords = Settings.IMP.MAIN.FALLING_COORDS;
 
     Settings.MAIN.COORDS coords = Settings.IMP.MAIN.COORDS;
@@ -178,6 +179,16 @@ public class CachedPackets {
         packetFactory, limboFactory.createVirtualChunk(fallingCoords.X >> 4, fallingCoords.Z >> 4)
     )).prepare(this.createUpdateViewPosition(packetFactory, fallingCoords.X, fallingCoords.Z), ProtocolVersion.MINECRAFT_1_14);
 
+    return preparedPacket.build();
+  }
+
+  private PreparedPacket createFallingCheckTitleAndChatPackets(LimboFactory limboFactory,
+                                                               String checkingTitle, String checkingSubtitle, String checkingChat) {
+    if ((Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() || Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) && checkingChat.isEmpty()) {
+      return null;
+    }
+
+    PreparedPacket preparedPacket = limboFactory.createPreparedPacket();
     if (!Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() && !Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) {
       this.createTitlePacket(preparedPacket, checkingTitle, checkingSubtitle);
     }
@@ -325,5 +336,9 @@ public class CachedPackets {
 
   public PreparedPacket getCaptchaNotReadyYet() {
     return this.captchaNotReadyYet;
+  }
+
+  public PreparedPacket getFallingCheckTitleAndChat() {
+    return this.fallingCheckTitleAndChat;
   }
 }
