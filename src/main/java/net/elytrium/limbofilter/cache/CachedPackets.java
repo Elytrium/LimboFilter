@@ -25,8 +25,6 @@ import com.velocitypowered.proxy.protocol.packet.chat.LegacyChat;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
 import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.chunk.VirtualChunk;
@@ -42,7 +40,7 @@ import net.kyori.adventure.nbt.IntBinaryTag;
 public class CachedPackets {
 
   private PreparedPacket fallingCheckPackets;
-  private List<PreparedPacket> captchaAttemptsPacket;
+  private PreparedPacket[] captchaAttemptsPacket;
   private PreparedPacket captchaFailed;
   private PreparedPacket fallingCheckFailed;
   private PreparedPacket timesUp;
@@ -52,7 +50,7 @@ public class CachedPackets {
   private PreparedPacket successfulBotFilterChat;
   private PreparedPacket successfulBotFilterDisconnect;
   private PreparedPacket noAbilities;
-  private List<PreparedPacket> experience;
+  private PreparedPacket[] experience;
   private PreparedPacket captchaNotReadyYet;
 
   public void createPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
@@ -84,16 +82,15 @@ public class CachedPackets {
     this.createChatPacket(this.captchaNotReadyYet, strings.CAPTCHA_NOT_READY_YET);
   }
 
-  private List<PreparedPacket> createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
-                                                           String checkingChat, String checkingTitle, String checkingSubtitle, String wrongCaptcha) {
-    List<PreparedPacket> packets = new ArrayList<>(Settings.IMP.MAIN.CAPTCHA_ATTEMPTS + 1);
-    packets.add(null);
+  private PreparedPacket[] createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
+                                                       String checkingChat, String checkingTitle, String checkingSubtitle, String wrongCaptcha) {
+    PreparedPacket[] packets = new PreparedPacket[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS + 1];
 
     for (int i = 1; i < Settings.IMP.MAIN.CAPTCHA_ATTEMPTS; ++i) {
       PreparedPacket packet = limboFactory.createPreparedPacket();
       this.createChatPacket(packet, MessageFormat.format(wrongCaptcha, i));
 
-      packets.add(packet
+      packets[i] = packet
           .prepare(
               this.createSetSlotPacket(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
@@ -103,11 +100,10 @@ public class CachedPackets {
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
               ), ProtocolVersion.MINECRAFT_1_17
           )
-          .build()
-      );
+          .build();
     }
 
-    packets.add(this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat)
+    packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS] = this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat)
         .prepare(
             this.createSetSlotPacket(
                 packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
@@ -117,7 +113,7 @@ public class CachedPackets {
                 packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
             ), ProtocolVersion.MINECRAFT_1_17
         )
-        .build());
+        .build();
 
     return packets;
   }
@@ -144,7 +140,7 @@ public class CachedPackets {
     }
   }
 
-  private void singleDispose(List<PreparedPacket> packets) {
+  private void singleDispose(PreparedPacket[] packets) {
     if (packets != null) {
       for (PreparedPacket packet : packets) {
         this.singleDispose(packet);
@@ -211,15 +207,14 @@ public class CachedPackets {
     return limboFactory.createPreparedPacket().prepare(packetFactory.createPlayerAbilitiesPacket((byte) 6, 0f, 0f)).build();
   }
 
-  private List<PreparedPacket> createExpPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
-    List<PreparedPacket> packets = new ArrayList<>();
-    long ticks = Settings.IMP.MAIN.FALLING_CHECK_TICKS;
+  private PreparedPacket[] createExpPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
+    int ticks = Settings.IMP.MAIN.FALLING_CHECK_TICKS;
+    PreparedPacket[] packets = new PreparedPacket[ticks];
     float expInterval = 0.01F;
     for (int i = 0; i < ticks; ++i) {
-      int percentage = (int) (i * 100 / ticks);
-      packets.add(
-          limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket(percentage * expInterval, percentage, 0)).build()
-      );
+      int percentage = i * 100 / ticks;
+      packets[i] =
+          limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket(percentage * expInterval, percentage, 0)).build();
     }
 
     return packets;
@@ -312,8 +307,12 @@ public class CachedPackets {
     return this.noAbilities;
   }
 
-  public List<PreparedPacket> getExperience() {
-    return this.experience;
+  public PreparedPacket getExperience(int tick) {
+    return this.experience[tick];
+  }
+
+  public PreparedPacket getLastExperience() {
+    return this.experience[this.experience.length - 1];
   }
 
   public PreparedPacket getFallingCheckPackets() {
@@ -321,7 +320,7 @@ public class CachedPackets {
   }
 
   public PreparedPacket getCaptchaAttemptsPacket(int attempt) {
-    return this.captchaAttemptsPacket.get(attempt);
+    return this.captchaAttemptsPacket[attempt];
   }
 
   public PreparedPacket getCaptchaNotReadyYet() {

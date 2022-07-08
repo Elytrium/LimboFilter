@@ -23,7 +23,6 @@ import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
 import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboSessionHandler;
@@ -31,7 +30,6 @@ import net.elytrium.limboapi.api.player.LimboPlayer;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
-import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
 import net.elytrium.limbofilter.stats.Statistics;
 
@@ -44,8 +42,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private final ProtocolVersion version;
   private final LimboFilter plugin;
   private final Statistics statistics;
-  private final CachedPackets packets;
-
   private final int validX;
   private final int validY;
   private final int validZ;
@@ -80,7 +76,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.plugin = plugin;
 
     this.statistics = this.plugin.getStatistics();
-    this.packets = this.plugin.getPackets();
 
     Settings.MAIN.FALLING_COORDS fallingCoords = Settings.IMP.MAIN.FALLING_COORDS;
     this.validX = fallingCoords.X;
@@ -115,13 +110,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.filterMainTask = this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
       if (System.currentTimeMillis() - this.joinTime > this.getTimeout()) {
-        this.disconnect(this.packets.getTimesUp(), true);
+        this.disconnect(this.plugin.getPackets().getTimesUp(), true);
       }
     }).delay(1, TimeUnit.SECONDS).repeat(1, TimeUnit.SECONDS).schedule();
   }
 
   private void sendFallingCheckPackets() {
-    this.player.writePacket(this.packets.getFallingCheckPackets());
+    this.player.writePacket(this.plugin.getPackets().getFallingCheckPackets());
   }
 
   @Override
@@ -187,7 +182,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
         this.fallingCheckFailed("Non-valid X, Z or Velocity");
         return;
       }
-      PreparedPacket expBuf = this.packets.getExperience().get(this.ticks);
+      PreparedPacket expBuf = this.plugin.getPackets().getExperience(this.ticks);
       if (expBuf != null) {
         this.player.writePacketAndFlush(expBuf);
       }
@@ -203,11 +198,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     }
 
     if (this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
-      List<PreparedPacket> expList = this.packets.getExperience();
-      this.player.writePacketAndFlush(expList.get(expList.size() - 1));
+      this.player.writePacketAndFlush(this.plugin.getPackets().getLastExperience());
       this.changeStateToCaptcha();
     } else {
-      this.disconnect(this.packets.getFallingCheckFailed(), true);
+      this.disconnect(this.plugin.getPackets().getFallingCheckFailed(), true);
     }
   }
 
@@ -242,12 +236,12 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   public void onChat(String message) {
     if (this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA) {
       if (message.equals(this.captchaAnswer)) {
-        this.player.writePacketAndFlush(this.packets.getResetSlot());
+        this.player.writePacketAndFlush(this.plugin.getPackets().getResetSlot());
         this.finishCheck();
       } else if (--this.attempts != 0) {
         this.sendCaptcha();
       } else {
-        this.disconnect(this.packets.getCaptchaFailed(), true);
+        this.disconnect(this.plugin.getPackets().getCaptchaFailed(), true);
       }
     }
   }
@@ -283,19 +277,19 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
         if (this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
           this.changeStateToCaptcha();
         } else {
-          this.disconnect(this.packets.getFallingCheckFailed(), true);
+          this.disconnect(this.plugin.getPackets().getFallingCheckFailed(), true);
         }
       }
       return;
     }
 
     if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
-      this.disconnect(this.packets.getKickClientCheckSettings(), true);
+      this.disconnect(this.plugin.getPackets().getKickClientCheckSettings(), true);
       return;
     }
 
     if (Settings.IMP.MAIN.CHECK_CLIENT_BRAND && !this.checkedByBrand) {
-      this.disconnect(this.packets.getKickClientCheckBrand(), true);
+      this.disconnect(this.plugin.getPackets().getKickClientCheckBrand(), true);
       return;
     }
 
@@ -304,9 +298,9 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
         || this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.NEED_TO_RECONNECT)) {
-      this.disconnect(this.packets.getSuccessfulBotFilterDisconnect(), false);
+      this.disconnect(this.plugin.getPackets().getSuccessfulBotFilterDisconnect(), false);
     } else {
-      this.player.writePacketAndFlush(this.packets.getSuccessfulBotFilterChat());
+      this.player.writePacketAndFlush(this.plugin.getPackets().getSuccessfulBotFilterChat());
       this.player.disconnect();
     }
   }
@@ -322,7 +316,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private void setCaptchaPositionAndDisableFalling() {
     this.server.respawnPlayer(this.proxyPlayer);
-    this.player.writePacketAndFlush(this.packets.getNoAbilities());
+    this.player.writePacketAndFlush(this.plugin.getPackets().getNoAbilities());
 
     this.waitingTeleportId = this.validTeleportId;
   }
@@ -331,13 +325,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     CaptchaHolder captchaHolder = this.plugin.getNextCaptcha();
 
     if (captchaHolder == null) {
-      this.player.closeWith(this.packets.getCaptchaNotReadyYet());
+      this.player.closeWith(this.plugin.getPackets().getCaptchaNotReadyYet());
       return;
     }
 
     this.captchaAnswer = captchaHolder.getAnswer();
 
-    this.player.writePacket(this.packets.getCaptchaAttemptsPacket(this.attempts));
+    this.player.writePacket(this.plugin.getPackets().getCaptchaAttemptsPacket(this.attempts));
     for (Object packet : captchaHolder.getMapPacket(this.version)) {
       this.player.writePacket(packet);
     }

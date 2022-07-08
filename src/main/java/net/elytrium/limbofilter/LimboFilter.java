@@ -182,11 +182,12 @@ public class LimboFilter {
     CachedPackets cachedPackets = new CachedPackets();
     cachedPackets.createPackets(this.limboFactory, this.packetFactory);
 
-    if (this.packets != null) {
-      this.packets.dispose();
-    }
-
+    CachedPackets previousCachedPackets = this.packets;
     this.packets = cachedPackets;
+
+    if (previousCachedPackets != null) {
+      previousCachedPackets.dispose();
+    }
 
     this.cachedFilterChecks.clear();
 
