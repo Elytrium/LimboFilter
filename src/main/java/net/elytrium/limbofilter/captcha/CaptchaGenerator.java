@@ -82,7 +82,10 @@ public class CaptchaGenerator {
 
     this.fonts.clear();
 
+    float fontSize = (float) Settings.IMP.MAIN.CAPTCHA_GENERATOR.RENDER_FONT_SIZE;
     Map<TextAttribute, Object> textSettings = Map.of(
+        TextAttribute.SIZE,
+        fontSize,
         TextAttribute.STRIKETHROUGH,
         Settings.IMP.MAIN.CAPTCHA_GENERATOR.STRIKETHROUGH,
         TextAttribute.UNDERLINE,
@@ -90,9 +93,9 @@ public class CaptchaGenerator {
     );
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.USE_STANDARD_FONTS) {
-      this.fonts.add(this.getRenderedFont(new Font(Font.SANS_SERIF, Font.PLAIN, 56).deriveFont(textSettings)));
-      this.fonts.add(this.getRenderedFont(new Font(Font.SERIF, Font.PLAIN, 56).deriveFont(textSettings)));
-      this.fonts.add(this.getRenderedFont(new Font(Font.MONOSPACED, Font.PLAIN, 56).deriveFont(textSettings)));
+      this.fonts.add(this.getRenderedFont(new Font(Font.SANS_SERIF, Font.PLAIN, (int) fontSize).deriveFont(textSettings)));
+      this.fonts.add(this.getRenderedFont(new Font(Font.SERIF, Font.PLAIN, (int) fontSize).deriveFont(textSettings)));
+      this.fonts.add(this.getRenderedFont(new Font(Font.MONOSPACED, Font.PLAIN, (int) fontSize).deriveFont(textSettings)));
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONTS_PATH != null) {
