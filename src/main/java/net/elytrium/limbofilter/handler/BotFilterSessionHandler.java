@@ -110,7 +110,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.player.flushPackets();
 
-    this.filterMainTask = this.plugin.getScheduler().schedule(() ->
+    this.filterMainTask = player.getScheduledExecutor().schedule(() ->
         this.disconnect(this.plugin.getPackets().getTimesUp(), true), this.getTimeout(), TimeUnit.SECONDS);
   }
 
