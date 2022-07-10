@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.serialization.Serializers;
@@ -104,6 +105,7 @@ public class LimboFilter {
   private final LimboFactory limboFactory;
   private final PacketFactory packetFactory;
   private final Level initialLogLevel;
+  private final ThreadLocal<ScheduledExecutorService> scheduler;
 
   private Limbo filterServer;
   private VirtualWorld filterWorld;
@@ -125,6 +127,7 @@ public class LimboFilter {
     this.limboFactory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
     this.packetFactory = this.limboFactory.getPacketFactory();
     this.initialLogLevel = LogManager.getRootLogger().getLevel();
+    this.scheduler = ThreadLocal.withInitial(() -> Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-scheduler")));
   }
 
   @Subscribe
@@ -265,14 +268,14 @@ public class LimboFilter {
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));
 
-    Executors.newScheduledThreadPool(1, task -> new Thread(task, "lf-purge-cache")).scheduleAtFixedRate(
+    Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-purge-cache")).scheduleAtFixedRate(
         () -> this.checkCache(this.cachedFilterChecks),
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         TimeUnit.MILLISECONDS
     );
 
-    Executors.newScheduledThreadPool(1, task -> new Thread(task, "lf-log-enabler")).scheduleAtFixedRate(
+    Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-log-enabler")).scheduleAtFixedRate(
         this::checkLoggerToEnable,
         Settings.IMP.MAIN.LOG_ENABLER_CHECK_REFRESH_RATE,
         Settings.IMP.MAIN.LOG_ENABLER_CHECK_REFRESH_RATE,
@@ -422,6 +425,10 @@ public class LimboFilter {
 
   public static Serializer getSerializer() {
     return SERIALIZER;
+  }
+
+  public ScheduledExecutorService getScheduler() {
+    return this.scheduler.get();
   }
 
   private static class CachedUser {

@@ -19,10 +19,10 @@ package net.elytrium.limbofilter.handler;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
 import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboSessionHandler;
@@ -58,7 +58,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private int ignoredTicks;
 
   private long joinTime;
-  private ScheduledTask filterMainTask;
+  private ScheduledFuture<?> filterMainTask;
 
   private CheckState state;
   private LimboPlayer player;
@@ -110,11 +110,8 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.player.flushPackets();
 
-    this.filterMainTask = this.plugin.getServer().getScheduler().buildTask(this.plugin, () -> {
-      if (System.currentTimeMillis() - this.joinTime > this.getTimeout()) {
-        this.disconnect(this.plugin.getPackets().getTimesUp(), true);
-      }
-    }).delay(1, TimeUnit.SECONDS).repeat(1, TimeUnit.SECONDS).schedule();
+    this.filterMainTask = this.plugin.getScheduler().schedule(() ->
+        this.disconnect(this.plugin.getPackets().getTimesUp(), true), this.getTimeout(), TimeUnit.SECONDS);
   }
 
   private void sendFallingCheckPackets() {
@@ -214,8 +211,8 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private void logPosition() {
     LimboFilter.getLogger().info(
         "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY) + "; need=" + getLoadedChunkSpeed(this.ticks)
-        + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX  + "; validY=" + this.validY + "; validZ=" + this.validZ
-        + "; ticks=" + this.ticks + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
+            + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validY=" + this.validY + "; validZ=" + this.validZ
+            + "; ticks=" + this.ticks + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
     );
   }
 
@@ -272,7 +269,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   @Override
   public void onDisconnect() {
-    this.filterMainTask.cancel();
+    this.filterMainTask.cancel(true);
   }
 
   private void finishCheck() {
