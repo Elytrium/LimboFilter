@@ -129,7 +129,7 @@ public class LimboFilter {
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    Settings.IMP.setLogger((org.slf4j.Logger) LOGGER);
+    Settings.IMP.setLogger(LOGGER);
 
     this.reload();
 
@@ -326,7 +326,7 @@ public class LimboFilter {
   }
 
   private void checkLoggerToEnable() {
-    if (this.logsDisabled && !this.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.DISABLE_LOG)) {
+    if (this.logsDisabled && !this.checkLoggerCps()) {
       this.logsDisabled = false;
       this.setLoggerLevel(this.initialLogLevel);
       LOGGER.warn("Re-enabling logger after attack. (see disable-log setting)");
@@ -334,11 +334,16 @@ public class LimboFilter {
   }
 
   private void checkLoggerToDisable() {
-    if (!this.logsDisabled && this.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.DISABLE_LOG)) {
+    if (!this.logsDisabled && this.checkLoggerCps()) {
       this.logsDisabled = true;
       LOGGER.warn("Disabling logger during attack. (see disable-log setting)");
       this.setLoggerLevel(Level.OFF);
     }
+  }
+
+  private boolean checkLoggerCps() {
+    return this.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.DISABLE_LOG)
+        || this.checkPpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.DISABLE_LOG);
   }
 
   private void setLoggerLevel(Level level) {
