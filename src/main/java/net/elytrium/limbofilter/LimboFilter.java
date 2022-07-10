@@ -28,6 +28,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
+import com.velocitypowered.proxy.console.VelocityConsole;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -64,6 +65,9 @@ import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.ComponentSerializer;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bstats.velocity.Metrics;
@@ -99,12 +103,14 @@ public class LimboFilter {
   private final Statistics statistics;
   private final LimboFactory limboFactory;
   private final PacketFactory packetFactory;
+  private final Level initialLogLevel;
 
   private Limbo filterServer;
   private VirtualWorld filterWorld;
   private ScheduledTask refreshCaptchaTask;
   private CaptchaGenerator generator;
   private CachedPackets packets;
+  private boolean logsDisabled;
 
   @Inject
   public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -118,11 +124,12 @@ public class LimboFilter {
 
     this.limboFactory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
     this.packetFactory = this.limboFactory.getPacketFactory();
+    this.initialLogLevel = LogManager.getRootLogger().getLevel();
   }
 
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    Settings.IMP.setLogger(LOGGER);
+    Settings.IMP.setLogger((org.slf4j.Logger) LOGGER);
 
     this.reload();
 
@@ -145,6 +152,10 @@ public class LimboFilter {
       LOGGER.error("https://github.com/Elytrium/LimboFilter/releases/");
       LOGGER.error("****************************************");
     }
+
+    // Not letting VelocityConsole to inherit root logger since we can disable it
+    org.apache.logging.log4j.Logger consoleLogger = LogManager.getLogger(VelocityConsole.class);
+    Configurator.setLevel(consoleLogger.getName(), consoleLogger.getLevel());
   }
 
   @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
@@ -254,10 +265,17 @@ public class LimboFilter {
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));
 
-    Executors.newScheduledThreadPool(1, task -> new Thread(task, "purge-cache")).scheduleAtFixedRate(
+    Executors.newScheduledThreadPool(1, task -> new Thread(task, "lf-purge-cache")).scheduleAtFixedRate(
         () -> this.checkCache(this.cachedFilterChecks),
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
+        TimeUnit.MILLISECONDS
+    );
+
+    Executors.newScheduledThreadPool(1, task -> new Thread(task, "lf-log-enabler")).scheduleAtFixedRate(
+        this::checkLoggerToEnable,
+        Settings.IMP.MAIN.LOG_ENABLER_CHECK_REFRESH_RATE,
+        Settings.IMP.MAIN.LOG_ENABLER_CHECK_REFRESH_RATE,
         TimeUnit.MILLISECONDS
     );
   }
@@ -293,6 +311,7 @@ public class LimboFilter {
 
   public void sendToFilterServer(Player player) {
     try {
+      this.checkLoggerToDisable();
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {
       t.printStackTrace();
@@ -304,6 +323,26 @@ public class LimboFilter {
         .filter(user -> user.getValue().getCheckTime() <= System.currentTimeMillis())
         .map(Map.Entry::getKey)
         .forEach(userMap::remove);
+  }
+
+  private void checkLoggerToEnable() {
+    if (this.logsDisabled && !this.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.DISABLE_LOG)) {
+      this.logsDisabled = false;
+      this.setLoggerLevel(this.initialLogLevel);
+      LOGGER.warn("Re-enabling logger after attack. (see disable-log setting)");
+    }
+  }
+
+  private void checkLoggerToDisable() {
+    if (!this.logsDisabled && this.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.DISABLE_LOG)) {
+      this.logsDisabled = true;
+      LOGGER.warn("Disabling logger during attack. (see disable-log setting)");
+      this.setLoggerLevel(Level.OFF);
+    }
+  }
+
+  private void setLoggerLevel(Level level) {
+    Configurator.setRootLevel(level);
   }
 
   public boolean checkCpsLimit(int limit) {

@@ -43,6 +43,8 @@ dependencies {
     // Needs for some velocity methods.
     compileOnly("io.netty:netty-codec:4.1.77.Final")
     compileOnly("it.unimi.dsi:fastutil-core:8.5.8")
+    compileOnly("org.apache.logging.log4j:log4j-api:2.17.2")
+    compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
 
     implementation("org.bstats:bstats-velocity:3.0.0")
 

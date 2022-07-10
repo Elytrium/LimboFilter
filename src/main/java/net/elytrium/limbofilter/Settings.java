@@ -101,6 +101,9 @@ public class Settings extends YamlConfig {
     @Comment("Unit of time in seconds for the Auto Toggles and the Statistics.")
     public int UNIT_OF_TIME_PPS = 5;
 
+    @Comment("Time in milliseconds how much we should wait before re-enabling logs after attacks")
+    public int LOG_ENABLER_CHECK_REFRESH_RATE = 1000;
+
     @Comment("Duration (in seconds) between regeneration of captchas")
     public long CAPTCHA_REGENERATE_RATE = 3600;
 
@@ -161,6 +164,9 @@ public class Settings extends YamlConfig {
 
       @Comment("Picture in the MOTD Server Ping packet will be disabled.")
       public int DISABLE_MOTD_PICTURE = 25;
+
+      @Comment("All the log messages from all plugins will be disabled.")
+      public int DISABLE_LOG = 129;
     }
 
     @Create
