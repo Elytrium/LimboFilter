@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.serialization.Serializers;
@@ -110,6 +111,8 @@ public class LimboFilter {
   private Limbo filterServer;
   private VirtualWorld filterWorld;
   private ScheduledTask refreshCaptchaTask;
+  private ScheduledFuture<?> purgeCacheTask;
+  private ScheduledFuture<?> logEnablerTask;
   private CaptchaGenerator generator;
   private CachedPackets packets;
   private boolean logsDisabled;
@@ -268,14 +271,22 @@ public class LimboFilter {
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));
 
-    Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-purge-cache")).scheduleAtFixedRate(
+    if (this.purgeCacheTask != null) {
+      this.purgeCacheTask.cancel(false);
+    }
+
+    this.purgeCacheTask = Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-purge-cache")).scheduleAtFixedRate(
         () -> this.checkCache(this.cachedFilterChecks),
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         Settings.IMP.MAIN.PURGE_CACHE_MILLIS,
         TimeUnit.MILLISECONDS
     );
 
-    Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-log-enabler")).scheduleAtFixedRate(
+    if (this.logEnablerTask != null) {
+      this.logEnablerTask.cancel(false);
+    }
+
+    this.logEnablerTask = Executors.newSingleThreadScheduledExecutor(task -> new Thread(task, "lf-log-enabler")).scheduleAtFixedRate(
         this::checkLoggerToEnable,
         Settings.IMP.MAIN.LOG_ENABLER_CHECK_REFRESH_RATE,
         Settings.IMP.MAIN.LOG_ENABLER_CHECK_REFRESH_RATE,
