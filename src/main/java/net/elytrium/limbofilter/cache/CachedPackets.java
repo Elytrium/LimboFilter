@@ -85,7 +85,7 @@ public class CachedPackets {
   }
 
   private PreparedPacket[] createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
-                                                       String checkingChat, String checkingTitle, String checkingSubtitle, String wrongCaptcha) {
+                                                       String checkingTitle, String checkingSubtitle, String checkingChat, String wrongCaptcha) {
     PreparedPacket[] packets = new PreparedPacket[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS + 1];
 
     for (int i = 1; i < Settings.IMP.MAIN.CAPTCHA_ATTEMPTS; ++i) {
@@ -184,12 +184,12 @@ public class CachedPackets {
 
   private PreparedPacket createFallingCheckTitleAndChatPackets(LimboFactory limboFactory,
                                                                String checkingTitle, String checkingSubtitle, String checkingChat) {
-    if ((Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() || Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) && checkingChat.isEmpty()) {
+    if ((checkingTitle.isEmpty() || checkingSubtitle.isEmpty()) && checkingChat.isEmpty()) {
       return null;
     }
 
     PreparedPacket preparedPacket = limboFactory.createPreparedPacket();
-    if (!Settings.IMP.MAIN.STRINGS.CHECKING_TITLE.isEmpty() && !Settings.IMP.MAIN.STRINGS.CHECKING_SUBTITLE.isEmpty()) {
+    if (!checkingTitle.isEmpty() && !checkingSubtitle.isEmpty()) {
       this.createTitlePacket(preparedPacket, checkingTitle, checkingSubtitle);
     }
 
