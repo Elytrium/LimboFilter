@@ -203,7 +203,7 @@ public class CachedPackets {
   private MinecraftPacket createChunkData(PacketFactory factory, VirtualChunk chunk) {
     chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
     return (MinecraftPacket)
-        factory.createChunkDataPacket(chunk.getFullChunkSnapshot(), true, Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION).getMaxSections());
+        factory.createChunkDataPacket(chunk.getFullChunkSnapshot(), Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION));
   }
 
   private MinecraftPacket createPlayerPosAndLook(PacketFactory factory, double x, double y, double z, float yaw, float pitch) {
