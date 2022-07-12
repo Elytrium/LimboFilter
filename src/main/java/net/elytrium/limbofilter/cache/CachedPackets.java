@@ -176,7 +176,7 @@ public class CachedPackets {
             (float) coords.FALLING_CHECK_YAW, (float) coords.FALLING_CHECK_PITCH
         )
     ).prepare(this.createChunkData(
-        packetFactory, limboFactory.createVirtualChunk(fallingCoords.X >> 4, fallingCoords.Z >> 4)
+        limboFactory, packetFactory, fallingCoords.X >> 4, fallingCoords.Z >> 4, Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION)
     )).prepare(this.createUpdateViewPosition(packetFactory, fallingCoords.X, fallingCoords.Z), ProtocolVersion.MINECRAFT_1_14);
 
     return preparedPacket.build();
@@ -200,10 +200,9 @@ public class CachedPackets {
     return preparedPacket.build();
   }
 
-  private MinecraftPacket createChunkData(PacketFactory factory, VirtualChunk chunk) {
-    chunk.setSkyLight(chunk.getX() & 15, 256, chunk.getZ() & 15, (byte) 1);
-    return (MinecraftPacket)
-        factory.createChunkDataPacket(chunk.getFullChunkSnapshot(), Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION));
+  private MinecraftPacket createChunkData(LimboFactory limboFactory, PacketFactory packetFactory, int chunkX, int chunkZ, Dimension dimension) {
+    VirtualChunk chunk = limboFactory.createVirtualChunk(chunkX, chunkZ, dimension.getDefaultBiome());
+    return (MinecraftPacket) packetFactory.createChunkDataPacket(chunk.getFullChunkSnapshot(), dimension);
   }
 
   private MinecraftPacket createPlayerPosAndLook(PacketFactory factory, double x, double y, double z, float yaw, float pitch) {
