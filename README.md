@@ -21,13 +21,12 @@ Test server: [``ely.su``](https://hotmc.ru/minecraft-server-203216)
 
 ## Features of LimboFilter
 
-- Improved Falling Check - Check X, Z coordinates;
 - Highly customizable CAPTCHA's - change fonts, backplates, colors, alphabet-pattern, length;
 - Client settings and brand checking;
 - Highly customisable config - you can change all the messages the plugin sends;
 - Ability to partially disable protection on low-loads of proxy;
 - Ability to prepare raw packets to reduce CPU usage;
-- Fast MCEdit schematic world loading for CAPTCHA checking;
+- Fast MCEdit/StructureBlock schematic world loading for CAPTCHA checking;
 - And more...
 
 ### LimboFilter /vs/ popular antibot solutions:
