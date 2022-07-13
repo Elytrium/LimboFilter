@@ -69,6 +69,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private boolean startedListening;
   private boolean checkedBySettings;
   private boolean checkedByBrand;
+  private boolean fallingDisabled;
 
   public BotFilterSessionHandler(Player proxyPlayer, LimboFilter plugin) {
     this.proxyPlayer = proxyPlayer;
@@ -156,11 +157,11 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       ++this.nonValidPacketsSize;
     }
     if (this.startedListening && this.state != CheckState.SUCCESSFUL) {
-      if (this.lastY == Settings.IMP.MAIN.COORDS.CAPTCHA_Y || this.onGround) {
+      if (this.onGround) {
         return;
       }
       if (this.state == CheckState.ONLY_CAPTCHA) {
-        if (this.lastY != this.posY && this.waitingTeleportId == -1) {
+        if (!this.fallingDisabled) {
           this.setCaptchaPositionAndDisableFalling();
         }
         return;
@@ -321,6 +322,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.server.respawnPlayer(this.proxyPlayer);
     this.player.writePacketAndFlush(this.plugin.getPackets().getNoAbilities());
 
+    this.fallingDisabled = true;
     this.waitingTeleportId = this.validTeleportId;
   }
 
