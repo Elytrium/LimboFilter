@@ -83,7 +83,7 @@ public class CraftMapCanvas {
     for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
       byte[] canvas = new byte[MapData.MAP_DIM_SIZE];
       for (int j = 0; j < MapData.MAP_DIM_SIZE; ++j) {
-        canvas[j] = (byte) fixedCanvas[i * MapData.MAP_DIM_SIZE + j];
+        canvas[j] = (byte) fixedCanvas[j * MapData.MAP_DIM_SIZE + i];
       }
 
       maps[i] = new MapData(i, canvas);
