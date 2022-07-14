@@ -25,15 +25,19 @@ import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
+import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.Settings;
 
 public class CaptchaPainter {
 
   private final ThreadLocalRandom random = ThreadLocalRandom.current();
+  private final ThreadLocal<byte[][]> buffers;
   private final List<CaptchaEffect> effects = new LinkedList<>();
   private final Color curveColor = new Color(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLOR, 16));
 
@@ -51,16 +55,27 @@ public class CaptchaPainter {
     }
 
     this.effects.add(new OutlineEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));
+
+    int length = (int) this.effects.stream().filter(CaptchaEffect::shouldCopy).count();
+    this.buffers = ThreadLocal.withInitial(() -> new byte[length + 1][MapData.MAP_SIZE]);
   }
 
-  public int[] drawCaptcha(RenderedFont font, byte foreground, String text) {
-    int[] image = new int[MapData.MAP_SIZE];
+  public byte[] drawCaptcha(RenderedFont font, byte foreground, String text) {
+    int bufferCnt = 0;
+    byte[][] buffers = this.buffers.get();
+    byte[] image = buffers[bufferCnt];
+    Arrays.fill(image, MapPalette.TRANSPARENT);
     this.drawText(image, font, foreground, text);
 
     for (CaptchaEffect e : this.effects) {
-      int[] newImage = new int[image.length];
-      e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, newImage);
-      image = newImage;
+      if (e.shouldCopy()) {
+        byte[] newImage = buffers[++bufferCnt];
+        Arrays.fill(newImage, MapPalette.TRANSPARENT);
+        e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, newImage);
+        image = newImage;
+      } else {
+        e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, image);
+      }
     }
 
     return image;
@@ -78,7 +93,7 @@ public class CaptchaPainter {
     return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
   }
 
-  private void drawText(int[] image, RenderedFont font, byte color, String text) {
+  private void drawText(byte[] image, RenderedFont font, byte color, String text) {
     int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X;
     int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y;
     int x = offsetX;
@@ -88,14 +103,14 @@ public class CaptchaPainter {
 
     for (char c : text.toCharArray()) {
       RenderedFont.Glyph glyph = font.getGlyph(c);
-      boolean[] data = glyph.getGlyphData();
+      BitSet data = glyph.getGlyphData();
 
       int width = glyph.getWidth();
       int height = glyph.getHeight();
 
       for (int i = 0; i < width; ++i) {
         for (int j = 0; j < height; ++j) {
-          if (data[j * width + i]) {
+          if (data.get(j * width + i)) {
             int localX = i + x;
             int localY = j + y;
             if (localX >= 0 && localY >= y && localX < MapData.MAP_DIM_SIZE && localY < MapData.MAP_DIM_SIZE) {

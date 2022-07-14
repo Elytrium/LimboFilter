@@ -24,7 +24,7 @@ public class OutlineEffect implements CaptchaEffect {
     this.borderRadius = borderRadius;
   }
 
-  public void filter(int width, int height, int[] src, int[] dest) {
+  public void filter(int width, int height, byte[] src, byte[] dest) {
     for (int x = this.borderRadius; x < height - this.borderRadius; x++) {
       for (int y = this.borderRadius; y < width - this.borderRadius; y++) {
         if (src[y * width + x] != 0) {
@@ -42,12 +42,17 @@ public class OutlineEffect implements CaptchaEffect {
           }
 
           if (found) {
-            dest[y * width + x] = src[y * width + x] & ~0b11;
+            dest[y * width + x] = (byte) (src[y * width + x] & ~0b11);
           } else {
             dest[y * width + x] = src[y * width + x];
           }
         }
       }
     }
+  }
+
+  @Override
+  public boolean shouldCopy() {
+    return false;
   }
 }

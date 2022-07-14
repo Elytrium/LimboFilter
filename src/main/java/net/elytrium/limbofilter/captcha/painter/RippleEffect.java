@@ -43,7 +43,7 @@ public class RippleEffect implements CaptchaEffect {
    * @param src  to be transformed, not null
    * @param dest to hold the result, not null
    */
-  public void filter(int width, int height, int[] src, int[] dest) {
+  public void filter(int width, int height, byte[] src, byte[] dest) {
     for (int x = 0; x < width; ++x) {
       for (int y = 0; y < height; ++y) {
         int ny = (y + this.verticalDelta[x] + height) % height;
@@ -72,6 +72,11 @@ public class RippleEffect implements CaptchaEffect {
     }
 
     return delta;
+  }
+
+  @Override
+  public boolean shouldCopy() {
+    return true;
   }
 
   /**

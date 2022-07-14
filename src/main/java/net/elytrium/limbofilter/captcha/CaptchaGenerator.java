@@ -72,7 +72,7 @@ public class CaptchaGenerator {
       for (String backplatePath : Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS) {
         if (!backplatePath.isEmpty()) {
           CraftMapCanvas craftMapCanvas = new CraftMapCanvas();
-          craftMapCanvas.drawImage(0, 0, this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath))));
+          craftMapCanvas.drawImage(this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath))));
           this.backplates.add(craftMapCanvas);
         }
       }
@@ -212,8 +212,8 @@ public class CaptchaGenerator {
       this.fontIterator.set(this.fonts.listIterator());
     }
 
-    map.drawImageCraft(0, 0, this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
-    map.drawImage(0, 0, this.painter.drawCurves());
+    map.drawImageCraft(this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
+    map.drawImage(this.painter.drawCurves());
 
     Function<MapPalette.MapVersion, MinecraftPacket> packet
         = mapVersion -> (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData(mapVersion));

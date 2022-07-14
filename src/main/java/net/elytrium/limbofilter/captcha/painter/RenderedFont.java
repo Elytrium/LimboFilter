@@ -28,6 +28,7 @@ import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.BitSet;
 import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limbofilter.Settings;
 
@@ -51,7 +52,7 @@ public class RenderedFont {
       Rectangle2D bounds = vector.getGlyphVisualBounds(0).getBounds2D();
       vector.setGlyphPosition(0, new Point2D.Double(posX - bounds.getX(), posY));
 
-      boolean[] glyphArray = new boolean[width * height];
+      BitSet glyphArray = new BitSet(width * height);
       Shape shape = vector.getGlyphOutline(0, -(float) width * 1.25f, -(float) height * 0.3125f);
       this.drawShape(shape, glyphArray, width, height, 0, 0, zoom);
 
@@ -64,7 +65,7 @@ public class RenderedFont {
     }
   }
 
-  private void drawShape(Shape shape, boolean[] array, int width, int height, int offsetX, int offsetY, double zoom) {
+  private void drawShape(Shape shape, BitSet array, int width, int height, int offsetX, int offsetY, double zoom) {
     Rectangle2D box = shape.getBounds2D();
     double multiplierX = box.getX() / width * zoom;
     double multiplierY = box.getY() / height * zoom;
@@ -72,8 +73,8 @@ public class RenderedFont {
       for (int y = 0; y < height; ++y) {
         if (shape.contains(multiplierX * x, multiplierY * y)) {
           int index = (height - y - 1 + offsetY) * width + (width - x - 1 + offsetX);
-          if (index >= 0 && index < array.length) {
-            array[index] = true;
+          if (index >= 0 && index < array.size()) {
+            array.set(index);
           }
         }
       }
@@ -86,17 +87,17 @@ public class RenderedFont {
 
   public static class Glyph {
 
-    private final boolean[] glyphData;
+    private final BitSet glyphData;
     private final int width;
     private final int height;
 
-    public Glyph(boolean[] glyphData, int width, int height) {
+    public Glyph(BitSet glyphData, int width, int height) {
       this.glyphData = glyphData;
       this.width = width;
       this.height = height;
     }
 
-    public boolean[] getGlyphData() {
+    public BitSet getGlyphData() {
       return this.glyphData;
     }
 

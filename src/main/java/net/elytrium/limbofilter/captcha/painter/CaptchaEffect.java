@@ -19,5 +19,7 @@ package net.elytrium.limbofilter.captcha.painter;
 
 public interface CaptchaEffect {
 
-  void filter(int width, int height, int[] src, int[] dest);
+  void filter(int width, int height, byte[] src, byte[] dest);
+
+  boolean shouldCopy();
 }

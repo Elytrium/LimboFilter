@@ -70,11 +70,15 @@ public class CachedCaptcha {
                                          Function<MapPalette.MapVersion, MinecraftPacket> mapDataPacket) {
     MinecraftPacket[][] mapDataPacketEnum = new MinecraftPacket[ProtocolVersion.values().length][1];
     LimboFactory limboFactory = this.plugin.getLimboFactory();
+    ProtocolVersion prepareMinVersion = limboFactory.getPrepareMinVersion();
+    ProtocolVersion prepareMaxVersion = limboFactory.getPrepareMaxVersion();
     for (MapPalette.MapVersion version : MapPalette.MapVersion.values()) {
-      if (version.getVersions().stream().anyMatch(protocolVersion ->
-          limboFactory.getPrepareMinVersion().compareTo(protocolVersion) <= 0 && limboFactory.getPrepareMaxVersion().compareTo(protocolVersion) >= 0)) {
-        MinecraftPacket packet = mapDataPacket.apply(version);
-        version.getVersions().forEach(protocolVersion -> mapDataPacketEnum[protocolVersion.ordinal()][0] = packet);
+      for (ProtocolVersion mapProtocolVersion : version.getVersions()) {
+        if (prepareMinVersion.compareTo(mapProtocolVersion) <= 0 && prepareMaxVersion.compareTo(mapProtocolVersion) >= 0) {
+          MinecraftPacket packet = mapDataPacket.apply(version);
+          version.getVersions().forEach(protocolVersion -> mapDataPacketEnum[protocolVersion.ordinal()][0] = packet);
+          break;
+        }
       }
     }
 
