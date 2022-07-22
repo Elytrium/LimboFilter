@@ -173,7 +173,7 @@ public class LimboFilter {
 
     BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L); // One tick == 50 millis
 
-    this.statistics.startUpdating();
+    this.statistics.restartUpdateTasks(this, this.server.getScheduler());
 
     if (this.refreshCaptchaTask != null) {
       this.refreshCaptchaTask.cancel();
