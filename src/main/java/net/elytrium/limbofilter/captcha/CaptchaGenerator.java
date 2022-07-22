@@ -164,8 +164,10 @@ public class CaptchaGenerator {
     this.tempCachedCaptcha = new CachedCaptcha(this.plugin, threadsCount);
     this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadsCount);
     ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
+    LinkedList<Thread> threads = new LinkedList<>();
     this.executor.setThreadFactory(runnable -> {
       Thread thread = new Thread(threadGroup, runnable, "CaptchaGeneratorThread");
+      threads.add(thread);
       thread.setPriority(Thread.MIN_PRIORITY);
       return thread;
     });
@@ -185,6 +187,9 @@ public class CaptchaGenerator {
       if (this.cachedCaptcha != null) {
         this.cachedCaptcha.dispose();
       }
+
+      threads.forEach(this.plugin.getLimboFactory()::releasePreparedPacketThread);
+      threads.clear();
 
       this.cachedCaptcha = this.tempCachedCaptcha;
       this.tempCachedCaptcha = null;
