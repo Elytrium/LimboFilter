@@ -49,7 +49,7 @@ public class FilterListener {
   public void onLogin(LoginLimboRegisterEvent event) {
     Player player = event.getPlayer();
     if (this.plugin.shouldCheck(player)) {
-      event.addCallback(() -> this.plugin.sendToFilterServer(player));
+      event.addOnJoinCallback(() -> this.plugin.sendToFilterServer(player));
     }
   }
 

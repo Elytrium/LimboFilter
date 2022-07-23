@@ -20,6 +20,7 @@ package net.elytrium.limbofilter;
 import java.util.List;
 import java.util.Map;
 import net.elytrium.java.commons.config.YamlConfig;
+import net.elytrium.limboapi.BuildConstants;
 
 public class Settings extends YamlConfig {
 
@@ -27,7 +28,7 @@ public class Settings extends YamlConfig {
   public static final Settings IMP = new Settings();
 
   @Final
-  public String VERSION = BuildConstants.FILTER_VERSION;
+  public String VERSION = BuildConstants.LIMBO_VERSION;
 
   @Comment({
       "Available serializers:",
@@ -281,6 +282,28 @@ public class Settings extends YamlConfig {
       public double CAPTCHA_PITCH = 38;
       public double FALLING_CHECK_YAW = 90;
       public double FALLING_CHECK_PITCH = 10;
+    }
+
+
+    @Create
+    public REDIS REDIS;
+
+    @Comment("Redis connection settings")
+    public static class REDIS {
+
+      public boolean ENABLE = false;
+      public String HOST = "localhost";
+      public int PORT = 6379;
+    }
+
+
+    @Create
+    public CAPTCHA_WHITELIST CAPTCHA_WHITELIST;
+
+    @Comment("Whitelist usernames or IP addresses to not show captcha")
+    public static class CAPTCHA_WHITELIST {
+
+      public boolean ENABLE = false;
     }
   }
 }
