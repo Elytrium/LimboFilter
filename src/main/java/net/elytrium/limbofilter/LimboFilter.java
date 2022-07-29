@@ -327,8 +327,10 @@ public class LimboFilter {
     if (this.jedisPool != null && Settings.IMP.MAIN.CAPTCHA_WHITELIST.ENABLE) {
       try (Jedis jedis = this.jedisPool.getResource()) {
         String sanitizedNickname = nickname.replaceAll("[^a-zA-Z0-9_]+", ""); // Probably no need, but I did it anyway
-        return !jedis.exists("captcha_whitelist_nickname:" + sanitizedNickname)
-                || !jedis.exists("captcha_whitelist_ip:" + ip.getHostAddress());
+        if (jedis.exists("captcha_whitelist_nickname:" + sanitizedNickname)
+                || jedis.exists("captcha_whitelist_ip:" + ip.getHostAddress())) {
+          return false;
+        }
       }
     }
 
