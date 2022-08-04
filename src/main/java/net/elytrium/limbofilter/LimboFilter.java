@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.serialization.Serializers;
 import net.elytrium.java.commons.updates.UpdatesChecker;
@@ -117,6 +119,7 @@ public class LimboFilter {
   private boolean logsDisabled;
 
   private JedisPool jedisPool;
+  private final Matcher nicknameMatcher = Pattern.compile("[^a-zA-Z0-9_]+").matcher("");
 
   @Inject
   public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -326,10 +329,12 @@ public class LimboFilter {
   public boolean shouldCheck(String nickname, InetAddress ip) {
     if (this.jedisPool != null && Settings.IMP.MAIN.CAPTCHA_WHITELIST.ENABLE) {
       try (Jedis jedis = this.jedisPool.getResource()) {
-        String sanitizedNickname = nickname.replaceAll("[^a-zA-Z0-9_]+", ""); // Probably no need, but I did it anyway
+        String sanitizedNickname = this.nicknameMatcher.reset(nickname).replaceAll(""); // Probably no need, but I did it anyway
         if (jedis.exists("captcha_whitelist_nickname:" + sanitizedNickname)
                 || jedis.exists("captcha_whitelist_ip:" + ip.getHostAddress())) {
           return false;
+        } else if (Settings.IMP.MAIN.CAPTCHA_WHITELIST.OVERRIDE_OTHER_CHECKS) {
+          return true;
         }
       }
     }

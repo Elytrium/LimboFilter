@@ -304,6 +304,7 @@ public class Settings extends YamlConfig {
     public static class CAPTCHA_WHITELIST {
 
       public boolean ENABLE = false;
+      public boolean OVERRIDE_OTHER_CHECKS = false;
     }
   }
 }
