@@ -21,6 +21,7 @@ import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.packet.Disconnect;
+import com.velocitypowered.proxy.protocol.packet.chat.ChatBuilder;
 import com.velocitypowered.proxy.protocol.packet.chat.LegacyChat;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
@@ -247,7 +248,7 @@ public class CachedPackets {
             ), LegacyChat.CHAT_TYPE, null
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
         .prepare(new SystemChat(
-            LimboFilter.getSerializer().deserialize(text), 1
+            LimboFilter.getSerializer().deserialize(text), ChatBuilder.ChatType.SYSTEM
         ), ProtocolVersion.MINECRAFT_1_19);
   }
 
