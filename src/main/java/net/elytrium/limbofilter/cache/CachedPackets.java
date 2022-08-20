@@ -123,6 +123,7 @@ public class CachedPackets {
 
   public void dispose() {
     this.singleDispose(this.fallingCheckPackets);
+    this.singleDispose(this.fallingCheckTitleAndChat);
     this.singleDispose(this.captchaAttemptsPacket);
     this.singleDispose(this.captchaFailed);
     this.singleDispose(this.fallingCheckFailed);
