@@ -67,7 +67,17 @@ public class CachedPackets {
     this.fallingCheckFailed = this.createDisconnectPacket(limboFactory, strings.FALLING_CHECK_FAILED_KICK);
     this.timesUp = this.createDisconnectPacket(limboFactory, strings.TIMES_UP);
 
-    this.resetSlot = limboFactory.createPreparedPacket().prepare(this.createSetSlotPacket(packetFactory, limboFactory.getItem(Item.AIR), 0, null)).build();
+    this.resetSlot = limboFactory.createPreparedPacket()
+      .prepare(
+          this.createSetSlotPacketLegacy(
+              packetFactory, limboFactory.getItem(Item.AIR), 0, null
+          ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_8
+      ).prepare(
+          this.createSetSlotPacketModern(
+              packetFactory, limboFactory.getItem(Item.AIR), 0, null
+          ), ProtocolVersion.MINECRAFT_1_9
+      )
+    .build();
 
     this.kickClientCheckSettings = this.createDisconnectPacket(limboFactory, strings.CLIENT_SETTINGS_KICK);
     this.kickClientCheckBrand = this.createDisconnectPacket(limboFactory, strings.CLIENT_BRAND_KICK);
@@ -95,11 +105,15 @@ public class CachedPackets {
 
       packets[i] = packet
           .prepare(
-              this.createSetSlotPacket(
+              this.createSetSlotPacketLegacy(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
-              ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_16_4
+              ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_8
           ).prepare(
-              this.createSetSlotPacket(
+              this.createSetSlotPacketModern(
+                  packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
+              ), ProtocolVersion.MINECRAFT_1_9, ProtocolVersion.MINECRAFT_1_16_4
+          ).prepare(
+              this.createSetSlotPacketModern(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
               ), ProtocolVersion.MINECRAFT_1_17
           )
@@ -108,11 +122,15 @@ public class CachedPackets {
 
     packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS] = this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat)
         .prepare(
-            this.createSetSlotPacket(
+            this.createSetSlotPacketLegacy(
                 packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
-            ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_16_4
+            ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_8
         ).prepare(
-            this.createSetSlotPacket(
+            this.createSetSlotPacketModern(
+                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
+            ), ProtocolVersion.MINECRAFT_1_9, ProtocolVersion.MINECRAFT_1_16_4
+        ).prepare(
+            this.createSetSlotPacketModern(
                 packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
             ), ProtocolVersion.MINECRAFT_1_17
         )
@@ -232,8 +250,12 @@ public class CachedPackets {
     return packets;
   }
 
-  private MinecraftPacket createSetSlotPacket(PacketFactory packetFactory, VirtualItem item, int count, CompoundBinaryTag nbt) {
+  private MinecraftPacket createSetSlotPacketLegacy(PacketFactory packetFactory, VirtualItem item, int count, CompoundBinaryTag nbt) {
     return (MinecraftPacket) packetFactory.createSetSlotPacket(0, 36, item, count, 0, nbt);
+  }
+
+  private MinecraftPacket createSetSlotPacketModern(PacketFactory packetFactory, VirtualItem item, int count, CompoundBinaryTag nbt) {
+    return (MinecraftPacket) packetFactory.createSetSlotPacket(0, Settings.IMP.MAIN.CAPTCHA_LEFT_HAND ? 45 : 36, item, count, 0, nbt);
   }
 
   public void createChatPacket(PreparedPacket packet, String text) {
