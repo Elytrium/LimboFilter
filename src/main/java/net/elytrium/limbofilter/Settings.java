@@ -70,7 +70,7 @@ public class Settings extends YamlConfig {
     public double MAX_VALID_POSITION_DIFFERENCE = 0.01;
     @Comment("Parameter for developers and contributors.")
     public boolean FALLING_CHECK_DEBUG = false;
-    @Comment("Captcha is displayed in the left hand.")
+    @Comment("Captcha is displayed in the left hand. May cause problems with entering captcha for users with 4:3 monitors. Version: 1.9+")
     public boolean CAPTCHA_LEFT_HAND = false;
 
     @Comment({
