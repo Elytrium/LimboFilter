@@ -100,9 +100,13 @@ public class CaptchaPainter {
     int y = offsetY;
     int spacingX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_X;
     int spacingY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_Y;
+    boolean eachWordOnSeparateLine = Settings.IMP.MAIN.CAPTCHA_GENERATOR.EACH_WORD_ON_SEPARATE_LINE;
 
     for (char c : text.toCharArray()) {
       RenderedFont.Glyph glyph = font.getGlyph(c);
+      if (glyph == null) {
+        throw new IllegalStateException("Missing glyph: " + c);
+      }
       BitSet data = glyph.getGlyphData();
 
       int width = glyph.getWidth();
@@ -121,7 +125,7 @@ public class CaptchaPainter {
       }
 
       x += spacingX + width;
-      if (x > MapData.MAP_DIM_SIZE - offsetX) {
+      if (x > MapData.MAP_DIM_SIZE - offsetX || (eachWordOnSeparateLine && c == ' ')) {
         x = offsetX;
         y += spacingY + (height / 2);
       }
