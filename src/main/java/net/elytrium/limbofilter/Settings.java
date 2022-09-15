@@ -249,10 +249,10 @@ public class Settings extends YamlConfig {
           "null or \"\" means that the digit should be skipped.",
           "Note: all the characters used here (including the space) must be listed in pattern."
       })
-      public Map<String, List<String>> NUMBER_SPELLING_WORDS = Map.of(// Use String key because EJC doesn't support Integers
-          "0", List.of("", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"),
-          "1", List.of("", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"),
-          "2", List.of("", "one hundred", "two hundred", "three hundred", "four hundred", "five hundred", "six hundred", "seven hundred", "eight hundred", "nine hundred")
+      public List<List<String>> NUMBER_SPELLING_WORDS = List.of(
+          List.of("", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"),
+          List.of("", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"),
+          List.of("", "one hundred", "two hundred", "three hundred", "four hundred", "five hundred", "six hundred", "seven hundred", "eight hundred", "nine hundred")
       );
       public List<String> RGB_COLOR_LIST = List.of("000000", "AA0000", "00AA00", "0000AA", "AAAA00", "AA00AA", "00AAAA");
     }

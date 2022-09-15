@@ -281,9 +281,9 @@ public class CaptchaGenerator {
     StringBuilder result = new StringBuilder();
 
     Map<String, String> exceptions = Settings.IMP.MAIN.CAPTCHA_GENERATOR.NUMBER_SPELLING_EXCEPTIONS;
-    Map<String, List<String>> words = Settings.IMP.MAIN.CAPTCHA_GENERATOR.NUMBER_SPELLING_WORDS;
+    List<List<String>> words = Settings.IMP.MAIN.CAPTCHA_GENERATOR.NUMBER_SPELLING_WORDS;
 
-    int idx = words.size();
+    int idx = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LENGTH;
     String n = String.valueOf(number);
 
     while (!n.isEmpty()) {
@@ -295,7 +295,7 @@ public class CaptchaGenerator {
       idx--;
 
       int digit = n.charAt(0) - '0';
-      String word = words.get(Integer.toString(idx)).get(digit);
+      String word = words.get(idx).get(digit);
 
       if (word != null && !word.isBlank()) {
         result.append(word).append(' ');
