@@ -216,7 +216,7 @@ public class CaptchaGenerator {
     if (!this.fontIterator.get().hasNext()) {
       this.fontIterator.set(this.fonts.listIterator());
     }
-
+    map.drawImage(this.painter.drawOvals());
     map.drawImageCraft(this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
     map.drawImage(this.painter.drawCurves());
 
