@@ -35,7 +35,19 @@ import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.Settings;
 
 public class CaptchaPainter {
-
+  
+  /*
+  / @author melysx
+  */
+  // Цвета кругов
+  private final Color[] ovalColors = new Color[] {
+          new Color(	255, 218, 185), new Color(218, 112, 214), new Color(85, 107, 47), new Color(138, 43, 226), new Color(255, 215, 0), new Color(107, 142, 35), new Color(238, 232, 170), new Color(175, 238, 238), new Color(255, 0, 0), new Color(204, 153, 255),
+          new Color(72, 209, 204), new Color(176, 224, 230), new Color(65, 105, 225), new Color(25, 25, 112),
+  new Color(255, 127, 80), new Color(192, 192, 192), new Color(154, 205, 50),
+  new Color(159, 108 ,108), new Color(0, 255, 0), new Color(139, 69, 19), new Color(	106, 90, 205),
+  new Color(165, 42, 42), new Color(188, 143, 143), new Color(138, 43, 226), new Color(0, 139, 139),
+  new Color(51, 0, 102), new Color(218, 112, 214), new Color(70, 130, 180), new Color(255, 239, 213)};
+  
   private final ThreadLocalRandom random = ThreadLocalRandom.current();
   private final ThreadLocal<byte[][]> buffers;
   private final List<CaptchaEffect> effects = new LinkedList<>();
@@ -92,7 +104,58 @@ public class CaptchaPainter {
 
     return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
   }
+  
+  /*
+  / @author melysx
+  */
+  
+  // Круги на фоне
+  
+  public int[] drawOvals() {
+    BufferedImage bufferedImage = this.createImage();
+    Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
+    graphics.setColor(this.randomColorOval());
+    // Берем значение из конфигурации
+    for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.OVAL_AMOUNT; ++i) {
+      this.addOval(graphics);
+    }
 
+    return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
+  }
+  
+  // Получение рандомного цвета из списка
+  public Color randomColorOval() {
+    int index = this.rnd.nextInt(this.ovalColors.length);
+    return this.ovalColors[index];
+  }
+    // Сами круги
+   private void addOval(Graphics2D graphics) {
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.OVAL_SIZE != 0) {
+      // Локации кружков
+      int minX = 1;
+      int minY = 5;
+      int maxX = 110;
+      int maxY = 90;
+      // Вызов локации кругов
+      ArrayList<Integer> listX = new ArrayList<>();
+      for (int x = minX; x < maxX; x++)
+        listX.add(Integer.valueOf(x));
+      ArrayList<Integer> listY = new ArrayList<>();
+      for (int y = minY; y < maxY; y++)
+        listY.add(Integer.valueOf(y));
+      // Если в конфиге число = 0 то круги не создаем
+      // Больше 0 то создается 
+      for (int i = 0; i < 1; i++) {
+        graphics.setColor(randomColorOval());
+        int ovalHeight = ThreadLocalRandom.current().nextInt(35, 45);
+        int ovalWeight = ThreadLocalRandom.current().nextInt(15, 25);
+        graphics.fillOval(((Integer)listX.get(this.rnd.nextInt(listX.size()))).intValue(), ((Integer)listY.get(this.rnd.nextInt(listY.size()))).intValue(), ovalWeight, ovalHeight);
+      }
+      // Размер круга не меняется, фспомогальное
+      graphics.setStroke(new BasicStroke(Settings.IMP.MAIN.CAPTCHA_GENERATOR.OVAL_SIZE));
+
+      }
+    }
   private void drawText(byte[] image, RenderedFont font, byte color, String text) {
     int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X;
     int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y;
