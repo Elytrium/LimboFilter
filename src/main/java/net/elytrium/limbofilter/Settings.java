@@ -220,9 +220,40 @@ public class Settings extends YamlConfig {
       public String CURVES_COLOR = "000000";
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
-      public String PATTERN = "abcdefghijklmnopqrtuvwxyz1234567890";
+      public String PATTERN = "abcdefghijklmnopqrstuvwxyz1234567890";
       public int LENGTH = 3;
       public int IMAGES_COUNT = 1000;
+      public boolean NUMBER_SPELLING = false;
+      @Comment({
+          "Set to true if you want to verify the number spelling configuration.",
+          "The results will be saved to the number_spelling.txt file."
+      })
+      public boolean SAVE_NUMBER_SPELLING_OUTPUT = false;
+      public boolean EACH_WORD_ON_SEPARATE_LINE = true;
+      @Comment({
+          "If the number ends with any key specified here, the corresponding value will be used.",
+          "For example: if exception 11 is specified with value 'eleven', the number 411 will be spelt as 'four hundred eleven'."
+      })
+      public Map<String, String> NUMBER_SPELLING_EXCEPTIONS = Map.of(
+          "11", "eleven",
+          "12", "twelve",
+          "13", "thirteen",
+          "14", "fourteen",
+          "15", "fifteen",
+          "16", "sixteen",
+          "17", "seventeen",
+          "18", "eighteen",
+          "19", "nineteen"
+      );
+      @Comment({
+          "null or \"\" means that the digit should be skipped.",
+          "Note: all the characters used here (including the space) must be listed in pattern."
+      })
+      public List<List<String>> NUMBER_SPELLING_WORDS = List.of(
+          List.of("", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"),
+          List.of("", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"),
+          List.of("", "one hundred", "two hundred", "three hundred", "four hundred", "five hundred", "six hundred", "seven hundred", "eight hundred", "nine hundred")
+      );
       public List<String> RGB_COLOR_LIST = List.of("000000", "AA0000", "00AA00", "0000AA", "AAAA00", "AA00AA", "00AAAA");
     }
 

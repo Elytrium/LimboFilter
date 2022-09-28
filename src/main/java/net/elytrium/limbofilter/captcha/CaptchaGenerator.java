@@ -19,6 +19,7 @@ package net.elytrium.limbofilter.captcha;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
+import it.unimi.dsi.fastutil.Pair;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.Graphics2D;
@@ -27,7 +28,10 @@ import java.awt.Image;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -78,6 +82,20 @@ public class CaptchaGenerator {
       }
     } catch (IOException e) {
       e.printStackTrace();
+    }
+
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.SAVE_NUMBER_SPELLING_OUTPUT) {
+      int from = (int) Math.pow(10, Settings.IMP.MAIN.CAPTCHA_GENERATOR.LENGTH - 1);
+      int to = from * 10;
+
+      try (OutputStream output = new FileOutputStream("number_spelling.txt")) {
+        for (int i = from; i < to; i++) {
+          String result = this.spellNumber(i);
+          output.write(String.format("%d %s%s", i, result, System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
 
     this.fonts.clear();
@@ -200,7 +218,7 @@ public class CaptchaGenerator {
   }
 
   public void genNewPacket(CachedCaptcha cachedCaptcha) {
-    String answer = this.randomAnswer();
+    Pair<String, String> answer = this.randomAnswer();
 
     CraftMapCanvas map;
     if (this.backplates.isEmpty()) {
@@ -217,7 +235,7 @@ public class CaptchaGenerator {
       this.fontIterator.set(this.fonts.listIterator());
     }
 
-    map.drawImageCraft(this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer));
+    map.drawImageCraft(this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer.key()));
     map.drawImage(this.painter.drawCurves());
 
     Function<MapPalette.MapVersion, MinecraftPacket> packet
@@ -233,7 +251,7 @@ public class CaptchaGenerator {
       packets17 = new MinecraftPacket[0];
     }
 
-    cachedCaptcha.addCaptchaPacket(answer, packets17, packet);
+    cachedCaptcha.addCaptchaPacket(answer.value(), packets17, packet);
   }
 
   public void shutdown() {
@@ -259,16 +277,53 @@ public class CaptchaGenerator {
     }
   }
 
-  private String randomAnswer() {
-    int length = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LENGTH;
-    String pattern = Settings.IMP.MAIN.CAPTCHA_GENERATOR.PATTERN;
+  private String spellNumber(int number) {
+    StringBuilder result = new StringBuilder();
 
-    char[] text = new char[length];
-    for (int i = 0; i < length; ++i) {
-      text[i] = pattern.charAt(ThreadLocalRandom.current().nextInt(pattern.length()));
+    Map<String, String> exceptions = Settings.IMP.MAIN.CAPTCHA_GENERATOR.NUMBER_SPELLING_EXCEPTIONS;
+    List<List<String>> words = Settings.IMP.MAIN.CAPTCHA_GENERATOR.NUMBER_SPELLING_WORDS;
+
+    int idx = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LENGTH;
+    String n = String.valueOf(number);
+
+    while (!n.isEmpty()) {
+      if (exceptions.containsKey(n)) {
+        result.append(exceptions.get(n)).append(' ');
+        break;
+      }
+
+      idx--;
+
+      int digit = n.charAt(0) - '0';
+      String word = words.get(idx).get(digit);
+
+      if (word != null && !word.isBlank()) {
+        result.append(word).append(' ');
+      }
+
+      n = n.substring(1);
     }
 
-    return new String(text);
+    return result.toString();
+  }
+
+  private Pair<String, String> randomAnswer() {
+    int length = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LENGTH;
+    if (!Settings.IMP.MAIN.CAPTCHA_GENERATOR.NUMBER_SPELLING) {
+      String pattern = Settings.IMP.MAIN.CAPTCHA_GENERATOR.PATTERN;
+
+      char[] text = new char[length];
+      for (int i = 0; i < length; ++i) {
+        text[i] = pattern.charAt(ThreadLocalRandom.current().nextInt(pattern.length()));
+      }
+
+      String answer = new String(text);
+      return Pair.of(answer, answer);
+    } else {
+      int min = (int) Math.pow(10, length - 1);
+      final int value = ThreadLocalRandom.current().nextInt(min, min * 10);
+      return Pair.of(this.spellNumber(value), String.valueOf(value));
+    }
   }
 
   private Byte nextColor() {
