@@ -17,17 +17,21 @@
 
 package net.elytrium.limbofilter.captcha;
 
+import com.google.common.primitives.Floats;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import it.unimi.dsi.fastutil.Pair;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.LinearGradientPaint;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,7 +60,7 @@ public class CaptchaGenerator {
   private final CaptchaPainter painter = new CaptchaPainter();
   private final List<CraftMapCanvas> backplates = new ArrayList<>();
   private final List<RenderedFont> fonts = new LinkedList<>();
-  private final List<Byte> colors = new LinkedList<>();
+  private final List<byte[]> colors = new LinkedList<>();
   private final LimboFilter plugin;
 
   private ThreadPoolExecutor executor;
@@ -65,7 +69,7 @@ public class CaptchaGenerator {
   private CachedCaptcha tempCachedCaptcha;
   private ThreadLocal<Iterator<CraftMapCanvas>> backplatesIterator;
   private ThreadLocal<Iterator<RenderedFont>> fontIterator;
-  private ThreadLocal<Iterator<Byte>> colorIterator;
+  private ThreadLocal<Iterator<byte[]>> colorIterator;
 
   public CaptchaGenerator(LimboFilter plugin) {
     this.plugin = plugin;
@@ -131,8 +135,42 @@ public class CaptchaGenerator {
       });
     }
 
-    Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.forEach(e ->
-        this.colors.add(MapPalette.tryFastMatchColor(Integer.parseInt(e, 16) | 0xFF000000, ProtocolVersion.MAXIMUM_VERSION)));
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.GRADIENT.GRADIENT_ENABLED) {
+      BufferedImage gradientImage = new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_RGB);
+      int[] imageData = ((DataBufferInt) gradientImage.getRaster().getDataBuffer()).getData();
+      Graphics2D graphics = gradientImage.createGraphics();
+
+      ThreadLocalRandom random = ThreadLocalRandom.current();
+      Settings.MAIN.CAPTCHA_GENERATOR.GRADIENT settings = Settings.IMP.MAIN.CAPTCHA_GENERATOR.GRADIENT;
+
+      Color[] colors = Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.stream().map(s -> Color.decode("#" + s)).toArray(Color[]::new);
+      float[] fractions = Floats.toArray(settings.FRACTIONS);
+
+      if (colors.length != fractions.length) {
+        throw new IllegalStateException("The color list and fraction list must contain the same number of elements");
+      }
+
+      for (int i = 0; i < settings.GRADIENTS_COUNT; ++i) {
+        LinearGradientPaint paint = new LinearGradientPaint(
+            (float) settings.START_X + random.nextFloat() * (float) settings.START_X_RANDOMNESS * MapData.MAP_DIM_SIZE,
+            (float) settings.START_Y + random.nextFloat() * (float) settings.START_Y_RANDOMNESS * MapData.MAP_DIM_SIZE,
+            (float) settings.END_X - random.nextFloat() * (float) settings.END_X_RANDOMNESS * MapData.MAP_DIM_SIZE,
+            (float) settings.END_Y - random.nextFloat() * (float) settings.END_Y_RANDOMNESS * MapData.MAP_DIM_SIZE,
+            fractions, colors);
+
+        graphics.setPaint(paint);
+        graphics.fillRect(0, 0, gradientImage.getWidth(), gradientImage.getHeight());
+
+        this.colors.add(MapPalette.imageToBytes(imageData,
+            new byte[MapData.MAP_DIM_SIZE * MapData.MAP_DIM_SIZE],
+            ProtocolVersion.MAXIMUM_VERSION));
+      }
+
+      graphics.dispose();
+    } else {
+      Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.forEach(e ->
+          this.colors.add(new byte[]{MapPalette.tryFastMatchColor(Integer.parseInt(e, 16) | 0xFF000000, ProtocolVersion.MAXIMUM_VERSION)}));
+    }
 
     this.backplatesIterator = ThreadLocal.withInitial(this.backplates::listIterator);
     this.fontIterator = ThreadLocal.withInitial(this.fonts::listIterator);
@@ -326,7 +364,7 @@ public class CaptchaGenerator {
     }
   }
 
-  private Byte nextColor() {
+  private byte[] nextColor() {
     if (!this.colorIterator.get().hasNext()) {
       this.colorIterator.set(this.colors.listIterator());
     }
