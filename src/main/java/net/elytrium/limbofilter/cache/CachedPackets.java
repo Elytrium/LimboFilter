@@ -17,6 +17,7 @@
 
 package net.elytrium.limbofilter.cache;
 
+import com.google.common.primitives.Ints;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
@@ -26,6 +27,7 @@ import com.velocitypowered.proxy.protocol.packet.chat.LegacyChat;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
 import java.text.MessageFormat;
+import java.util.UUID;
 import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.chunk.VirtualChunk;
@@ -35,6 +37,9 @@ import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.elytrium.limbofilter.protocol.data.ItemFrame;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
+import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.IntBinaryTag;
 
@@ -54,6 +59,7 @@ public class CachedPackets {
   private PreparedPacket noAbilities;
   private PreparedPacket[] experience;
   private PreparedPacket captchaNotReadyYet;
+  private PreparedPacket framedCaptchaPackets;
 
   public void createPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     Settings.MAIN.STRINGS strings = Settings.IMP.MAIN.STRINGS;
@@ -93,6 +99,49 @@ public class CachedPackets {
 
     this.captchaNotReadyYet = limboFactory.createPreparedPacket();
     this.createChatPacket(this.captchaNotReadyYet, strings.CAPTCHA_NOT_READY_YET);
+
+    this.framedCaptchaPackets = this.createFramedCaptchaPackets(limboFactory);
+  }
+
+  private PreparedPacket createFramedCaptchaPackets(LimboFactory limboFactory) {
+    Settings.MAIN.FRAMED_CAPTCHA settings = Settings.IMP.MAIN.FRAMED_CAPTCHA;
+    if (!settings.FRAMED_CAPTCHA_ENABLED) {
+      return null;
+    }
+
+    Settings.MAIN.FRAMED_CAPTCHA.COORDS.OFFSET_1_7 offset = settings.COORDS.OFFSET_1_7;
+
+    PreparedPacket preparedPacket = limboFactory.createPreparedPacket();
+
+    for (int y = 0; y < settings.HEIGHT; y++) {
+      for (int x = 0; x < settings.WIDTH; x++) {
+        int id = y * settings.WIDTH + x;
+        int entityId = id + 10;
+
+        preparedPacket
+            .prepare(
+                new SpawnEntity(
+                    entityId, UUID.nameUUIDFromBytes(Ints.toByteArray(id)), ItemFrame::getID,
+                    settings.COORDS.X + x + offset.X, settings.COORDS.Y + y + offset.Y, settings.COORDS.Z + offset.Z,
+                    0, 0, 0, 2, 0, 0, 0
+                ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_7_6
+            )
+            .prepare(
+                new SpawnEntity(
+                    entityId, UUID.nameUUIDFromBytes(Ints.toByteArray(id)), ItemFrame::getID,
+                    settings.COORDS.X + x, settings.COORDS.Y + y, settings.COORDS.Z,
+                    0, 180, 180, 2, 0, 0, 0
+                ), ProtocolVersion.MINECRAFT_1_8
+            )
+            .prepare(
+                new SetEntityMetadata(
+                    entityId, version -> ItemFrame.createMapMetadata(limboFactory, version, id)
+                ), ProtocolVersion.MINIMUM_VERSION
+            );
+      }
+    }
+
+    return preparedPacket.build();
   }
 
   private PreparedPacket[] createCaptchaAttemptsPacket(LimboFactory limboFactory, PacketFactory packetFactory,
@@ -103,7 +152,28 @@ public class CachedPackets {
       PreparedPacket packet = limboFactory.createPreparedPacket();
       this.createChatPacket(packet, MessageFormat.format(wrongCaptcha, i));
 
-      packets[i] = packet
+      if (!Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+        packet
+            .prepare(
+                this.createSetSlotPacketLegacy(
+                    packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
+                ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_8
+            ).prepare(
+                this.createSetSlotPacketModern(
+                    packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
+                ), ProtocolVersion.MINECRAFT_1_9, ProtocolVersion.MINECRAFT_1_16_4
+            ).prepare(
+                this.createSetSlotPacketModern(
+                    packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
+                ), ProtocolVersion.MINECRAFT_1_17
+        );
+      }
+      packets[i] = packet.build();
+    }
+
+    packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS] = this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat);
+    if (!Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+      packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS]
           .prepare(
               this.createSetSlotPacketLegacy(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
@@ -116,25 +186,9 @@ public class CachedPackets {
               this.createSetSlotPacketModern(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
               ), ProtocolVersion.MINECRAFT_1_17
-          )
-          .build();
+      );
     }
-
-    packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS] = this.createCaptchaFirstAttemptPacket(limboFactory, checkingTitle, checkingSubtitle, checkingChat)
-        .prepare(
-            this.createSetSlotPacketLegacy(
-                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
-            ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_8
-        ).prepare(
-            this.createSetSlotPacketModern(
-                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, null
-            ), ProtocolVersion.MINECRAFT_1_9, ProtocolVersion.MINECRAFT_1_16_4
-        ).prepare(
-            this.createSetSlotPacketModern(
-                packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
-            ), ProtocolVersion.MINECRAFT_1_17
-        )
-        .build();
+    packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS].build();
 
     return packets;
   }
@@ -154,6 +208,7 @@ public class CachedPackets {
     this.singleDispose(this.noAbilities);
     this.singleDispose(this.experience);
     this.singleDispose(this.captchaNotReadyYet);
+    this.singleDispose(this.framedCaptchaPackets);
   }
 
   private void singleDispose(PreparedPacket packet) {
@@ -363,5 +418,9 @@ public class CachedPackets {
 
   public PreparedPacket getFallingCheckTitleAndChat() {
     return this.fallingCheckTitleAndChat;
+  }
+
+  public PreparedPacket getFramedCaptchaPackets() {
+    return this.framedCaptchaPackets;
   }
 }

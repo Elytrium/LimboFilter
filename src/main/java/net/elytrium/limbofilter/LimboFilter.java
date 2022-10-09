@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.PluginContainer;
@@ -53,7 +54,9 @@ import net.elytrium.limboapi.api.file.SchematicFile;
 import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limboapi.api.player.GameMode;
+import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
+import net.elytrium.limboapi.api.protocol.packets.PacketMapping;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
@@ -61,6 +64,9 @@ import net.elytrium.limbofilter.commands.LimboFilterCommand;
 import net.elytrium.limbofilter.commands.SendFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
+import net.elytrium.limbofilter.protocol.packets.Interact;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
+import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.ComponentSerializer;
@@ -131,6 +137,35 @@ public class LimboFilter {
   @Subscribe
   public void onProxyInitialization(ProxyInitializeEvent event) {
     Settings.IMP.setLogger(LOGGER);
+
+    this.limboFactory.registerPacket(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
+        new PacketMapping(0x02, ProtocolVersion.MINIMUM_VERSION, false),
+        new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_9, false),
+        new PacketMapping(0x0B, ProtocolVersion.MINECRAFT_1_12, false),
+        new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_12_1, false),
+        new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_13, false),
+        new PacketMapping(0x0E, ProtocolVersion.MINECRAFT_1_14, false),
+        new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_17, false),
+        new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19, false),
+        new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false)
+    });
+
+    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
+        new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
+        new PacketMapping(0x39, ProtocolVersion.MINECRAFT_1_9, true),
+        new PacketMapping(0x3B, ProtocolVersion.MINECRAFT_1_12, true),
+        new PacketMapping(0x3C, ProtocolVersion.MINECRAFT_1_12_1, true),
+        new PacketMapping(0x3F, ProtocolVersion.MINECRAFT_1_13, true),
+        new PacketMapping(0x43, ProtocolVersion.MINECRAFT_1_14, true),
+        new PacketMapping(0x44, ProtocolVersion.MINECRAFT_1_15, true),
+        new PacketMapping(0x4D, ProtocolVersion.MINECRAFT_1_17, true),
+        new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
+    });
+
+    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
+        new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
+        new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
+    });
 
     this.reload();
 

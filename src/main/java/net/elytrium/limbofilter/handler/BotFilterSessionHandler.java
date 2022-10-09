@@ -22,6 +22,8 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
 import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
@@ -31,6 +33,10 @@ import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
+import net.elytrium.limbofilter.protocol.data.EntityMetadata;
+import net.elytrium.limbofilter.protocol.data.ItemFrame;
+import net.elytrium.limbofilter.protocol.packets.Interact;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
 import net.elytrium.limbofilter.stats.Statistics;
 
 public class BotFilterSessionHandler implements LimboSessionHandler {
@@ -38,6 +44,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private static final double[] LOADED_CHUNK_SPEED_CACHE = new double[Settings.IMP.MAIN.FALLING_CHECK_TICKS];
   private static long FALLING_CHECK_TOTAL_TIME;
 
+  private final Map<Integer, Integer> frameRotation = new HashMap<>();
   private final Player proxyPlayer;
   private final ProtocolVersion version;
   private final LimboFilter plugin;
@@ -265,6 +272,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
         this.checkedBySettings = true;
       }
+    } else if (packet instanceof Interact) {
+      Interact interact = (Interact) packet;
+      if (interact.getType() == 0 || interact.getType() == 1) {
+        int rotation = this.frameRotation.compute(interact.getEntityId(), (k, v) -> (v != null ? v : 0) + 1);
+        EntityMetadata metadata = ItemFrame.createRotationMetadata(this.version, rotation);
+        this.player.writePacketAndFlush(new SetEntityMetadata(interact.getEntityId(), metadata));
+      }
     }
   }
 
@@ -335,6 +349,11 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     }
 
     this.captchaAnswer = captchaHolder.getAnswer();
+
+    PreparedPacket framedCaptchaPacket = this.plugin.getPackets().getFramedCaptchaPackets();
+    if (framedCaptchaPacket != null) {
+      this.player.writePacket(framedCaptchaPacket);
+    }
 
     this.player.writePacket(this.plugin.getPackets().getCaptchaAttemptsPacket(this.attempts));
     for (Object packet : captchaHolder.getMapPacket(this.version)) {
