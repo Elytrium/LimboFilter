@@ -57,7 +57,7 @@ import net.elytrium.limbofilter.captcha.painter.RenderedFont;
 
 public class CaptchaGenerator {
 
-  private final CaptchaPainter painter = new CaptchaPainter();
+  private final CaptchaPainter painter;
   private final List<CraftMapCanvas> backplates = new ArrayList<>();
   private final List<RenderedFont> fonts = new LinkedList<>();
   private final List<byte[]> colors = new LinkedList<>();
@@ -73,14 +73,22 @@ public class CaptchaGenerator {
 
   public CaptchaGenerator(LimboFilter plugin) {
     this.plugin = plugin;
+    if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+      this.painter = new CaptchaPainter(
+          MapData.MAP_DIM_SIZE * Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH,
+          MapData.MAP_DIM_SIZE * Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT);
+    } else {
+      this.painter = new CaptchaPainter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE);
+    }
   }
 
   public void initializeGenerator() {
     try {
       for (String backplatePath : Settings.IMP.MAIN.CAPTCHA_GENERATOR.BACKPLATE_PATHS) {
         if (!backplatePath.isEmpty()) {
-          CraftMapCanvas craftMapCanvas = new CraftMapCanvas();
-          craftMapCanvas.drawImage(this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath))));
+          CraftMapCanvas craftMapCanvas = this.createCraftMapCanvas();
+          craftMapCanvas.drawImage(this.resizeIfNeeded(ImageIO.read(this.plugin.getFile(backplatePath)),
+              this.painter.getWidth(), this.painter.getHeight()), this.painter.getWidth(), this.painter.getHeight());
           this.backplates.add(craftMapCanvas);
         }
       }
@@ -177,6 +185,14 @@ public class CaptchaGenerator {
     this.colorIterator = ThreadLocal.withInitial(this.colors::listIterator);
   }
 
+  private CraftMapCanvas createCraftMapCanvas() {
+    if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+      return new CraftMapCanvas(Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH, Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT);
+    } else {
+      return new CraftMapCanvas(1, 1);
+    }
+  }
+
   private RenderedFont getRenderedFont(Font font) {
     return new RenderedFont(font,
         new FontRenderContext(null, true, true),
@@ -191,18 +207,29 @@ public class CaptchaGenerator {
     );
   }
 
-  private BufferedImage resizeIfNeeded(BufferedImage image) {
-    if (image.getWidth() != MapData.MAP_DIM_SIZE || image.getHeight() != MapData.MAP_DIM_SIZE) {
-      BufferedImage resizedImage = new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image.getType());
+  private BufferedImage resizeIfNeeded(BufferedImage image, int width, int height) {
+    if (image.getWidth() != width || image.getHeight() != height) {
+      BufferedImage resizedImage = new BufferedImage(width, height, image.getType());
 
       Graphics2D graphics = resizedImage.createGraphics();
-      graphics.drawImage(image.getScaledInstance(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, Image.SCALE_SMOOTH), 0, 0, null);
+      graphics.drawImage(image.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
       graphics.dispose();
 
       return resizedImage;
     } else {
       return image;
     }
+  }
+
+  private void rotate(MapData mapData) {
+    byte[] mapImage = mapData.getData();
+    byte[] temp = new byte[MapData.MAP_SIZE];
+    for (int y = 0; y < MapData.MAP_DIM_SIZE; y++) {
+      for (int x = 0; x < MapData.MAP_DIM_SIZE; x++) {
+        temp[y * MapData.MAP_DIM_SIZE + x] = mapImage[x * MapData.MAP_DIM_SIZE + MapData.MAP_DIM_SIZE - y - 1];
+      }
+    }
+    System.arraycopy(temp, 0, mapImage, 0, MapData.MAP_SIZE);
   }
 
   @SuppressWarnings("StatementWithEmptyBody")
@@ -260,7 +287,7 @@ public class CaptchaGenerator {
 
     CraftMapCanvas map;
     if (this.backplates.isEmpty()) {
-      map = new CraftMapCanvas();
+      map = this.createCraftMapCanvas();
     } else {
       if (!this.backplatesIterator.get().hasNext()) {
         this.backplatesIterator.set(this.backplates.listIterator());
@@ -273,17 +300,38 @@ public class CaptchaGenerator {
       this.fontIterator.set(this.fonts.listIterator());
     }
 
-    map.drawImageCraft(this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer.key()));
-    map.drawImage(this.painter.drawCurves());
+    map.drawImageCraft(this.painter.drawCaptcha(this.fontIterator.get().next(), this.nextColor(), answer.key()),
+        this.painter.getWidth(), this.painter.getHeight());
+    map.drawImage(this.painter.drawCurves(), this.painter.getWidth(), this.painter.getHeight());
 
-    Function<MapPalette.MapVersion, MinecraftPacket> packet
-        = mapVersion -> (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, map.getMapData(mapVersion));
+    Function<MapPalette.MapVersion, MinecraftPacket[]> packet
+        = mapVersion -> {
+          ThreadLocalRandom random = ThreadLocalRandom.current();
+          MinecraftPacket[] packets = new MinecraftPacket[map.getWidth() * map.getHeight()];
+
+          for (int mapId = 0; mapId < packets.length; mapId++) {
+            MapData mapData = map.getMapData(mapId, mapVersion);
+            if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED
+                && random.nextDouble() <= Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAME_ROTATION_CHANCE) {
+              for (int j = 0; j < random.nextInt(4); ++j) {
+                this.rotate(mapData);
+              }
+            }
+            packets[mapId] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(mapId, (byte) 0, mapData);
+          }
+
+          return packets;
+        };
     MinecraftPacket[] packets17;
     if (this.plugin.getLimboFactory().getPrepareMinVersion().compareTo(ProtocolVersion.MINECRAFT_1_7_6) <= 0) {
-      packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE];
-      MapData[] maps17Data = map.getMaps17Data();
-      for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
-        packets17[i] = (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(0, (byte) 0, maps17Data[i]);
+      int mapCount = map.getWidth() * map.getHeight();
+      packets17 = new MinecraftPacket[MapData.MAP_DIM_SIZE * mapCount];
+      for (int mapId = 0; mapId < mapCount; mapId++) {
+        MapData[] maps17Data = map.getMaps17Data(mapId);
+        for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
+          packets17[mapId * MapData.MAP_DIM_SIZE + i] =
+              (MinecraftPacket) this.plugin.getPacketFactory().createMapDataPacket(mapId, (byte) 0, maps17Data[i]);
+        }
       }
     } else {
       packets17 = new MinecraftPacket[0];

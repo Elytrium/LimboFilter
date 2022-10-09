@@ -30,7 +30,6 @@ import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.Settings;
 
@@ -40,24 +39,28 @@ public class CaptchaPainter {
   private final ThreadLocal<byte[][]> buffers;
   private final List<CaptchaEffect> effects = new LinkedList<>();
   private final Color curveColor = new Color(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLOR, 16));
+  private final int width;
+  private final int height;
 
-  public CaptchaPainter() {
+  public CaptchaPainter(int width, int height) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
       RippleEffect.AxisConfig vertical = new RippleEffect.AxisConfig(
           this.random.nextDouble() * 2 * Math.PI, (1 + this.random.nextDouble() * 2) * Math.PI,
-          MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_HEIGHT
+          height / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_HEIGHT
       );
       RippleEffect.AxisConfig horizontal = new RippleEffect.AxisConfig(
           this.random.nextDouble() * 2 * Math.PI, (2 + this.random.nextDouble() * 2) * Math.PI,
-          MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_WIDTH
+          width / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_WIDTH
       );
-      this.effects.add(new RippleEffect(vertical, horizontal, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE));
+      this.effects.add(new RippleEffect(vertical, horizontal, width, height));
     }
 
     this.effects.add(new OutlineEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));
 
     int length = (int) this.effects.stream().filter(CaptchaEffect::shouldCopy).count();
-    this.buffers = ThreadLocal.withInitial(() -> new byte[length + 1][MapData.MAP_SIZE]);
+    this.buffers = ThreadLocal.withInitial(() -> new byte[length + 1][width * height]);
+    this.width = width;
+    this.height = height;
   }
 
   public byte[] drawCaptcha(RenderedFont font, byte[] foreground, String text) {
@@ -71,10 +74,10 @@ public class CaptchaPainter {
       if (e.shouldCopy()) {
         byte[] newImage = buffers[++bufferCnt];
         Arrays.fill(newImage, MapPalette.TRANSPARENT);
-        e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, newImage);
+        e.filter(this.width, this.height, image, newImage);
         image = newImage;
       } else {
-        e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, image);
+        e.filter(this.width, this.height, image, image);
       }
     }
 
@@ -117,16 +120,15 @@ public class CaptchaPainter {
           if (data.get(j * width + i)) {
             int localX = i + x;
             int localY = j + y;
-            if (localX >= 0 && localY >= y && localX < MapData.MAP_DIM_SIZE && localY < MapData.MAP_DIM_SIZE) {
-              int index = localY * MapData.MAP_DIM_SIZE + localX;
-              image[index] = colors[index % colors.length];
+            if (localX >= 0 && localY >= y && localX < this.width && localY < this.height) {
+              image[localY * this.width + localX] = colors[index % colors.length];
             }
           }
         }
       }
 
       x += spacingX + width;
-      if (x > MapData.MAP_DIM_SIZE - offsetX || (eachWordOnSeparateLine && c == ' ')) {
+      if (x > this.width - offsetX || (eachWordOnSeparateLine && c == ' ')) {
         x = offsetX;
         y += spacingY + (height / 2);
       }
@@ -134,7 +136,7 @@ public class CaptchaPainter {
   }
 
   private BufferedImage createImage() {
-    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
+    return new BufferedImage(this.width, this.height, BufferedImage.TYPE_INT_ARGB);
   }
 
   private void addCurve(Graphics2D graphics) {
@@ -143,17 +145,17 @@ public class CaptchaPainter {
 
       if (this.random.nextBoolean()) {
         cubicCurve = new CubicCurve2D.Double(
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, (0.8 + 0.1 * this.random.nextDouble()) * MapData.MAP_DIM_SIZE
+            this.random.nextDouble() * this.width, this.random.nextDouble() * 0.1 * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, (0.8 + 0.1 * this.random.nextDouble()) * this.height
         );
       } else {
         cubicCurve = new CubicCurve2D.Double(
-            this.random.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            (0.8 + 0.1 * this.random.nextDouble()) * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE
+            this.random.nextDouble() * 0.1 * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            (0.8 + 0.1 * this.random.nextDouble()) * this.width, this.random.nextDouble() * this.height
         );
       }
 
@@ -176,5 +178,13 @@ public class CaptchaPainter {
         pathIterator.next();
       }
     }
+  }
+
+  public int getWidth() {
+    return this.width;
+  }
+
+  public int getHeight() {
+    return this.height;
   }
 }

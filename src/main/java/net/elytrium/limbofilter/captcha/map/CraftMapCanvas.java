@@ -25,54 +25,94 @@ import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 
 public class CraftMapCanvas {
 
-  private final byte[] canvas;
+  private final byte[][] canvas;
   private final ThreadLocal<byte[]> buffer17 = ThreadLocal.withInitial(() -> new byte[MapData.MAP_SIZE]);
+  private final int width;
+  private final int height;
 
-  public CraftMapCanvas() {
-    this.canvas = new byte[MapData.MAP_SIZE];
-    Arrays.fill(this.canvas, (byte) 0);
+  public CraftMapCanvas(int width, int height) {
+    this.width = width;
+    this.height = height;
+    this.canvas = new byte[width * height][MapData.MAP_SIZE];
+    Arrays.stream(this.canvas).forEach(e -> Arrays.fill(e, (byte) 0));
   }
 
   public CraftMapCanvas(CraftMapCanvas another) {
-    this.canvas = Arrays.copyOf(another.getCanvas(), MapData.MAP_SIZE);
+    this.width = another.width;
+    this.height = another.height;
+    this.canvas = Arrays.stream(another.getCanvas()).map(byte[]::clone).toArray(byte[][]::new);
   }
 
-  public void drawImage(BufferedImage image) {
-    this.drawImageCraft(MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION));
+  public void drawImage(BufferedImage image, int width, int height) {
+    this.drawImageCraft(MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION), width, height);
   }
 
-  public void drawImage(int[] image) {
-    this.drawImageCraft(MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION));
+  public void drawImage(int[] image, int width, int height) {
+    this.drawImageCraft(MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION), width, height);
   }
 
-  public void drawImageCraft(byte[] craftBytes) {
-    for (int i = 0; i < this.canvas.length; ++i) {
-      byte color = craftBytes[i];
-      if (color != MapPalette.TRANSPARENT) {
-        this.canvas[i] = color;
+  public void drawImageCraft(byte[] craftBytes, int width, int height) {
+    for (int canvasY = 0; canvasY < this.width; canvasY++) {
+      for (int canvasX = 0; canvasX < this.height; canvasX++) {
+        int canvas = this.canvas.length - 1 - canvasY * this.width - canvasX;
+        for (int dataY = 0; dataY < MapData.MAP_DIM_SIZE; dataY++) {
+          int imageY = canvasY * MapData.MAP_DIM_SIZE + dataY;
+          if (imageY >= height) {
+            return;
+          }
+
+          for (int dataX = 0; dataX < MapData.MAP_DIM_SIZE; dataX++) {
+            int imageX = canvasX * MapData.MAP_DIM_SIZE + dataX;
+            if (imageX >= width) {
+              break;
+            }
+
+            byte color = craftBytes[imageY * width + imageX];
+            if (color != MapPalette.TRANSPARENT) {
+              this.canvas[canvas][dataY * MapData.MAP_DIM_SIZE + dataX] = color;
+            }
+          }
+        }
       }
     }
   }
 
-  public void drawImageCraft(int[] craftBytes) {
-    for (int i = 0; i < this.canvas.length; ++i) {
-      byte color = (byte) craftBytes[i];
-      if (color != MapPalette.TRANSPARENT) {
-        this.canvas[i] = color;
+  public void drawImageCraft(int[] craftBytes, int width, int height) {
+    for (int canvasY = 0; canvasY < this.width; canvasY++) {
+      for (int canvasX = 0; canvasX < this.height; canvasX++) {
+        int canvas = this.canvas.length - 1 - canvasY * this.width - canvasX;
+        for (int mapY = 0; mapY < MapData.MAP_DIM_SIZE; mapY++) {
+          int imageY = canvasY * MapData.MAP_DIM_SIZE + mapY;
+          if (imageY >= height) {
+            return;
+          }
+
+          for (int mapX = 0; mapX < MapData.MAP_DIM_SIZE; mapX++) {
+            int imageX = canvasX * MapData.MAP_DIM_SIZE + mapX;
+            if (imageX >= width) {
+              break;
+            }
+
+            byte color = (byte) craftBytes[imageY * width + imageX];
+            if (color != MapPalette.TRANSPARENT) {
+              this.canvas[canvas][mapY * MapData.MAP_DIM_SIZE + mapX] = color;
+            }
+          }
+        }
       }
     }
   }
 
-  public MapData getMapData(MapPalette.MapVersion version) {
+  public MapData getMapData(int index, MapPalette.MapVersion version) {
     byte[] convertedCanvas = new byte[MapData.MAP_SIZE];
-    return new MapData(MapPalette.convertImage(this.canvas, convertedCanvas, version));
+    return new MapData(MapPalette.convertImage(this.canvas[index], convertedCanvas, version));
   }
 
-  public MapData[] getMaps17Data() {
+  public MapData[] getMaps17Data(int index) {
     MapData[] maps = new MapData[MapData.MAP_DIM_SIZE];
     byte[] fixedCanvas = this.buffer17.get();
     Arrays.fill(fixedCanvas, (byte) 0);
-    MapPalette.convertImage(this.canvas, fixedCanvas, MapPalette.MapVersion.MINIMUM_VERSION);
+    MapPalette.convertImage(this.canvas[index], fixedCanvas, MapPalette.MapVersion.MINIMUM_VERSION);
 
     for (int i = 0; i < MapData.MAP_DIM_SIZE; ++i) {
       byte[] canvas = new byte[MapData.MAP_DIM_SIZE];
@@ -86,7 +126,15 @@ public class CraftMapCanvas {
     return maps;
   }
 
-  public byte[] getCanvas() {
+  public byte[][] getCanvas() {
     return this.canvas;
+  }
+
+  public int getWidth() {
+    return this.width;
+  }
+
+  public int getHeight() {
+    return this.height;
   }
 }
