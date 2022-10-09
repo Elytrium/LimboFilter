@@ -257,6 +257,37 @@ public class Settings extends YamlConfig {
       public List<String> RGB_COLOR_LIST = List.of("000000", "AA0000", "00AA00", "0000AA", "AAAA00", "AA00AA", "00AAAA");
     }
 
+    @Create
+    public FRAMED_CAPTCHA FRAMED_CAPTCHA;
+
+    public static class FRAMED_CAPTCHA {
+
+      public boolean FRAMED_CAPTCHA_ENABLED = false;
+      public int WIDTH = 3;
+      public int HEIGHT = 3;
+      public double FRAME_ROTATION_CHANCE = 0.33;
+
+      @Create
+      public COORDS COORDS;
+
+      public static class COORDS {
+
+        public int X = -3;
+        public int Y = 128;
+        public int Z = 2;
+
+        @Create
+        public OFFSET_1_7 OFFSET_1_7;
+
+        public static class OFFSET_1_7 {
+
+          public int X = 0;
+          public int Y = -2;
+          public int Z = 1;
+        }
+      }
+    }
+
     @Comment(
         "Available dimensions: OVERWORLD, NETHER, THE_END"
     )
