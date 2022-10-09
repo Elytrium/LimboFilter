@@ -19,8 +19,8 @@ package net.elytrium.limbofilter.protocol.data;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import java.util.Map;
+import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.material.Item;
-import net.elytrium.limboapi.server.world.SimpleItem;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.IntBinaryTag;
 
@@ -58,14 +58,14 @@ public class ItemFrame {
     }
   }
 
-  public static EntityMetadata createMapMetadata(ProtocolVersion protocolVersion, int mapId) {
+  public static EntityMetadata createMapMetadata(LimboFactory limboFactory, ProtocolVersion protocolVersion, int mapId) {
     if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_12_2) <= 0) {
       return new EntityMetadata(Map.of(
-          getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(SimpleItem.fromItem(Item.FILLED_MAP), 1, mapId, null)
+          getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, mapId, null)
       ));
     } else {
       return new EntityMetadata(Map.of(
-          getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(SimpleItem.fromItem(Item.FILLED_MAP), 1, 0,
+          getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, 0,
               CompoundBinaryTag.builder().put("map", IntBinaryTag.of(mapId)).build())
       ));
     }

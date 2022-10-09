@@ -135,7 +135,7 @@ public class CachedPackets {
             )
             .prepare(
                 new SetEntityMetadata(
-                    entityId, version -> ItemFrame.createMapMetadata(version, id)
+                    entityId, version -> ItemFrame.createMapMetadata(limboFactory, version, id)
                 ), ProtocolVersion.MINIMUM_VERSION
             );
       }

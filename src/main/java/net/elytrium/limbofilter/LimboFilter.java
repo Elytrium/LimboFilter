@@ -57,7 +57,6 @@ import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limboapi.api.protocol.packets.PacketMapping;
-import net.elytrium.limboapi.protocol.LimboProtocol;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
@@ -139,7 +138,7 @@ public class LimboFilter {
   public void onProxyInitialization(ProxyInitializeEvent event) {
     Settings.IMP.setLogger(LOGGER);
 
-    LimboProtocol.register(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
+    this.limboFactory.registerPacket(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
         new PacketMapping(0x02, ProtocolVersion.MINIMUM_VERSION, false),
         new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_9, false),
         new PacketMapping(0x0B, ProtocolVersion.MINECRAFT_1_12, false),
@@ -151,7 +150,7 @@ public class LimboFilter {
         new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false)
     });
 
-    LimboProtocol.register(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
+    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
         new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
         new PacketMapping(0x39, ProtocolVersion.MINECRAFT_1_9, true),
         new PacketMapping(0x3B, ProtocolVersion.MINECRAFT_1_12, true),
@@ -163,7 +162,7 @@ public class LimboFilter {
         new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
     });
 
-    LimboProtocol.register(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
+    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
         new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
         new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
     });
