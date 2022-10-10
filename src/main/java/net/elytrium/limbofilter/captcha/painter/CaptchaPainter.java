@@ -121,7 +121,7 @@ public class CaptchaPainter {
             int localX = i + x;
             int localY = j + y;
             if (localX >= 0 && localY >= y && localX < this.width && localY < this.height) {
-              image[localY * this.width + localX] = colors[index % colors.length];
+              image[localY * this.width + localX] = colors[(localY * this.width + localX) % colors.length];
             }
           }
         }

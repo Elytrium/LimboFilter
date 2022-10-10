@@ -144,7 +144,7 @@ public class CaptchaGenerator {
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.GRADIENT.GRADIENT_ENABLED) {
-      BufferedImage gradientImage = new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_RGB);
+      BufferedImage gradientImage = new BufferedImage(this.painter.getWidth(), this.painter.getHeight(), BufferedImage.TYPE_INT_RGB);
       int[] imageData = ((DataBufferInt) gradientImage.getRaster().getDataBuffer()).getData();
       Graphics2D graphics = gradientImage.createGraphics();
 
@@ -160,17 +160,17 @@ public class CaptchaGenerator {
 
       for (int i = 0; i < settings.GRADIENTS_COUNT; ++i) {
         LinearGradientPaint paint = new LinearGradientPaint(
-            (float) settings.START_X + random.nextFloat() * (float) settings.START_X_RANDOMNESS * MapData.MAP_DIM_SIZE,
-            (float) settings.START_Y + random.nextFloat() * (float) settings.START_Y_RANDOMNESS * MapData.MAP_DIM_SIZE,
-            (float) settings.END_X - random.nextFloat() * (float) settings.END_X_RANDOMNESS * MapData.MAP_DIM_SIZE,
-            (float) settings.END_Y - random.nextFloat() * (float) settings.END_Y_RANDOMNESS * MapData.MAP_DIM_SIZE,
+            (float) settings.START_X + random.nextFloat() * (float) settings.START_X_RANDOMNESS * this.painter.getWidth(),
+            (float) settings.START_Y + random.nextFloat() * (float) settings.START_Y_RANDOMNESS * this.painter.getHeight(),
+            (float) settings.END_X - random.nextFloat() * (float) settings.END_X_RANDOMNESS * this.painter.getWidth(),
+            (float) settings.END_Y - random.nextFloat() * (float) settings.END_Y_RANDOMNESS * this.painter.getHeight(),
             fractions, colors);
 
         graphics.setPaint(paint);
         graphics.fillRect(0, 0, gradientImage.getWidth(), gradientImage.getHeight());
 
         this.colors.add(MapPalette.imageToBytes(imageData,
-            new byte[MapData.MAP_DIM_SIZE * MapData.MAP_DIM_SIZE],
+            new byte[this.painter.getWidth() * this.painter.getHeight()],
             ProtocolVersion.MAXIMUM_VERSION));
       }
 
