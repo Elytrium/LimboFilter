@@ -255,6 +255,24 @@ public class Settings extends YamlConfig {
           List.of("", "one hundred", "two hundred", "three hundred", "four hundred", "five hundred", "six hundred", "seven hundred", "eight hundred", "nine hundred")
       );
       public List<String> RGB_COLOR_LIST = List.of("000000", "AA0000", "00AA00", "0000AA", "AAAA00", "AA00AA", "00AAAA");
+
+      @Create
+      public GRADIENT GRADIENT;
+
+      public static class GRADIENT {
+
+        public boolean GRADIENT_ENABLED = false;
+        public int GRADIENTS_COUNT = 32;
+        public double START_X = 0;
+        public double START_Y = 40;
+        public double END_X = 128;
+        public double END_Y = 80;
+        public double START_X_RANDOMNESS = 0;
+        public double START_Y_RANDOMNESS = 2;
+        public double END_X_RANDOMNESS = 0;
+        public double END_Y_RANDOMNESS = 2;
+        public List<Double> FRACTIONS = List.of(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
+      }
     }
 
     @Create

@@ -63,7 +63,7 @@ public class CaptchaPainter {
     this.height = height;
   }
 
-  public byte[] drawCaptcha(RenderedFont font, byte foreground, String text) {
+  public byte[] drawCaptcha(RenderedFont font, byte[] foreground, String text) {
     int bufferCnt = 0;
     byte[][] buffers = this.buffers.get();
     byte[] image = buffers[bufferCnt];
@@ -96,7 +96,7 @@ public class CaptchaPainter {
     return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
   }
 
-  private void drawText(byte[] image, RenderedFont font, byte color, String text) {
+  private void drawText(byte[] image, RenderedFont font, byte[] colors, String text) {
     int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X;
     int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y;
     int x = offsetX;
@@ -121,7 +121,7 @@ public class CaptchaPainter {
             int localX = i + x;
             int localY = j + y;
             if (localX >= 0 && localY >= y && localX < this.width && localY < this.height) {
-              image[localY * this.width + localX] = color;
+              image[localY * this.width + localX] = colors[(localY * this.width + localX) % colors.length];
             }
           }
         }
