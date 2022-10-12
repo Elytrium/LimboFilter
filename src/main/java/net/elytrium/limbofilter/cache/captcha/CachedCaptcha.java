@@ -84,9 +84,16 @@ public class CachedCaptcha {
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
       PreparedPacket prepared = this.plugin.getLimboFactory().createPreparedPacket();
+      if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+        for (int i = 0; i < Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH * Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT; i++) {
+          final int index = i;
+          prepared.prepare(version -> mapDataPacketEnum[version.ordinal()][index], ProtocolVersion.MINECRAFT_1_8);
+        }
+      } else {
+        prepared.prepare(version -> mapDataPacketEnum[version.ordinal()][0], ProtocolVersion.MINECRAFT_1_8);
+      }
       return new CaptchaHolder(answer, next, prepared
           .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
-          .prepare(version -> mapDataPacketEnum[version.ordinal()][0], ProtocolVersion.MINECRAFT_1_8)
           .build()
       );
     } else {
