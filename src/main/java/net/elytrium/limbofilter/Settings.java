@@ -271,6 +271,7 @@ public class Settings extends YamlConfig {
         public double START_Y_RANDOMNESS = 2;
         public double END_X_RANDOMNESS = 0;
         public double END_Y_RANDOMNESS = 2;
+        @Comment("Numbers ranging from 0.0 to 1.0 specifying the distribution of colors along the gradient. Can be empty.")
         public List<Double> FRACTIONS = List.of(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
       }
     }
