@@ -45,6 +45,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
@@ -152,9 +154,15 @@ public class CaptchaGenerator {
       Settings.MAIN.CAPTCHA_GENERATOR.GRADIENT settings = Settings.IMP.MAIN.CAPTCHA_GENERATOR.GRADIENT;
 
       Color[] colors = Settings.IMP.MAIN.CAPTCHA_GENERATOR.RGB_COLOR_LIST.stream().map(s -> Color.decode("#" + s)).toArray(Color[]::new);
-      float[] fractions = Floats.toArray(settings.FRACTIONS);
 
-      if (colors.length != fractions.length) {
+      List<Double> fractions = settings.FRACTIONS;
+
+      if (fractions == null || fractions.isEmpty()) {
+        double step = 1.0 / colors.length;
+        fractions = IntStream.range(0, colors.length).mapToDouble(i -> i * step).boxed().collect(Collectors.toList());
+      }
+
+      if (colors.length != fractions.size()) {
         throw new IllegalStateException("The color list and fraction list must contain the same number of elements");
       }
 
@@ -164,7 +172,7 @@ public class CaptchaGenerator {
             (float) settings.START_Y + random.nextFloat() * (float) settings.START_Y_RANDOMNESS * this.painter.getHeight(),
             (float) settings.END_X - random.nextFloat() * (float) settings.END_X_RANDOMNESS * this.painter.getWidth(),
             (float) settings.END_Y - random.nextFloat() * (float) settings.END_Y_RANDOMNESS * this.painter.getHeight(),
-            fractions, colors);
+            Floats.toArray(fractions), colors);
 
         graphics.setPaint(paint);
         graphics.fillRect(0, 0, gradientImage.getWidth(), gradientImage.getHeight());
