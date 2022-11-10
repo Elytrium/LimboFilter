@@ -115,6 +115,11 @@ public class CaptchaGenerator {
     this.fonts.clear();
 
     float fontSize = (float) Settings.IMP.MAIN.CAPTCHA_GENERATOR.RENDER_FONT_SIZE;
+
+    if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED && Settings.IMP.MAIN.FRAMED_CAPTCHA.AUTOSCALE_FONT) {
+      fontSize *= Math.min(Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH, Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT);
+    }
+
     Map<TextAttribute, Object> textSettings = Map.of(
         TextAttribute.SIZE,
         fontSize,
@@ -202,15 +207,19 @@ public class CaptchaGenerator {
   }
 
   private RenderedFont getRenderedFont(Font font) {
+    boolean scaleFont = Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED && Settings.IMP.MAIN.FRAMED_CAPTCHA.AUTOSCALE_FONT;
+    int multiplierX = scaleFont ? Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH : 1;
+    int multiplierY = scaleFont ? Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT : 1;
+
     return new RenderedFont(font,
         new FontRenderContext(null, true, true),
         Settings.IMP.MAIN.CAPTCHA_GENERATOR.PATTERN.toCharArray(),
-        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_WIDTH,
-        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_HEIGHT,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_WIDTH * multiplierX,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_HEIGHT * multiplierY,
         Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE,
         (float) Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_RATE,
-        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OFFSET_X,
-        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OFFSET_Y,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OFFSET_X * multiplierX,
+        Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OFFSET_Y * multiplierY,
         1.35
     );
   }

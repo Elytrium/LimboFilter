@@ -284,6 +284,7 @@ public class Settings extends YamlConfig {
       public int WIDTH = 3;
       public int HEIGHT = 3;
       public double FRAME_ROTATION_CHANCE = 0.33;
+      public boolean AUTOSCALE_FONT = true;
 
       @Create
       public COORDS COORDS;

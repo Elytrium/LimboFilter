@@ -97,12 +97,16 @@ public class CaptchaPainter {
   }
 
   private void drawText(byte[] image, RenderedFont font, byte[] colors, String text) {
-    int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X;
-    int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y;
+    boolean scaleFont = Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED && Settings.IMP.MAIN.FRAMED_CAPTCHA.AUTOSCALE_FONT;
+    int multiplierX = scaleFont ? Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH : 1;
+    int multiplierY = scaleFont ? Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT : 1;
+
+    int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X * multiplierX;
+    int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y * multiplierY;
     int x = offsetX;
     int y = offsetY;
-    int spacingX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_X;
-    int spacingY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_Y;
+    int spacingX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_X * multiplierX;
+    int spacingY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_Y * multiplierY;
     boolean eachWordOnSeparateLine = Settings.IMP.MAIN.CAPTCHA_GENERATOR.EACH_WORD_ON_SEPARATE_LINE;
 
     for (char c : text.toCharArray()) {
