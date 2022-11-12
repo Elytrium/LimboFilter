@@ -25,8 +25,8 @@ public class OutlineEffect implements CaptchaEffect {
   }
 
   public void filter(int width, int height, byte[] src, byte[] dest) {
-    for (int x = this.borderRadius; x < height - this.borderRadius; x++) {
-      for (int y = this.borderRadius; y < width - this.borderRadius; y++) {
+    for (int x = this.borderRadius; x < width - this.borderRadius; x++) {
+      for (int y = this.borderRadius; y < height - this.borderRadius; y++) {
         if (src[y * width + x] != 0) {
           boolean found = false;
           for (int blurX = x - this.borderRadius; blurX <= x + this.borderRadius; blurX++) {

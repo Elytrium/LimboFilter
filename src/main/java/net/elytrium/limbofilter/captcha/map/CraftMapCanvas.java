@@ -52,8 +52,8 @@ public class CraftMapCanvas {
   }
 
   public void drawImageCraft(byte[] craftBytes, int width, int height) {
-    for (int canvasY = 0; canvasY < this.width; canvasY++) {
-      for (int canvasX = 0; canvasX < this.height; canvasX++) {
+    for (int canvasY = 0; canvasY < this.height; canvasY++) {
+      for (int canvasX = 0; canvasX < this.width; canvasX++) {
         int canvas = this.canvas.length - 1 - canvasY * this.width - canvasX;
         for (int dataY = 0; dataY < MapData.MAP_DIM_SIZE; dataY++) {
           int imageY = canvasY * MapData.MAP_DIM_SIZE + dataY;
@@ -78,8 +78,8 @@ public class CraftMapCanvas {
   }
 
   public void drawImageCraft(int[] craftBytes, int width, int height) {
-    for (int canvasY = 0; canvasY < this.width; canvasY++) {
-      for (int canvasX = 0; canvasX < this.height; canvasX++) {
+    for (int canvasY = 0; canvasY < this.height; canvasY++) {
+      for (int canvasX = 0; canvasX < this.width; canvasX++) {
         int canvas = this.canvas.length - 1 - canvasY * this.width - canvasX;
         for (int mapY = 0; mapY < MapData.MAP_DIM_SIZE; mapY++) {
           int imageY = canvasY * MapData.MAP_DIM_SIZE + mapY;
