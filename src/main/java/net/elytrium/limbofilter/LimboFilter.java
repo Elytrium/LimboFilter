@@ -306,6 +306,7 @@ public class LimboFilter {
 
     if (Settings.IMP.MAIN.TCP_LISTENER.ENABLED) {
       try {
+        LOGGER.info("Initializing TCP Listener");
         new TcpListener(this).start();
       } catch (PcapNativeException | NotOpenException e) {
         new Exception("Got exception when starting TCP listener. Disable it if you are unsure what does it does.", e).printStackTrace();

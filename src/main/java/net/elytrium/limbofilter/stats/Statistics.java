@@ -135,6 +135,12 @@ public class Statistics {
   }
 
   public int getPing(InetAddress address) {
-    return this.pingMap.get(address);
+    Integer ping = this.pingMap.get(address);
+
+    if (ping == null) {
+      return -1;
+    } else {
+      return ping;
+    }
   }
 }

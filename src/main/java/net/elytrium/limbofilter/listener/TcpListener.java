@@ -21,6 +21,7 @@ import com.velocitypowered.proxy.config.VelocityConfiguration;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.elytrium.limbofilter.LimboFilter;
@@ -35,11 +36,21 @@ import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.core.Pcaps;
 import org.pcap4j.packet.IpPacket;
 import org.pcap4j.packet.TcpPacket;
+import org.pcap4j.packet.factory.statik.services.StaticPacketFactoryBinderProvider;
 
 public class TcpListener {
 
   private final LimboFilter plugin;
   private final Map<InetAddress, Long> tempPingTimestamp = new HashMap<>();
+
+  static {
+    Objects.requireNonNull(StaticPacketFactoryBinderProvider.class);
+    try {
+      Class.forName("org.pcap4j.packet.factory.statik.services.StaticPacketFactoryBinder");
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   public TcpListener(LimboFilter plugin) {
     this.plugin = plugin;
@@ -60,10 +71,10 @@ public class TcpListener {
     new Thread(() -> {
       try {
         handle.loop(Settings.IMP.MAIN.TCP_LISTENER.PACKET_COUNT, (PacketListener) rawPacket -> {
-          IpPacket ipPacket = (IpPacket) rawPacket;
+          IpPacket ipPacket = rawPacket.get(IpPacket.class);
           IpPacket.IpHeader ipHeader = ipPacket.getHeader();
 
-          TcpPacket tcpPacket = (TcpPacket) ipPacket.getPayload();
+          TcpPacket tcpPacket = ipPacket.getPayload().get(TcpPacket.class);
           TcpPacket.TcpHeader tcpHeader = tcpPacket.getHeader();
 
           if (localAddresses.contains(ipHeader.getSrcAddr()) && tcpHeader.getPsh() && tcpHeader.getAck()) {
@@ -71,7 +82,7 @@ public class TcpListener {
           }
 
           if (localAddresses.contains(ipHeader.getDstAddr()) && tcpHeader.getAck()) {
-            Long tempPingTimestamp = this.tempPingTimestamp.get(ipHeader.getDstAddr());
+            Long tempPingTimestamp = this.tempPingTimestamp.remove(ipHeader.getDstAddr());
             if (tempPingTimestamp != null) {
               this.plugin.getStatistics().updatePing(ipHeader.getSrcAddr(), (int) (System.currentTimeMillis() - tempPingTimestamp));
             }
