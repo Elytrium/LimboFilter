@@ -19,8 +19,11 @@ package net.elytrium.limbofilter.stats;
 
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.velocitypowered.api.scheduler.Scheduler;
+import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -35,6 +38,8 @@ public class Statistics {
   private final AtomicLong interpolatedCpsBefore = new AtomicLong();
   private final AtomicLong interpolatedPpsBefore = new AtomicLong();
   private final List<ScheduledTask> scheduledTaskList = new LinkedList<>();
+
+  private final Map<InetAddress, Integer> pingMap = new HashMap<>();
 
   public void addBlockedConnection() {
     this.blockedConnections.increment();
@@ -122,5 +127,14 @@ public class Statistics {
         .delay(delay, TimeUnit.MILLISECONDS)
         .repeat(delay, TimeUnit.MILLISECONDS)
         .schedule());
+  }
+
+  public void updatePing(InetAddress address, int currentPing) {
+    int previousPing = this.pingMap.get(address);
+    this.pingMap.put(address, (previousPing * 3 + currentPing) / 4);
+  }
+
+  public int getPing(InetAddress address) {
+    return this.pingMap.get(address);
   }
 }

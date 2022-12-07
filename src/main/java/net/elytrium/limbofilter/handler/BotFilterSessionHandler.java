@@ -22,6 +22,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
 import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -308,6 +309,21 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     if (Settings.IMP.MAIN.CHECK_CLIENT_BRAND && !this.checkedByBrand) {
       this.disconnect(this.plugin.getPackets().getKickClientCheckBrand(), true);
+      return;
+    }
+
+    if (Settings.IMP.MAIN.TCP_LISTENER.ENABLED && Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED
+        && (this.player.getPing() - this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress()))
+        > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFF) {
+      this.disconnect(this.plugin.getPackets().getKickProxyCheck(), true);
+
+      try {
+        Runtime.getRuntime().exec(Settings.IMP.MAIN.TCP_LISTENER.PROXY_BAN_COMMAND
+            .replace("{IP}", this.proxyPlayer.getRemoteAddress().getAddress().getHostAddress()));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
       return;
     }
 

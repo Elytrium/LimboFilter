@@ -54,6 +54,7 @@ public class CachedPackets {
   private PreparedPacket resetSlot;
   private PreparedPacket kickClientCheckSettings;
   private PreparedPacket kickClientCheckBrand;
+  private PreparedPacket kickProxyCheck;
   private PreparedPacket successfulBotFilterChat;
   private PreparedPacket successfulBotFilterDisconnect;
   private PreparedPacket noAbilities;
@@ -87,6 +88,7 @@ public class CachedPackets {
 
     this.kickClientCheckSettings = this.createDisconnectPacket(limboFactory, strings.CLIENT_SETTINGS_KICK);
     this.kickClientCheckBrand = this.createDisconnectPacket(limboFactory, strings.CLIENT_BRAND_KICK);
+    this.kickProxyCheck = this.createDisconnectPacket(limboFactory, strings.PROXY_CHECK_KICK);
 
     this.successfulBotFilterChat = limboFactory.createPreparedPacket();
     this.createChatPacket(this.successfulBotFilterChat, strings.SUCCESSFUL_CRACKED);
@@ -203,6 +205,7 @@ public class CachedPackets {
     this.singleDispose(this.resetSlot);
     this.singleDispose(this.kickClientCheckBrand);
     this.singleDispose(this.kickClientCheckSettings);
+    this.singleDispose(this.kickProxyCheck);
     this.singleDispose(this.successfulBotFilterChat);
     this.singleDispose(this.successfulBotFilterDisconnect);
     this.singleDispose(this.noAbilities);
@@ -382,6 +385,10 @@ public class CachedPackets {
 
   public PreparedPacket getKickClientCheckBrand() {
     return this.kickClientCheckBrand;
+  }
+
+  public PreparedPacket getKickProxyCheck() {
+    return this.kickProxyCheck;
   }
 
   public PreparedPacket getSuccessfulBotFilterChat() {
