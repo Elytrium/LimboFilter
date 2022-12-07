@@ -147,7 +147,8 @@ public class LimboFilter {
         new PacketMapping(0x0E, ProtocolVersion.MINECRAFT_1_14, false),
         new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_17, false),
         new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19, false),
-        new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false)
+        new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false),
+        new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19_3, false),
     });
 
     this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
@@ -160,6 +161,7 @@ public class LimboFilter {
         new PacketMapping(0x44, ProtocolVersion.MINECRAFT_1_15, true),
         new PacketMapping(0x4D, ProtocolVersion.MINECRAFT_1_17, true),
         new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
+        new PacketMapping(0x4E, ProtocolVersion.MINECRAFT_1_19_3, true),
     });
 
     this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
