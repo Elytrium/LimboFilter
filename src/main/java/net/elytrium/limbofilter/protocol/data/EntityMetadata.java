@@ -94,8 +94,10 @@ public class EntityMetadata {
     public int getType(ProtocolVersion protocolVersion) {
       if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_12_2) <= 0) {
         return 5;
-      } else {
+      } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_19_1) <= 0) {
         return 6;
+      } else {
+        return 7;
       }
     }
   }
