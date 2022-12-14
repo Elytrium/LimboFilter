@@ -57,6 +57,8 @@ import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limboapi.api.protocol.packets.PacketMapping;
+import net.elytrium.limboapi.api.protocol.packets.data.MapData;
+import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
@@ -206,6 +208,31 @@ public class LimboFilter {
       setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
     } else {
       setSerializer(new Serializer(serializer));
+    }
+
+    long captchaGeneratorRamConsumed = (long) MapData.MAP_SIZE * Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT;
+
+    if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+      captchaGeneratorRamConsumed *= (long) Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH * Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT;
+    }
+
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
+      captchaGeneratorRamConsumed *= ProtocolVersion.values().length / 2f;
+    } else {
+      captchaGeneratorRamConsumed *= MapPalette.MapVersion.values().length;
+    }
+
+    double captchaGeneratorRamGigabytesConsumed = captchaGeneratorRamConsumed / 1024.0 / 1024.0 / 1024.0;
+
+    String ramWarning = String.format("Current captcha generator settings will consume %.2fGB RAM normally and %.2fGB RAM on reloads",
+        captchaGeneratorRamGigabytesConsumed, captchaGeneratorRamGigabytesConsumed * 2);
+
+    if (captchaGeneratorRamConsumed > Runtime.getRuntime().maxMemory() * 2 / 3) {
+      LOGGER.warn(ramWarning);
+      LOGGER.warn("Modify the config to decrease RAM consumption");
+    } else {
+      LOGGER.info(ramWarning);
+      LOGGER.info("Modify the config to decrease RAM consumption");
     }
 
     BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L); // One tick == 50 millis
