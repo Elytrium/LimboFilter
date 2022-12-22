@@ -38,9 +38,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.java.commons.mc.serialization.Serializer;
@@ -102,6 +105,7 @@ public class LimboFilter {
   private static Serializer SERIALIZER;
 
   private final Map<String, CachedUser> cachedFilterChecks = new ConcurrentHashMap<>();
+  private final Set<String> verifiedOnlineModePlayers = Collections.synchronizedSet(new HashSet<>());
 
   private final Path dataDirectory;
   private final File configFile;
@@ -379,6 +383,19 @@ public class LimboFilter {
       return true;
     }
   }
+
+  public boolean isVerifiedOnlineMode(String username) {
+    return this.verifiedOnlineModePlayers.contains(username);
+  }
+
+  public void setVerifiedOnlineMode(String username) {
+    this.verifiedOnlineModePlayers.add(username);
+  }
+
+  public void unsetVerifiedOnlineMode(String username) {
+    this.verifiedOnlineModePlayers.remove(username);
+  }
+
 
   public void sendToFilterServer(Player player) {
     try {

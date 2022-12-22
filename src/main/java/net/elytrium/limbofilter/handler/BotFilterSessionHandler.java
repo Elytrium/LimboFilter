@@ -314,7 +314,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.state = CheckState.SUCCESSFUL;
     this.plugin.cacheFilterUser(this.proxyPlayer);
 
-    if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
+    if (this.plugin.isVerifiedOnlineMode(this.proxyPlayer.getUsername())
         || this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.NEED_TO_RECONNECT)) {
       this.disconnect(this.plugin.getPackets().getSuccessfulBotFilterDisconnect(), false);
     } else {
