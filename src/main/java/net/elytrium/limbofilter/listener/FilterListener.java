@@ -19,6 +19,7 @@ package net.elytrium.limbofilter.listener;
 
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.event.query.ProxyQueryEvent;
@@ -41,8 +42,14 @@ public class FilterListener {
 
     if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
         && this.plugin.shouldCheck(event.getUsername(), event.getConnection().getRemoteAddress().getAddress())) {
+      this.plugin.setVerifiedOnlineMode(event.getUsername());
       event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
     }
+  }
+
+  @Subscribe
+  public void onProxyDisconnect(DisconnectEvent event) {
+    this.plugin.unsetVerifiedOnlineMode(event.getPlayer().getUsername());
   }
 
   @Subscribe(order = PostOrder.FIRST)

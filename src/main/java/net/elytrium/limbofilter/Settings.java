@@ -87,7 +87,7 @@ public class Settings extends YamlConfig {
     public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
 
     public boolean LOAD_WORLD = false;
-    @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (saved in 1.17 - 1.18.2).")
+    @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (any Minecraft version is supported, but the latest one is recommended)")
     public String WORLD_FILE_TYPE = "structure";
     public String WORLD_FILE_PATH = "world.nbt";
 
@@ -189,7 +189,7 @@ public class Settings extends YamlConfig {
 
     public static class CAPTCHA_GENERATOR {
 
-      @Comment("Prepares Captcha packets, uses ~0.5GB RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
+      @Comment("Prepares Captcha packets, consumes x8 more RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
       public boolean PREPARE_CAPTCHA_PACKETS = false;
       @Comment("List of paths to the background image to draw on captcha. Any format, 128x128 128x128 px (will be automatically resized and stretched to the correct size). [] if empty.")
       public List<String> BACKPLATE_PATHS = List.of("");
