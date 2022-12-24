@@ -311,6 +311,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       return;
     }
 
+    if (this.checkPing()) {
+      return;
+    }
+
     this.state = CheckState.SUCCESSFUL;
     this.plugin.cacheFilterUser(this.proxyPlayer);
 
@@ -321,6 +325,18 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       this.player.writePacketAndFlush(this.plugin.getPackets().getSuccessfulBotFilterChat());
       this.player.disconnect();
     }
+  }
+
+  private boolean checkPing() {
+    if (Settings.IMP.MAIN.TCP_LISTENER.ENABLED && Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED
+        && (this.player.getPing() - this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress()))
+        > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFFERENCE) {
+      this.disconnect(this.plugin.getPackets().getKickProxyCheck(), true);
+
+      return true;
+    }
+
+    return false;
   }
 
   private void changeStateToCaptcha() {

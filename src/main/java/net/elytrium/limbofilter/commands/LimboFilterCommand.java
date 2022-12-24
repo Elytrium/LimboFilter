@@ -23,6 +23,7 @@ import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
+import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +82,8 @@ public class LimboFilterCommand implements SimpleCommand {
           this.plugin,
           () -> PLAYERS_WITH_STATS.stream()
               .map(server::getPlayer)
-              .forEach(optionalPlayer -> optionalPlayer.ifPresent(player -> player.sendActionBar(this.createStatsComponent(player.getPing()))))
+              .forEach(optionalPlayer -> optionalPlayer.ifPresent(
+                  player -> player.sendActionBar(this.createStatsComponent(player.getRemoteAddress().getAddress(), player.getPing()))))
       ).repeat(1, TimeUnit.SECONDS).schedule();
     }
 
@@ -141,7 +143,7 @@ public class LimboFilterCommand implements SimpleCommand {
             source.sendMessage(this.statsEnabled, MessageType.SYSTEM);
           }
         } else {
-          source.sendMessage(this.createStatsComponent(-1), MessageType.SYSTEM);
+          source.sendMessage(this.createStatsComponent(null, -1), MessageType.SYSTEM);
         }
 
         return;
@@ -164,7 +166,7 @@ public class LimboFilterCommand implements SimpleCommand {
     }
   }
 
-  private Component createStatsComponent(long ping) {
+  private Component createStatsComponent(InetAddress address, long ping) {
     Statistics statistics = this.plugin.getStatistics();
     return LimboFilter.getSerializer().deserialize(
         MessageFormat.format(
@@ -173,7 +175,8 @@ public class LimboFilterCommand implements SimpleCommand {
             statistics.getConnections() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_CPS,
             statistics.getPings() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_PPS,
             statistics.getTotalConnection(),
-            ping
+            ping,
+            statistics.getPing(address)
         )
     );
   }

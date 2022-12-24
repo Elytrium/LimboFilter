@@ -314,6 +314,36 @@ public class Settings extends YamlConfig {
     public String BOTFILTER_DIMENSION = "THE_END";
 
     @Create
+    public MAIN.TCP_LISTENER TCP_LISTENER;
+
+    public static class TCP_LISTENER {
+
+      @Comment({
+          "Needs libpcap (libpcap-dev) on Linux; WinPcap/npcap on Windows",
+          "Needs CAP_NET_RAW (or super-user) on Linux",
+      })
+      public boolean ENABLED = false;
+
+      @Comment({
+          "Experimental proxy check feature",
+          "Checks the proxy via comparing L4 (TCP PSH+ACK -> TCP ACK) and L7 (Minecraft KeepAlive) ping",
+          "Works better with falling check enabled (50+ falling-check-ticks)"
+      })
+      public boolean PROXY_DETECTOR_ENABLED = false;
+
+      @Comment("Difference between TCP (L4) and Minecraft (L7) ping in milliseconds to detect proxies.")
+      public int PROXY_DETECTOR_DIFFERENCE = 5;
+
+      public String INTERFACE_NAME = "any";
+
+      @Comment("How many bytes we should take from the each frame to analyse. 120 is enough for any TCP+IP header analysing")
+      public int SNAPLEN = 120;
+
+      @Comment("Time in millis for capturing frames")
+      public int TIMEOUT = 10;
+    }
+
+    @Create
     public MAIN.STRINGS STRINGS;
 
     @Comment("Leave title fields empty to disable.")
@@ -324,6 +354,7 @@ public class Settings extends YamlConfig {
 
       public String CLIENT_SETTINGS_KICK = "{PRFX}{NL}&cYour client doesn't send settings packets.";
       public String CLIENT_BRAND_KICK = "{PRFX}{NL}&cYour client doesn't send brand packet or it's blocked.";
+      public String PROXY_CHECK_KICK = "{PRFX}{NL}&cYour connection is suspicious.";
 
       public String CHECKING_CHAT = "{PRFX} Bot-Filter check was started, please wait and don't move..";
       public String CHECKING_TITLE = "{PRFX}";
@@ -341,7 +372,7 @@ public class Settings extends YamlConfig {
       public String FALLING_CHECK_FAILED_KICK = "{PRFX}{NL}&cFalling Check was failed.{NL}&6Please, rejoin the server.";
       public String TIMES_UP = "{PRFX}{NL}&cYou have exceeded the maximum Bot-Filter check time.{NL}&6Please, rejoin the server.";
 
-      public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| Ping: &6&l{4}";
+      public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| L7 Ping: &6&l{4} &c&l| L4 Ping: &6&l{5}";
       public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
       public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
 
