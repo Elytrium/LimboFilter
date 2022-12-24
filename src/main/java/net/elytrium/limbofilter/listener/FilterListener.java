@@ -50,6 +50,8 @@ public class FilterListener {
   @Subscribe
   public void onProxyDisconnect(DisconnectEvent event) {
     this.plugin.unsetVerifiedOnlineMode(event.getPlayer().getUsername());
+    this.plugin.getStatistics().removeAddress(event.getPlayer().getRemoteAddress().getAddress());
+    this.plugin.getTcpListener().removeAddress(event.getPlayer().getRemoteAddress().getAddress());
   }
 
   @Subscribe(order = PostOrder.FIRST)

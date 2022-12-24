@@ -318,26 +318,29 @@ public class Settings extends YamlConfig {
 
     public static class TCP_LISTENER {
 
-      public boolean ENABLED = true;
+      @Comment({
+          "Needs libpcap (libpcap-dev) on Linux; WinPcap/npcap on Windows",
+          "Needs CAP_NET_RAW (or super-user) on Linux",
+      })
+      public boolean ENABLED = false;
 
-      public boolean PROXY_DETECTOR_ENABLED = true;
+      @Comment({
+          "Experimental proxy check feature",
+          "Checks the proxy via comparing L4 (TCP PSH+ACK -> TCP ACK) and L7 (Minecraft KeepAlive) ping",
+          "Works better with falling check enabled (50+ falling-check-ticks)"
+      })
+      public boolean PROXY_DETECTOR_ENABLED = false;
 
       @Comment("Difference between TCP (L4) and Minecraft (L7) ping in milliseconds to detect proxies.")
-      public int PROXY_DETECTOR_DIFF = 50;
-
-      @Comment("Set to \"\" to disable. ipset commands can be set there.")
-      public String PROXY_BAN_COMMAND = "";
+      public int PROXY_DETECTOR_DIFFERENCE = 5;
 
       public String INTERFACE_NAME = "any";
 
-      @Comment("How many bytes we should analyse from the each frame. 120 is enough for any TCP+IP header analysing")
+      @Comment("How many bytes we should take from the each frame to analyse. 120 is enough for any TCP+IP header analysing")
       public int SNAPLEN = 120;
 
       @Comment("Time in millis for capturing frames")
       public int TIMEOUT = 10;
-
-      @Comment("Packet count to capture at time")
-      public int PACKET_COUNT = 1000;
     }
 
     @Create

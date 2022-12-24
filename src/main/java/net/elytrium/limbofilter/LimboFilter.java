@@ -127,6 +127,7 @@ public class LimboFilter {
   private CaptchaGenerator generator;
   private CachedPackets packets;
   private boolean logsDisabled;
+  private TcpListener tcpListener;
 
   @Inject
   public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -337,10 +338,16 @@ public class LimboFilter {
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));
 
+    if (this.tcpListener != null) {
+      this.tcpListener.stop();
+      this.tcpListener = null;
+    }
+
     if (Settings.IMP.MAIN.TCP_LISTENER.ENABLED) {
       try {
         LOGGER.info("Initializing TCP Listener");
-        new TcpListener(this).start();
+        this.tcpListener = new TcpListener(this);
+        this.tcpListener.start();
       } catch (PcapNativeException | NotOpenException e) {
         new Exception("Got exception when starting TCP listener. Disable it if you are unsure what does it does.", e).printStackTrace();
       }
@@ -498,6 +505,10 @@ public class LimboFilter {
 
   public Statistics getStatistics() {
     return this.statistics;
+  }
+
+  public TcpListener getTcpListener() {
+    return this.tcpListener;
   }
 
   public CaptchaHolder getNextCaptcha() {

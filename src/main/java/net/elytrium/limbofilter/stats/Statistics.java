@@ -38,7 +38,6 @@ public class Statistics {
   private final AtomicLong interpolatedCpsBefore = new AtomicLong();
   private final AtomicLong interpolatedPpsBefore = new AtomicLong();
   private final List<ScheduledTask> scheduledTaskList = new LinkedList<>();
-
   private final Map<InetAddress, Integer> pingMap = new HashMap<>();
 
   public void addBlockedConnection() {
@@ -130,7 +129,11 @@ public class Statistics {
   }
 
   public void updatePing(InetAddress address, int currentPing) {
-    int previousPing = this.pingMap.get(address);
+    Integer previousPing = this.pingMap.get(address);
+    if (previousPing == null) {
+      previousPing = 0;
+    }
+
     this.pingMap.put(address, (previousPing * 3 + currentPing) / 4);
   }
 
@@ -142,5 +145,9 @@ public class Statistics {
     } else {
       return ping;
     }
+  }
+
+  public void removeAddress(InetAddress address) {
+    this.pingMap.remove(address);
   }
 }

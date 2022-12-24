@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.pcap4j.core.BpfProgram;
 import org.pcap4j.core.NotOpenException;
 import org.pcap4j.core.PacketListener;
@@ -41,15 +42,12 @@ import org.pcap4j.packet.factory.statik.services.StaticPacketFactoryBinderProvid
 public class TcpListener {
 
   private final LimboFilter plugin;
-  private final Map<InetAddress, Long> tempPingTimestamp = new HashMap<>();
+  private final Map<InetAddress, TcpAwaitingPacket> tempPingTimestamp = new HashMap<>();
+  @MonotonicNonNull
+  private Thread thread;
 
   static {
     Objects.requireNonNull(StaticPacketFactoryBinderProvider.class);
-    try {
-      Class.forName("org.pcap4j.packet.factory.statik.services.StaticPacketFactoryBinder");
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   public TcpListener(LimboFilter plugin) {
@@ -68,9 +66,10 @@ public class TcpListener {
     int port = ((VelocityConfiguration) this.plugin.getServer().getConfiguration()).getBind().getPort();
     handle.setFilter("tcp and (dst port " + port + " or src port " + port + ")", BpfProgram.BpfCompileMode.OPTIMIZE);
 
-    new Thread(() -> {
+    this.thread = new Thread(() -> {
       try {
-        handle.loop(Settings.IMP.MAIN.TCP_LISTENER.PACKET_COUNT, (PacketListener) rawPacket -> {
+        Thread.currentThread().setContextClassLoader(LimboFilter.class.getClassLoader());
+        handle.loop(-1, (PacketListener) rawPacket -> {
           IpPacket ipPacket = rawPacket.get(IpPacket.class);
           IpPacket.IpHeader ipHeader = ipPacket.getHeader();
 
@@ -78,19 +77,43 @@ public class TcpListener {
           TcpPacket.TcpHeader tcpHeader = tcpPacket.getHeader();
 
           if (localAddresses.contains(ipHeader.getSrcAddr()) && tcpHeader.getPsh() && tcpHeader.getAck()) {
-            this.tempPingTimestamp.put(ipHeader.getDstAddr(), System.currentTimeMillis());
+            this.tempPingTimestamp.put(ipHeader.getDstAddr(), new TcpAwaitingPacket(tcpHeader.getAcknowledgmentNumber(), System.currentTimeMillis()));
           }
 
           if (localAddresses.contains(ipHeader.getDstAddr()) && tcpHeader.getAck()) {
-            Long tempPingTimestamp = this.tempPingTimestamp.remove(ipHeader.getDstAddr());
-            if (tempPingTimestamp != null) {
-              this.plugin.getStatistics().updatePing(ipHeader.getSrcAddr(), (int) (System.currentTimeMillis() - tempPingTimestamp));
+            TcpAwaitingPacket awaitingPacket = this.tempPingTimestamp.remove(ipHeader.getSrcAddr());
+            if (awaitingPacket != null && awaitingPacket.seq == tcpHeader.getSequenceNumber()) {
+              int pingDiff = (int) (System.currentTimeMillis() - awaitingPacket.time);
+              if (pingDiff > 2) {
+                this.plugin.getStatistics().updatePing(ipHeader.getSrcAddr(), (int) (System.currentTimeMillis() - awaitingPacket.time));
+              }
             }
           }
         });
       } catch (PcapNativeException | InterruptedException | NotOpenException e) {
         e.printStackTrace();
       }
-    }).start();
+    });
+
+    this.thread.start();
+  }
+
+  public void removeAddress(InetAddress address) {
+    this.tempPingTimestamp.remove(address);
+  }
+
+  public void stop() {
+    this.thread.interrupt();
+  }
+
+  private static class TcpAwaitingPacket {
+
+    private final int seq;
+    private final long time;
+
+    private TcpAwaitingPacket(int seq, long time) {
+      this.seq = seq;
+      this.time = time;
+    }
   }
 }
