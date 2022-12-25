@@ -43,7 +43,7 @@ public class CaptchaPainter {
   private final List<Color> curveColor;
   private final int width;
   private final int height;
-  private Iterator<Color> curveColorIterator;
+  private ThreadLocal<Iterator<Color>> curveColorIterator;
 
   public CaptchaPainter(int width, int height) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
@@ -69,7 +69,7 @@ public class CaptchaPainter {
       this.curveColor = Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.stream()
           .map(c -> new Color(Integer.parseInt(c, 16)))
           .collect(Collectors.toUnmodifiableList());
-      this.curveColorIterator = this.curveColor.iterator();
+      this.curveColorIterator = ThreadLocal.withInitial(this.curveColor::iterator);
     } else {
       this.curveColor = null;
     }
@@ -103,11 +103,11 @@ public class CaptchaPainter {
 
     BufferedImage bufferedImage = this.createImage();
     Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
-    if (!this.curveColorIterator.hasNext()) {
-      this.curveColorIterator = this.curveColor.iterator();
+    if (!this.curveColorIterator.get().hasNext()) {
+      this.curveColorIterator.set(this.curveColor.iterator());
     }
 
-    graphics.setColor(this.curveColorIterator.next());
+    graphics.setColor(this.curveColorIterator.get().next());
 
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; ++i) {
       this.addCurve(graphics);
