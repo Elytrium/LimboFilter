@@ -27,9 +27,11 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.Settings;
 
@@ -38,9 +40,10 @@ public class CaptchaPainter {
   private final ThreadLocalRandom random = ThreadLocalRandom.current();
   private final ThreadLocal<byte[][]> buffers;
   private final List<CaptchaEffect> effects = new LinkedList<>();
-  private final Color curveColor = new Color(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLOR, 16));
+  private final List<Color> curveColor;
   private final int width;
   private final int height;
+  private Iterator<Color> curveColorIterator;
 
   public CaptchaPainter(int width, int height) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
@@ -61,6 +64,15 @@ public class CaptchaPainter {
     this.buffers = ThreadLocal.withInitial(() -> new byte[length + 1][width * height]);
     this.width = width;
     this.height = height;
+
+    if (!Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.isEmpty()) {
+      this.curveColor = Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.stream()
+          .map(c -> new Color(Integer.parseInt(c, 16)))
+          .collect(Collectors.toUnmodifiableList());
+      this.curveColorIterator = this.curveColor.iterator();
+    } else {
+      this.curveColor = null;
+    }
   }
 
   public byte[] drawCaptcha(RenderedFont font, byte[] foreground, String text) {
@@ -85,9 +97,17 @@ public class CaptchaPainter {
   }
 
   public int[] drawCurves() {
+    if (this.curveColor == null || Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT == 0) {
+      return null;
+    }
+
     BufferedImage bufferedImage = this.createImage();
     Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
-    graphics.setColor(this.curveColor);
+    if (!this.curveColorIterator.hasNext()) {
+      this.curveColorIterator = this.curveColor.iterator();
+    }
+
+    graphics.setColor(this.curveColorIterator.next());
 
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; ++i) {
       this.addCurve(graphics);

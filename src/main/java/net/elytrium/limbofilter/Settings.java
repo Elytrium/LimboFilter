@@ -82,9 +82,13 @@ public class Settings extends YamlConfig {
         "CAPTCHA_ON_POSITION_FAILED -> Initially, the falling check will be started, but if the player fails that check, the captcha checking will be started."
     })
     public String CHECK_STATE = "CAPTCHA_POSITION";
-
     @Comment("See \"filter-auto-toggle.check-state-toggle\".")
     public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
+
+    @Comment("See \"filter-auto-toggle.check-state-toggle\".")
+    public String GEYSER_CHECK_STATE = "CAPTCHA_POSITION";
+    @Comment("See \"filter-auto-toggle.check-state-toggle\".")
+    public String GEYSER_CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
 
     public boolean LOAD_WORLD = false;
     @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (any Minecraft version is supported, but the latest one is recommended)")
@@ -218,7 +222,8 @@ public class Settings extends YamlConfig {
       public int CURVE_SIZE = 2;
       @Comment("Set 0 to disable")
       public int CURVES_AMOUNT = 3;
-      public String CURVES_COLOR = "000000";
+      @Comment("RGB colors without #")
+      public List<String> CURVES_COLORS = List.of("000000");
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
       public String PATTERN = "abcdefghijklmnopqrstuvwxyz1234567890";
@@ -325,6 +330,7 @@ public class Settings extends YamlConfig {
           "Works better with falling check enabled (150+ falling-check-ticks)",
           "Needs libpcap (libpcap-dev) on Linux; WinPcap/npcap on Windows",
           "Needs CAP_NET_RAW (or super-user) on Linux",
+          "Doesn't work if Velocity is behind reverse-proxy (haproxy, protection services, etc)",
       })
       public boolean PROXY_DETECTOR_ENABLED = false;
 

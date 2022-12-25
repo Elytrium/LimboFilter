@@ -48,6 +48,10 @@ public class CraftMapCanvas {
   }
 
   public void drawImage(int[] image, int width, int height) {
+    if (image == null) {
+      return;
+    }
+
     this.drawImageCraft(MapPalette.imageToBytes(image, ProtocolVersion.MAXIMUM_VERSION), width, height);
   }
 

@@ -38,12 +38,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.java.commons.mc.serialization.Serializer;
@@ -108,7 +105,6 @@ public class LimboFilter {
   private static Serializer SERIALIZER;
 
   private final Map<String, CachedUser> cachedFilterChecks = new ConcurrentHashMap<>();
-  private final Set<String> verifiedOnlineModePlayers = Collections.synchronizedSet(new HashSet<>());
 
   private final Path dataDirectory;
   private final File configFile;
@@ -381,6 +377,10 @@ public class LimboFilter {
         username,
         new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis() + Settings.IMP.MAIN.PURGE_CACHE_MILLIS)
     );
+  }
+
+  public void resetCacheForFilterUser(Player player) {
+    this.cachedFilterChecks.remove(player.getUsername());
   }
 
   public boolean shouldCheck(Player player) {

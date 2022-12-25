@@ -30,7 +30,6 @@ import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.velocity.commands.SuggestUtils;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
-import net.kyori.adventure.audience.MessageType;
 
 public class SendFilterCommand implements SimpleCommand {
 
@@ -57,25 +56,18 @@ public class SendFilterCommand implements SimpleCommand {
       Optional<RegisteredServer> registeredServer = server.getServer(target);
       if (registeredServer.isPresent()) {
         Collection<Player> players = registeredServer.get().getPlayersConnected();
+        players.forEach(this.plugin::resetCacheForFilterUser);
         players.forEach(this.plugin::sendToFilterServer);
-        source.sendMessage(
-            serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_SERVER_SUCCESSFUL, players.size(), target)),
-            MessageType.SYSTEM
-        );
+        source.sendMessage(serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_SERVER_SUCCESSFUL, players.size(), target)));
       } else {
         Optional<Player> optionalPlayer = server.getPlayer(target);
         if (optionalPlayer.isPresent()) {
           Player player = optionalPlayer.get();
+          this.plugin.resetCacheForFilterUser(player);
           this.plugin.sendToFilterServer(player);
-          source.sendMessage(
-              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_PLAYER_SUCCESSFUL, player.getUsername())),
-              MessageType.SYSTEM
-          );
+          source.sendMessage(serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_PLAYER_SUCCESSFUL, player.getUsername())));
         } else {
-          source.sendMessage(
-              serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_FAILED, target)),
-              MessageType.SYSTEM
-          );
+          source.sendMessage(serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_FAILED, target)));
         }
       }
     }

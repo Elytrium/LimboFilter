@@ -96,9 +96,15 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.posY = this.validY;
     this.posZ = this.validZ;
 
-    this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
-        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE)
-        : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
+    if (proxyPlayer.getRemoteAddress().getPort() == 0) {
+      this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
+          ? CheckState.valueOf(Settings.IMP.MAIN.GEYSER_CHECK_STATE)
+          : CheckState.valueOf(Settings.IMP.MAIN.GEYSER_CHECK_STATE_NON_TOGGLED);
+    } else {
+      this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
+          ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE)
+          : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
+    }
   }
 
   @Override
@@ -247,7 +253,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   @Override
   public void onChat(String message) {
     if (this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA) {
-      if (message.equals(this.captchaAnswer)) {
+      if (message.equals(this.captchaAnswer) || (message.startsWith("/") && message.substring(1).equals(this.captchaAnswer))) {
         this.player.writePacketAndFlush(this.plugin.getPackets().getResetSlot());
         this.finishCheck();
       } else if (--this.attempts != 0) {
