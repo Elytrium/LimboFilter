@@ -33,6 +33,7 @@ import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
+import net.elytrium.limbofilter.listener.TcpListener;
 import net.elytrium.limbofilter.protocol.data.EntityMetadata;
 import net.elytrium.limbofilter.protocol.data.ItemFrame;
 import net.elytrium.limbofilter.protocol.packets.Interact;
@@ -285,6 +286,11 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   @Override
   public void onDisconnect() {
     this.filterMainTask.cancel(true);
+
+    TcpListener tcpListener = this.plugin.getTcpListener();
+    if (tcpListener != null) {
+      tcpListener.removeAddress(this.proxyPlayer.getRemoteAddress().getAddress());
+    }
   }
 
   private void finishCheck() {
@@ -328,7 +334,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private boolean checkPing() {
-    if (Settings.IMP.MAIN.TCP_LISTENER.ENABLED && Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED
+    if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED
         && (this.player.getPing() - this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress()))
         > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFFERENCE) {
       this.disconnect(this.plugin.getPackets().getKickProxyCheck(), true);

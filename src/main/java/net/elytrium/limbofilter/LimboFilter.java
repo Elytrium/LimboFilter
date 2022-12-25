@@ -343,7 +343,7 @@ public class LimboFilter {
       this.tcpListener = null;
     }
 
-    if (Settings.IMP.MAIN.TCP_LISTENER.ENABLED) {
+    if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED) {
       try {
         LOGGER.info("Initializing TCP Listener");
         this.tcpListener = new TcpListener(this);
@@ -418,6 +418,10 @@ public class LimboFilter {
 
   public void sendToFilterServer(Player player) {
     try {
+      if (this.tcpListener != null) {
+        this.tcpListener.registerAddress(player.getRemoteAddress().getAddress());
+      }
+
       this.checkLoggerToDisable();
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {

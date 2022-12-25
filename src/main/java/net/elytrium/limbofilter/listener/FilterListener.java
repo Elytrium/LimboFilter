@@ -55,11 +55,6 @@ public class FilterListener {
     if (statistics != null) {
       statistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
     }
-
-    TcpListener tcpListener = this.plugin.getTcpListener();
-    if (tcpListener != null) {
-      tcpListener.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
-    }
   }
 
   @Subscribe(order = PostOrder.FIRST)

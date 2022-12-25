@@ -86,13 +86,11 @@ public class TcpListener {
                 previousPacket.seq = tcpHeader.getAcknowledgmentNumber();
                 previousPacket.time = currentTime;
               }
-            } else {
-              this.tempPingTimestamp.put(ipHeader.getDstAddr(), new TcpAwaitingPacket(tcpHeader.getAcknowledgmentNumber(), System.currentTimeMillis()));
             }
           }
 
           if (localAddresses.contains(ipHeader.getDstAddr()) && tcpHeader.getAck()) {
-            TcpAwaitingPacket awaitingPacket = this.tempPingTimestamp.remove(ipHeader.getSrcAddr());
+            TcpAwaitingPacket awaitingPacket = this.tempPingTimestamp.get(ipHeader.getSrcAddr());
             if (awaitingPacket != null && awaitingPacket.seq == tcpHeader.getSequenceNumber()) {
               int pingDiff = (int) (System.currentTimeMillis() - awaitingPacket.time);
               if (pingDiff > 2) {
@@ -107,6 +105,10 @@ public class TcpListener {
     });
 
     this.thread.start();
+  }
+
+  public void registerAddress(InetAddress address) {
+    this.tempPingTimestamp.put(address, new TcpAwaitingPacket(Integer.MIN_VALUE, 0));
   }
 
   public void removeAddress(InetAddress address) {
