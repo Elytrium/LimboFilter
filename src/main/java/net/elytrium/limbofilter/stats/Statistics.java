@@ -129,12 +129,7 @@ public class Statistics {
   }
 
   public void updatePing(InetAddress address, int currentPing) {
-    Integer previousPing = this.pingMap.get(address);
-    if (previousPing == null) {
-      previousPing = 0;
-    }
-
-    this.pingMap.put(address, (previousPing * 3 + currentPing) / 4);
+    this.pingMap.merge(address, currentPing, (previousPing, newPing) -> (previousPing * 3 + newPing) / 4);
   }
 
   public int getPing(InetAddress address) {

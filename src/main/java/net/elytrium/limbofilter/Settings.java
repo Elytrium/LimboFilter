@@ -339,6 +339,9 @@ public class Settings extends YamlConfig {
       @Comment("How many bytes we should take from the each frame to analyse. 120 is enough for any TCP+IP header analysing")
       public int SNAPLEN = 120;
 
+      @Comment("How many milliseconds should the delay be between frame analysis.")
+      public int LISTEN_DELAY = 50;
+
       @Comment("Time in millis for capturing frames")
       public int TIMEOUT = 10;
     }

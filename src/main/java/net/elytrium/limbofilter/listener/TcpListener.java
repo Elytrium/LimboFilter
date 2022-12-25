@@ -69,6 +69,8 @@ public class TcpListener {
     this.thread = new Thread(() -> {
       try {
         Thread.currentThread().setContextClassLoader(LimboFilter.class.getClassLoader());
+        long listenDelay = Settings.IMP.MAIN.TCP_LISTENER.LISTEN_DELAY;
+
         handle.loop(-1, (PacketListener) rawPacket -> {
           IpPacket ipPacket = rawPacket.get(IpPacket.class);
           IpPacket.IpHeader ipHeader = ipPacket.getHeader();
@@ -77,7 +79,16 @@ public class TcpListener {
           TcpPacket.TcpHeader tcpHeader = tcpPacket.getHeader();
 
           if (localAddresses.contains(ipHeader.getSrcAddr()) && tcpHeader.getPsh() && tcpHeader.getAck()) {
-            this.tempPingTimestamp.put(ipHeader.getDstAddr(), new TcpAwaitingPacket(tcpHeader.getAcknowledgmentNumber(), System.currentTimeMillis()));
+            TcpAwaitingPacket previousPacket = this.tempPingTimestamp.get(ipHeader.getDstAddr());
+            if (previousPacket != null) {
+              long currentTime = System.currentTimeMillis();
+              if (previousPacket.time + listenDelay <= currentTime) {
+                previousPacket.seq = tcpHeader.getAcknowledgmentNumber();
+                previousPacket.time = currentTime;
+              }
+            } else {
+              this.tempPingTimestamp.put(ipHeader.getDstAddr(), new TcpAwaitingPacket(tcpHeader.getAcknowledgmentNumber(), System.currentTimeMillis()));
+            }
           }
 
           if (localAddresses.contains(ipHeader.getDstAddr()) && tcpHeader.getAck()) {
@@ -85,7 +96,7 @@ public class TcpListener {
             if (awaitingPacket != null && awaitingPacket.seq == tcpHeader.getSequenceNumber()) {
               int pingDiff = (int) (System.currentTimeMillis() - awaitingPacket.time);
               if (pingDiff > 2) {
-                this.plugin.getStatistics().updatePing(ipHeader.getSrcAddr(), (int) (System.currentTimeMillis() - awaitingPacket.time));
+                this.plugin.getStatistics().updatePing(ipHeader.getSrcAddr(), pingDiff);
               }
             }
           }
@@ -108,8 +119,8 @@ public class TcpListener {
 
   private static class TcpAwaitingPacket {
 
-    private final int seq;
-    private final long time;
+    private int seq;
+    private long time;
 
     private TcpAwaitingPacket(int seq, long time) {
       this.seq = seq;

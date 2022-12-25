@@ -27,6 +27,7 @@ import com.velocitypowered.api.proxy.Player;
 import net.elytrium.limboapi.api.event.LoginLimboRegisterEvent;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.elytrium.limbofilter.stats.Statistics;
 
 public class FilterListener {
 
@@ -50,8 +51,15 @@ public class FilterListener {
   @Subscribe
   public void onProxyDisconnect(DisconnectEvent event) {
     this.plugin.unsetVerifiedOnlineMode(event.getPlayer().getUsername());
-    this.plugin.getStatistics().removeAddress(event.getPlayer().getRemoteAddress().getAddress());
-    this.plugin.getTcpListener().removeAddress(event.getPlayer().getRemoteAddress().getAddress());
+    Statistics statistics = this.plugin.getStatistics();
+    if (statistics != null) {
+      statistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
+    }
+
+    TcpListener tcpListener = this.plugin.getTcpListener();
+    if (tcpListener != null) {
+      tcpListener.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
+    }
   }
 
   @Subscribe(order = PostOrder.FIRST)
