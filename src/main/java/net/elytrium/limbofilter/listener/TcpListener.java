@@ -44,7 +44,7 @@ public class TcpListener {
   private final LimboFilter plugin;
   private final Map<InetAddress, TcpAwaitingPacket> tempPingTimestamp = new HashMap<>();
   @MonotonicNonNull
-  private Thread thread;
+  private PcapHandle handle;
 
   static {
     Objects.requireNonNull(StaticPacketFactoryBinderProvider.class);
@@ -59,19 +59,19 @@ public class TcpListener {
         .collect(Collectors.toSet());
 
     PcapNetworkInterface networkInterface = Pcaps.getDevByName(Settings.IMP.MAIN.TCP_LISTENER.INTERFACE_NAME);
-    PcapHandle handle = networkInterface.openLive(Settings.IMP.MAIN.TCP_LISTENER.SNAPLEN, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS,
+    this.handle = networkInterface.openLive(Settings.IMP.MAIN.TCP_LISTENER.SNAPLEN, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS,
         Settings.IMP.MAIN.TCP_LISTENER.TIMEOUT
     );
 
     int port = ((VelocityConfiguration) this.plugin.getServer().getConfiguration()).getBind().getPort();
-    handle.setFilter("tcp and (dst port " + port + " or src port " + port + ")", BpfProgram.BpfCompileMode.OPTIMIZE);
+    this.handle.setFilter("tcp and (dst port " + port + " or src port " + port + ")", BpfProgram.BpfCompileMode.OPTIMIZE);
 
-    this.thread = new Thread(() -> {
+    new Thread(() -> {
       try {
         Thread.currentThread().setContextClassLoader(LimboFilter.class.getClassLoader());
         long listenDelay = Settings.IMP.MAIN.TCP_LISTENER.LISTEN_DELAY;
 
-        handle.loop(-1, (PacketListener) rawPacket -> {
+        this.handle.loop(-1, (PacketListener) rawPacket -> {
           IpPacket ipPacket = rawPacket.get(IpPacket.class);
           IpPacket.IpHeader ipHeader = ipPacket.getHeader();
 
@@ -99,12 +99,12 @@ public class TcpListener {
             }
           }
         });
-      } catch (PcapNativeException | InterruptedException | NotOpenException e) {
+      } catch (PcapNativeException | NotOpenException e) {
         e.printStackTrace();
-      }
-    });
+      } catch (InterruptedException ignored) {
 
-    this.thread.start();
+      }
+    }).start();
   }
 
   public void registerAddress(InetAddress address) {
@@ -116,7 +116,11 @@ public class TcpListener {
   }
 
   public void stop() {
-    this.thread.interrupt();
+    try {
+      this.handle.breakLoop();
+    } catch (NotOpenException e) {
+      e.printStackTrace();
+    }
   }
 
   private static class TcpAwaitingPacket {
