@@ -43,14 +43,12 @@ public class FilterListener {
 
     if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
         && this.plugin.shouldCheck(event.getUsername(), event.getConnection().getRemoteAddress().getAddress())) {
-      this.plugin.setVerifiedOnlineMode(event.getUsername());
       event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
     }
   }
 
   @Subscribe
   public void onProxyDisconnect(DisconnectEvent event) {
-    this.plugin.unsetVerifiedOnlineMode(event.getPlayer().getUsername());
     Statistics statistics = this.plugin.getStatistics();
     if (statistics != null) {
       statistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());

@@ -152,7 +152,8 @@ public class Settings extends YamlConfig {
       @Comment({
           "Verify Online Mode connection before AntiBot.",
           "If connections per unit of time amount is bigger than the limit: online mode players will need to reconnect.",
-          "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting."
+          "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting.",
+          "Only works if you have an auth plugin installed. In other cases you should configure need-to-reconnect parameter"
       })
       public int ONLINE_MODE_VERIFY = 79;
 

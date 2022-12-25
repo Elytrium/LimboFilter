@@ -403,19 +403,6 @@ public class LimboFilter {
     }
   }
 
-  public boolean isVerifiedOnlineMode(String username) {
-    return this.verifiedOnlineModePlayers.contains(username);
-  }
-
-  public void setVerifiedOnlineMode(String username) {
-    this.verifiedOnlineModePlayers.add(username);
-  }
-
-  public void unsetVerifiedOnlineMode(String username) {
-    this.verifiedOnlineModePlayers.remove(username);
-  }
-
-
   public void sendToFilterServer(Player player) {
     try {
       if (this.tcpListener != null) {
