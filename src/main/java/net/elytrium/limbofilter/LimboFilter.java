@@ -71,6 +71,7 @@ import net.elytrium.limbofilter.protocol.packets.Interact;
 import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
 import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
 import net.elytrium.limbofilter.stats.Statistics;
+import net.elytrium.pcap.PcapException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.ComponentSerializer;
 import org.apache.logging.log4j.Level;
@@ -80,8 +81,6 @@ import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bstats.velocity.Metrics;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.pcap4j.core.NotOpenException;
-import org.pcap4j.core.PcapNativeException;
 import org.slf4j.Logger;
 
 @Plugin(
@@ -344,7 +343,7 @@ public class LimboFilter {
         LOGGER.info("Initializing TCP Listener");
         this.tcpListener = new TcpListener(this);
         this.tcpListener.start();
-      } catch (PcapNativeException | NotOpenException e) {
+      } catch (PcapException e) {
         new Exception("Got exception when starting TCP listener. Disable it if you are unsure what does it does.", e).printStackTrace();
       }
     }

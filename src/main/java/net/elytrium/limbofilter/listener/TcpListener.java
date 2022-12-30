@@ -19,6 +19,8 @@ package net.elytrium.limbofilter.listener;
 
 import com.velocitypowered.proxy.config.VelocityConfiguration;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -26,18 +28,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.elytrium.pcap.Pcap;
+import net.elytrium.pcap.PcapException;
+import net.elytrium.pcap.data.PcapAddress;
+import net.elytrium.pcap.data.PcapDevice;
+import net.elytrium.pcap.handle.BpfProgram;
+import net.elytrium.pcap.handle.PcapHandle;
+import net.elytrium.pcap.layer.IP;
+import net.elytrium.pcap.layer.Packet;
+import net.elytrium.pcap.layer.TCP;
+import net.elytrium.pcap.layer.data.LinkType;
+import net.elytrium.pcap.layer.exception.LayerDecodeException;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.pcap4j.core.BpfProgram;
-import org.pcap4j.core.NotOpenException;
-import org.pcap4j.core.PacketListener;
-import org.pcap4j.core.PcapAddress;
-import org.pcap4j.core.PcapHandle;
-import org.pcap4j.core.PcapNativeException;
-import org.pcap4j.core.PcapNetworkInterface;
-import org.pcap4j.core.Pcaps;
-import org.pcap4j.packet.IpPacket;
-import org.pcap4j.packet.TcpPacket;
-import org.pcap4j.packet.factory.statik.services.StaticPacketFactoryBinderProvider;
 
 public class TcpListener {
 
@@ -47,62 +49,76 @@ public class TcpListener {
   private PcapHandle handle;
 
   static {
-    Objects.requireNonNull(StaticPacketFactoryBinderProvider.class);
+    try {
+      Pcap.init();
+    } catch (PcapException e) {
+      e.printStackTrace();
+    }
   }
 
   public TcpListener(LimboFilter plugin) {
     this.plugin = plugin;
   }
 
-  public void start() throws PcapNativeException, NotOpenException {
-    Set<InetAddress> localAddresses = Pcaps.findAllDevs().stream().flatMap(e -> e.getAddresses().stream()).map(PcapAddress::getAddress)
-        .collect(Collectors.toSet());
-
-    PcapNetworkInterface networkInterface = Pcaps.getDevByName(Settings.IMP.MAIN.TCP_LISTENER.INTERFACE_NAME);
-    this.handle = networkInterface.openLive(Settings.IMP.MAIN.TCP_LISTENER.SNAPLEN, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS,
+  public void start() throws PcapException {
+    this.handle = Pcap.openLive(Settings.IMP.MAIN.TCP_LISTENER.INTERFACE_NAME, Settings.IMP.MAIN.TCP_LISTENER.SNAPLEN, 1,
         Settings.IMP.MAIN.TCP_LISTENER.TIMEOUT
     );
 
     int port = ((VelocityConfiguration) this.plugin.getServer().getConfiguration()).getBind().getPort();
-    this.handle.setFilter("tcp and (dst port " + port + " or src port " + port + ")", BpfProgram.BpfCompileMode.OPTIMIZE);
+    BpfProgram filter = this.handle.compile("tcp and (dst port " + port + " or src port " + port + ")", 1);
+    this.handle.setFilter(filter);
+    filter.free();
 
+    Set<InetAddress> localAddresses = Pcap.findAllDevs().stream()
+        .map(PcapDevice::getAddresses)
+        .flatMap(Collection::stream)
+        .map(PcapAddress::getAddress)
+        .filter(Objects::nonNull)
+        .map(InetSocketAddress::getAddress)
+        .collect(Collectors.toSet());
+
+    LinkType datalink = this.handle.datalink();
     new Thread(() -> {
+      Thread.currentThread().setContextClassLoader(LimboFilter.class.getClassLoader());
+      long listenDelay = Settings.IMP.MAIN.TCP_LISTENER.LISTEN_DELAY;
+
       try {
-        Thread.currentThread().setContextClassLoader(LimboFilter.class.getClassLoader());
-        long listenDelay = Settings.IMP.MAIN.TCP_LISTENER.LISTEN_DELAY;
+        this.handle.loop(-1, (packetHeader, rawPacket) -> {
+          try {
+            Packet packet = new Packet();
+            packet.decode(rawPacket, datalink);
 
-        this.handle.loop(-1, (PacketListener) rawPacket -> {
-          IpPacket ipPacket = rawPacket.get(IpPacket.class);
-          IpPacket.IpHeader ipHeader = ipPacket.getHeader();
+            // Ethernet/LinuxSLL -> IP -> TCP
+            IP ipPacket = (IP) packet.getLayers().get(1);
+            TCP tcpPacket = (TCP) packet.getLayers().get(2);
 
-          TcpPacket tcpPacket = ipPacket.getPayload().get(TcpPacket.class);
-          TcpPacket.TcpHeader tcpHeader = tcpPacket.getHeader();
-
-          if (localAddresses.contains(ipHeader.getSrcAddr()) && tcpHeader.getPsh() && tcpHeader.getAck()) {
-            TcpAwaitingPacket previousPacket = this.tempPingTimestamp.get(ipHeader.getDstAddr());
-            if (previousPacket != null) {
-              long currentTime = System.currentTimeMillis();
-              if (previousPacket.time + listenDelay <= currentTime) {
-                previousPacket.seq = tcpHeader.getAcknowledgmentNumber();
-                previousPacket.time = currentTime;
+            if (localAddresses.contains(ipPacket.getSrcAddress()) && tcpPacket.isPsh() && tcpPacket.isAck()) {
+              TcpAwaitingPacket previousPacket = this.tempPingTimestamp.get(ipPacket.getDstAddress());
+              if (previousPacket != null) {
+                long currentTime = System.currentTimeMillis();
+                if (previousPacket.time + listenDelay <= currentTime) {
+                  previousPacket.seq = tcpPacket.getAckSn();
+                  previousPacket.time = currentTime;
+                }
               }
             }
-          }
 
-          if (localAddresses.contains(ipHeader.getDstAddr()) && tcpHeader.getAck()) {
-            TcpAwaitingPacket awaitingPacket = this.tempPingTimestamp.get(ipHeader.getSrcAddr());
-            if (awaitingPacket != null && awaitingPacket.seq == tcpHeader.getSequenceNumber()) {
-              int pingDiff = (int) (System.currentTimeMillis() - awaitingPacket.time);
-              if (pingDiff > 2) {
-                this.plugin.getStatistics().updatePing(ipHeader.getSrcAddr(), pingDiff);
+            if (localAddresses.contains(ipPacket.getDstAddress()) && tcpPacket.isAck()) {
+              TcpAwaitingPacket awaitingPacket = this.tempPingTimestamp.get(ipPacket.getSrcAddress());
+              if (awaitingPacket != null && awaitingPacket.seq == tcpPacket.getSequence()) {
+                int pingDiff = (int) (System.currentTimeMillis() - awaitingPacket.time);
+                if (pingDiff > 2) {
+                  this.plugin.getStatistics().updatePing(ipPacket.getSrcAddress(), pingDiff);
+                }
               }
             }
+          } catch (LayerDecodeException e) {
+            e.printStackTrace();
           }
         });
-      } catch (PcapNativeException | NotOpenException e) {
+      } catch (PcapException e) {
         e.printStackTrace();
-      } catch (InterruptedException ignored) {
-
       }
     }).start();
   }
@@ -116,11 +132,8 @@ public class TcpListener {
   }
 
   public void stop() {
-    try {
-      this.handle.breakLoop();
-    } catch (NotOpenException e) {
-      e.printStackTrace();
-    }
+    this.handle.breakLoop();
+    this.handle.close();
   }
 
   private static class TcpAwaitingPacket {

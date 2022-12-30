@@ -339,12 +339,21 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private boolean checkPing() {
-    if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED
-        && (this.player.getPing() - this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress()))
-        > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFFERENCE) {
+    int l7Ping = this.player.getPing();
+    int l4Ping = this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress());
+
+    if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED && (l7Ping - l4Ping) > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFFERENCE) {
       this.disconnect(this.plugin.getPackets().getKickProxyCheck(), true);
 
+      if (Settings.IMP.MAIN.TCP_LISTENER.DEBUG_ON_FAIL) {
+        LimboFilter.getLogger().info("{} failed proxy check: L4 ping {}, L7 ping {}", this.proxyPlayer, l4Ping, l7Ping);
+      }
+
       return true;
+    }
+
+    if (Settings.IMP.MAIN.TCP_LISTENER.DEBUG_ON_SUCCESS) {
+      LimboFilter.getLogger().info("{} passed proxy check: L4 ping {}, L7 ping {}", this.proxyPlayer, l4Ping, l7Ping);
     }
 
     return false;

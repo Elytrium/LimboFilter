@@ -347,6 +347,10 @@ public class Settings extends YamlConfig {
 
       @Comment("Time in millis for capturing frames")
       public int TIMEOUT = 10;
+
+      @Comment("Log L4 and L7 ping")
+      public boolean DEBUG_ON_FAIL = false;
+      public boolean DEBUG_ON_SUCCESS = false;
     }
 
     @Create
