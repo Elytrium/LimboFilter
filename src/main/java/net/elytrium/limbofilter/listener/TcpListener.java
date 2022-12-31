@@ -32,6 +32,7 @@ import net.elytrium.pcap.Pcap;
 import net.elytrium.pcap.PcapException;
 import net.elytrium.pcap.data.PcapAddress;
 import net.elytrium.pcap.data.PcapDevice;
+import net.elytrium.pcap.data.PcapError;
 import net.elytrium.pcap.handle.BpfProgram;
 import net.elytrium.pcap.handle.PcapHandle;
 import net.elytrium.pcap.layer.IP;
@@ -118,7 +119,9 @@ public class TcpListener {
           }
         });
       } catch (PcapException e) {
-        e.printStackTrace();
+        if (e.getError() != PcapError.ERROR_BREAK) {
+          e.printStackTrace();
+        }
       }
     }).start();
   }
