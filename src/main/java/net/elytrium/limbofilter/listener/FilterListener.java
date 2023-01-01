@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -59,7 +59,7 @@ public class FilterListener {
   public void onLogin(LoginLimboRegisterEvent event) {
     Player player = event.getPlayer();
     if (this.plugin.shouldCheck(player)) {
-      event.addCallback(() -> this.plugin.sendToFilterServer(player));
+      event.addOnJoinCallback(() -> this.plugin.sendToFilterServer(player));
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,7 +44,7 @@ public class LimboFilterCommand implements SimpleCommand {
 
   private static final List<Component> HELP_MESSAGE = List.of(
       Component.text("This server is using LimboFilter and LimboAPI.", NamedTextColor.YELLOW),
-      Component.text("(C) 2021 - 2022 Elytrium", NamedTextColor.YELLOW),
+      Component.text("(C) 2021 - 2023 Elytrium", NamedTextColor.YELLOW),
       Component.text("https://elytrium.net/github/", NamedTextColor.GREEN),
       Component.empty()
   );
@@ -152,7 +152,7 @@ public class LimboFilterCommand implements SimpleCommand {
   }
 
   private void showHelp(CommandSource source) {
-    HELP_MESSAGE.forEach(message -> source.sendMessage(message));
+    HELP_MESSAGE.forEach(source::sendMessage);
     List<Map.Entry<String, Component>> availableSubcommands = SUBCOMMANDS.entrySet().stream()
         .filter(command -> source.hasPermission("limbofilter.admin." + command.getKey()))
         .collect(Collectors.toList());
