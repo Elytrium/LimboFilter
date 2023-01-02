@@ -95,7 +95,7 @@ public class CaptchaGenerator {
         }
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new IllegalArgumentException(e);
     }
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.SAVE_NUMBER_SPELLING_OUTPUT) {
@@ -108,7 +108,7 @@ public class CaptchaGenerator {
           output.write(String.format("%d %s%s", i, result, System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
         }
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new IllegalArgumentException(e);
       }
     }
 
@@ -145,7 +145,7 @@ public class CaptchaGenerator {
             this.fonts.add(this.getRenderedFont(font.deriveFont(textSettings)));
           }
         } catch (FontFormatException | IOException e) {
-          e.printStackTrace();
+          throw new IllegalArgumentException(e);
         }
       });
     }

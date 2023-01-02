@@ -360,7 +360,6 @@ public class Settings extends YamlConfig {
     public static class STRINGS {
 
       public String RELOAD = "{PRFX} &aReloaded successfully!";
-      public String RELOAD_FAILED = "{PRFX} &cReload failed, check console for details.";
 
       public String CLIENT_SETTINGS_KICK = "{PRFX}{NL}&cYour client doesn't send settings packets.";
       public String CLIENT_BRAND_KICK = "{PRFX}{NL}&cYour client doesn't send brand packet or it's blocked.";

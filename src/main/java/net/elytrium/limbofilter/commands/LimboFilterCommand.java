@@ -68,7 +68,6 @@ public class LimboFilterCommand implements SimpleCommand {
   private final LimboFilter plugin;
 
   private final Component reload;
-  private final Component reloadFailed;
   private final Component statsEnabled;
   private final Component statsDisabled;
 
@@ -88,7 +87,6 @@ public class LimboFilterCommand implements SimpleCommand {
 
     Serializer serializer = LimboFilter.getSerializer();
     this.reload = serializer.deserialize(Settings.IMP.MAIN.STRINGS.RELOAD);
-    this.reloadFailed = serializer.deserialize(Settings.IMP.MAIN.STRINGS.RELOAD_FAILED);
     this.statsEnabled = serializer.deserialize(Settings.IMP.MAIN.STRINGS.STATS_ENABLED);
     this.statsDisabled = serializer.deserialize(Settings.IMP.MAIN.STRINGS.STATS_DISABLED);
   }
@@ -121,14 +119,8 @@ public class LimboFilterCommand implements SimpleCommand {
     if (args.length == 1) {
       String command = args[0];
       if (command.equalsIgnoreCase("reload") && source.hasPermission("limbofilter.admin.reload")) {
-        try {
-          this.plugin.reload();
-          source.sendMessage(this.reload);
-        } catch (Exception e) {
-          e.printStackTrace();
-          source.sendMessage(this.reloadFailed);
-        }
-
+        this.plugin.reload();
+        source.sendMessage(this.reload);
         return;
       } else if (command.equalsIgnoreCase("stats") && source.hasPermission("limbofilter.admin.stats")) {
         if (source instanceof Player) {

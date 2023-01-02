@@ -53,7 +53,7 @@ public class TcpListener {
     try {
       Pcap.init();
     } catch (PcapException e) {
-      e.printStackTrace();
+      throw new ExceptionInInitializerError(e);
     }
   }
 
@@ -115,12 +115,12 @@ public class TcpListener {
               }
             }
           } catch (LayerDecodeException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
           }
         });
       } catch (PcapException e) {
         if (e.getError() != PcapError.ERROR_BREAK) {
-          e.printStackTrace();
+          throw new IllegalStateException(e);
         }
       }
     }).start();

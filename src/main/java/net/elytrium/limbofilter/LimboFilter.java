@@ -273,7 +273,7 @@ public class LimboFilter {
       try {
         this.cachedFilterChecks.put(username, new CachedUser(InetAddress.getByName(ip), Long.MAX_VALUE));
       } catch (UnknownHostException e) {
-        e.printStackTrace();
+        throw new IllegalArgumentException(e);
       }
     });
 
@@ -307,7 +307,7 @@ public class LimboFilter {
         Settings.MAIN.WORLD_COORDS coords = Settings.IMP.MAIN.WORLD_COORDS;
         file.toWorld(this.limboFactory, this.filterWorld, coords.X, coords.Y, coords.Z, Settings.IMP.MAIN.WORLD_LIGHT_LEVEL);
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new IllegalArgumentException(e);
       }
     }
 
