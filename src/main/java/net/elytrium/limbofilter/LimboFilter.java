@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,12 +47,10 @@ import net.elytrium.java.commons.mc.serialization.Serializers;
 import net.elytrium.java.commons.updates.UpdatesChecker;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
-import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.chunk.VirtualWorld;
 import net.elytrium.limboapi.api.file.SchematicFile;
 import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
-import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limboapi.api.protocol.packets.PacketMapping;
@@ -177,7 +174,7 @@ public class LimboFilter {
 
     Metrics metrics = this.metricsFactory.make(this, 13699);
     Settings.MAIN main = Settings.IMP.MAIN;
-    metrics.addCustomChart(new SimplePie("filter_type", () -> main.CHECK_STATE));
+    metrics.addCustomChart(new SimplePie("filter_type", () -> String.valueOf(main.CHECK_STATE)));
     metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(main.LOAD_WORLD)));
     metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(main.CHECK_CLIENT_BRAND)));
     metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(main.CHECK_CLIENT_SETTINGS)));
@@ -204,7 +201,7 @@ public class LimboFilter {
   public void reload() {
     Settings.IMP.reload(this.configFile, Settings.IMP.PREFIX);
 
-    ComponentSerializer<Component, Component, String> serializer = Serializers.valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
+    ComponentSerializer<Component, Component, String> serializer = Settings.IMP.SERIALIZER.getSerializer();
     if (serializer == null) {
       LOGGER.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
       setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
@@ -279,7 +276,7 @@ public class LimboFilter {
 
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
     this.filterWorld = this.limboFactory.createVirtualWorld(
-        Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION),
+        Settings.IMP.MAIN.BOTFILTER_DIMENSION,
         captchaCoords.CAPTCHA_X, captchaCoords.CAPTCHA_Y, captchaCoords.CAPTCHA_Z,
         (float) captchaCoords.CAPTCHA_YAW, (float) captchaCoords.CAPTCHA_PITCH
     );
@@ -319,7 +316,7 @@ public class LimboFilter {
         .setName("LimboFilter")
         .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
-        .setGameMode(GameMode.valueOf(Settings.IMP.MAIN.GAME_MODE))
+        .setGameMode(Settings.IMP.MAIN.GAME_MODE)
         .setShouldRespawn(false);
 
     CommandManager manager = this.server.getCommandManager();

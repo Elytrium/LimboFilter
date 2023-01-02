@@ -20,6 +20,10 @@ package net.elytrium.limbofilter;
 import java.util.List;
 import java.util.Map;
 import net.elytrium.java.commons.config.YamlConfig;
+import net.elytrium.java.commons.mc.serialization.Serializers;
+import net.elytrium.limboapi.api.chunk.Dimension;
+import net.elytrium.limboapi.api.player.GameMode;
+import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 
 public class Settings extends YamlConfig {
 
@@ -37,7 +41,7 @@ public class Settings extends YamlConfig {
       "GSON - \"[{\"text\":\"Example\",\"bold\":true,\"color\":\"red\"},{\"text\":\" \",\"bold\":true},{\"text\":\"Text\",\"bold\":true,\"color\":\"blue\"}]\". (https://minecraft.tools/en/json_text.php/)",
       "GSON_COLOR_DOWNSAMPLING - Same as GSON, but uses downsampling."
   })
-  public String SERIALIZER = "LEGACY_AMPERSAND";
+  public Serializers SERIALIZER = Serializers.LEGACY_AMPERSAND;
   public String PREFIX = "LimboFilter &6>>&f";
 
   @Create
@@ -81,14 +85,14 @@ public class Settings extends YamlConfig {
         "CAPTCHA_POSITION -> Falling and Captcha checking concurrently (Player will be kicked, if he fails either falling check or captcha checking).",
         "CAPTCHA_ON_POSITION_FAILED -> Initially, the falling check will be started, but if the player fails that check, the captcha checking will be started."
     })
-    public String CHECK_STATE = "CAPTCHA_POSITION";
+    public BotFilterSessionHandler.CheckState CHECK_STATE = BotFilterSessionHandler.CheckState.CAPTCHA_POSITION;
     @Comment("See \"filter-auto-toggle.check-state-toggle\".")
-    public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
+    public BotFilterSessionHandler.CheckState CHECK_STATE_NON_TOGGLED = BotFilterSessionHandler.CheckState.CAPTCHA_ON_POSITION_FAILED;
 
     @Comment("See \"filter-auto-toggle.check-state-toggle\".")
-    public String GEYSER_CHECK_STATE = "CAPTCHA_POSITION";
+    public BotFilterSessionHandler.CheckState GEYSER_CHECK_STATE = BotFilterSessionHandler.CheckState.CAPTCHA_POSITION;
     @Comment("See \"filter-auto-toggle.check-state-toggle\".")
-    public String GEYSER_CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
+    public BotFilterSessionHandler.CheckState GEYSER_CHECK_STATE_NON_TOGGLED = BotFilterSessionHandler.CheckState.CAPTCHA_ON_POSITION_FAILED;
 
     public boolean LOAD_WORLD = false;
     @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (any Minecraft version is supported, but the latest one is recommended)")
@@ -102,7 +106,7 @@ public class Settings extends YamlConfig {
     public int WORLD_LIGHT_LEVEL = 15;
 
     @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
-    public String GAME_MODE = "ADVENTURE";
+    public GameMode GAME_MODE = GameMode.ADVENTURE;
 
     @Comment("Unit of time in seconds for the Auto Toggles the Statistics.")
     public int UNIT_OF_TIME_CPS = 300;
@@ -317,7 +321,7 @@ public class Settings extends YamlConfig {
     @Comment(
         "Available dimensions: OVERWORLD, NETHER, THE_END"
     )
-    public String BOTFILTER_DIMENSION = "THE_END";
+    public Dimension BOTFILTER_DIMENSION = Dimension.THE_END;
 
     @Create
     public MAIN.TCP_LISTENER TCP_LISTENER;

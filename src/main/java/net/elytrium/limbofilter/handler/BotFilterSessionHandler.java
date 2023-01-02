@@ -98,12 +98,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     if (proxyPlayer.getRemoteAddress().getPort() == 0) {
       this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
-          ? CheckState.valueOf(Settings.IMP.MAIN.GEYSER_CHECK_STATE)
-          : CheckState.valueOf(Settings.IMP.MAIN.GEYSER_CHECK_STATE_NON_TOGGLED);
+          ? Settings.IMP.MAIN.GEYSER_CHECK_STATE : Settings.IMP.MAIN.GEYSER_CHECK_STATE_NON_TOGGLED;
     } else {
       this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
-          ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE)
-          : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
+          ? Settings.IMP.MAIN.CHECK_STATE : Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED;
     }
   }
 

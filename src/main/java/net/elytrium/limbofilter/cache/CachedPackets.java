@@ -254,7 +254,7 @@ public class CachedPackets {
             (float) coords.FALLING_CHECK_YAW, (float) coords.FALLING_CHECK_PITCH
         )
     ).prepare(this.createChunkData(
-        limboFactory, packetFactory, fallingCoords.X >> 4, fallingCoords.Z >> 4, Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION)
+        limboFactory, packetFactory, fallingCoords.X >> 4, fallingCoords.Z >> 4, Settings.IMP.MAIN.BOTFILTER_DIMENSION
     )).prepare(this.createUpdateViewPosition(packetFactory, fallingCoords.X, fallingCoords.Z), ProtocolVersion.MINECRAFT_1_14);
 
     return preparedPacket.build();
