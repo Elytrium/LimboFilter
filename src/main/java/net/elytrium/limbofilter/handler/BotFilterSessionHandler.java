@@ -182,16 +182,16 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
         ++this.ignoredTicks;
         return;
       }
+      if (this.ignoredTicks > Settings.IMP.MAIN.NON_VALID_POSITION_Y_ATTEMPTS) {
+        this.fallingCheckFailed("A lot of non-valid Y attempts");
+        return;
+      }
       if (this.ticks >= Settings.IMP.MAIN.FALLING_CHECK_TICKS) {
         if (this.state == CheckState.CAPTCHA_POSITION) {
           this.changeStateToCaptcha();
         } else {
           this.finishCheck();
         }
-        return;
-      }
-      if (this.ignoredTicks > Settings.IMP.MAIN.NON_VALID_POSITION_Y_ATTEMPTS) {
-        this.fallingCheckFailed("A lot of non-valid Y attempts");
         return;
       }
       if (this.checkY()) {
