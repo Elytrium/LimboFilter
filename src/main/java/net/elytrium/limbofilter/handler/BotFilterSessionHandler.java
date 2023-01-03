@@ -223,14 +223,21 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private void logPosition() {
     LimboFilter.getLogger().info(
-        "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY) + "; need=" + getLoadedChunkSpeed(this.ticks)
+        "lastY=" + this.lastY + "; y=" + this.posY + "; delta=" + (this.lastY - this.posY) + "; need=" + getLoadedChunkSpeed(this.ticks)
             + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validY=" + this.validY + "; validZ=" + this.validZ
             + "; ticks=" + this.ticks + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
+            + "; diff=" + (this.lastY - this.posY - getLoadedChunkSpeed(this.ticks))
     );
   }
 
   private boolean checkY() {
-    return Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE;
+    while (this.ticks < LOADED_CHUNK_SPEED_CACHE.length
+        && Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE) {
+      ++this.ticks;
+      ++this.ignoredTicks;
+    }
+
+    return this.ticks >= LOADED_CHUNK_SPEED_CACHE.length;
   }
 
   @Override
