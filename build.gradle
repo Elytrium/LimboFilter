@@ -9,7 +9,7 @@ plugins {
 }
 
 setGroup("net.elytrium")
-setVersion("1.0.8-SNAPSHOT")
+setVersion("1.0.8")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
