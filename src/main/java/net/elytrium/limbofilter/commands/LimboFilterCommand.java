@@ -32,7 +32,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import net.elytrium.java.commons.mc.serialization.Serializer;
+import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.stats.Statistics;

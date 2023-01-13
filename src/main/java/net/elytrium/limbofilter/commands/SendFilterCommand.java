@@ -26,8 +26,8 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import net.elytrium.java.commons.mc.serialization.Serializer;
-import net.elytrium.java.commons.mc.velocity.commands.SuggestUtils;
+import net.elytrium.commons.kyori.serialization.Serializer;
+import net.elytrium.commons.velocity.commands.SuggestUtils;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 
