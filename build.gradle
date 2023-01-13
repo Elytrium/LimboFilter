@@ -56,7 +56,9 @@ shadowJar {
     getArchiveClassifier().set("")
 
     relocate("org.bstats", "net.elytrium.limbofilter.thirdparty.org.bstats")
-    relocate("net.elytrium.commons", "net.elytrium.limbofilter.thirdparty.commons")
+    relocate("net.elytrium.commons.velocity", "net.elytrium.limboapi.thirdparty.commons.velocity")
+    relocate("net.elytrium.commons.kyori", "net.elytrium.limboapi.thirdparty.commons.kyori")
+    relocate("net.elytrium.commons.config", "net.elytrium.limboapi.thirdparty.commons.config")
 }
 
 license {
