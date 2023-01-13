@@ -34,7 +34,7 @@ Test server: [``ely.su``](https://hotmc.ru/minecraft-server-203216)
 
 ### Admin
 
-- ***limbofilter.admin.sendfilter* | /sendfilter** - Send Player to Filter Command
+- ***limbofilter.commands.sendfilter* | /sendfilter** - Send Player to Filter Command
 - ***limbofilter.admin.stats* | /lfilter stats** - Plugin Statistics Command
 - ***limbofilter.admin.reload* | /lfilter reload** - Reload Plugin Command
 - ***limboauth.admin.***\* - Gives All Admin Permissions
