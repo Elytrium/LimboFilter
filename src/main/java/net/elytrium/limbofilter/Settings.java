@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,8 +19,12 @@ package net.elytrium.limbofilter;
 
 import java.util.List;
 import java.util.Map;
-import net.elytrium.java.commons.config.YamlConfig;
 import net.elytrium.limboapi.BuildConstants;
+import net.elytrium.commons.config.YamlConfig;
+import net.elytrium.commons.kyori.serialization.Serializers;
+import net.elytrium.limboapi.api.chunk.Dimension;
+import net.elytrium.limboapi.api.player.GameMode;
+import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 
 public class Settings extends YamlConfig {
 
@@ -38,7 +42,7 @@ public class Settings extends YamlConfig {
       "GSON - \"[{\"text\":\"Example\",\"bold\":true,\"color\":\"red\"},{\"text\":\" \",\"bold\":true},{\"text\":\"Text\",\"bold\":true,\"color\":\"blue\"}]\". (https://minecraft.tools/en/json_text.php/)",
       "GSON_COLOR_DOWNSAMPLING - Same as GSON, but uses downsampling."
   })
-  public String SERIALIZER = "LEGACY_AMPERSAND";
+  public Serializers SERIALIZER = Serializers.LEGACY_AMPERSAND;
   public String PREFIX = "LimboFilter &6>>&f";
 
   @Create
@@ -71,6 +75,8 @@ public class Settings extends YamlConfig {
     public double MAX_VALID_POSITION_DIFFERENCE = 0.01;
     @Comment("Parameter for developers and contributors.")
     public boolean FALLING_CHECK_DEBUG = false;
+    @Comment("Should captcha be displayed in the left hand. May cause problems with entering captcha for users with 4:3 monitors. Version: 1.9+")
+    public boolean CAPTCHA_LEFT_HAND = false;
 
     @Comment({
         "Available states: ONLY_POSITION, ONLY_CAPTCHA, CAPTCHA_POSITION, CAPTCHA_ON_POSITION_FAILED",
@@ -80,13 +86,17 @@ public class Settings extends YamlConfig {
         "CAPTCHA_POSITION -> Falling and Captcha checking concurrently (Player will be kicked, if he fails either falling check or captcha checking).",
         "CAPTCHA_ON_POSITION_FAILED -> Initially, the falling check will be started, but if the player fails that check, the captcha checking will be started."
     })
-    public String CHECK_STATE = "CAPTCHA_POSITION";
+    public BotFilterSessionHandler.CheckState CHECK_STATE = BotFilterSessionHandler.CheckState.CAPTCHA_POSITION;
+    @Comment("See \"filter-auto-toggle.check-state-toggle\".")
+    public BotFilterSessionHandler.CheckState CHECK_STATE_NON_TOGGLED = BotFilterSessionHandler.CheckState.CAPTCHA_ON_POSITION_FAILED;
 
     @Comment("See \"filter-auto-toggle.check-state-toggle\".")
-    public String CHECK_STATE_NON_TOGGLED = "CAPTCHA_ON_POSITION_FAILED";
+    public BotFilterSessionHandler.CheckState GEYSER_CHECK_STATE = BotFilterSessionHandler.CheckState.CAPTCHA_POSITION;
+    @Comment("See \"filter-auto-toggle.check-state-toggle\".")
+    public BotFilterSessionHandler.CheckState GEYSER_CHECK_STATE_NON_TOGGLED = BotFilterSessionHandler.CheckState.CAPTCHA_ON_POSITION_FAILED;
 
     public boolean LOAD_WORLD = false;
-    @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (saved in 1.17 - 1.18.2).")
+    @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (any Minecraft version is supported, but the latest one is recommended)")
     public String WORLD_FILE_TYPE = "structure";
     public String WORLD_FILE_PATH = "world.nbt";
 
@@ -97,7 +107,7 @@ public class Settings extends YamlConfig {
     public int WORLD_LIGHT_LEVEL = 15;
 
     @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
-    public String GAME_MODE = "ADVENTURE";
+    public GameMode GAME_MODE = GameMode.ADVENTURE;
 
     @Comment("Unit of time in seconds for the Auto Toggles the Statistics.")
     public int UNIT_OF_TIME_CPS = 300;
@@ -151,7 +161,8 @@ public class Settings extends YamlConfig {
       @Comment({
           "Verify Online Mode connection before AntiBot.",
           "If connections per unit of time amount is bigger than the limit: online mode players will need to reconnect.",
-          "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting."
+          "Else: Some attacks can consume more cpu and network, and can lead to long-lasting Mojang rate-limiting.",
+          "Only works if you have an auth plugin installed. In other cases you should configure need-to-reconnect parameter"
       })
       public int ONLINE_MODE_VERIFY = 79;
 
@@ -188,7 +199,7 @@ public class Settings extends YamlConfig {
 
     public static class CAPTCHA_GENERATOR {
 
-      @Comment("Prepares Captcha packets, uses ~0.5GB RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
+      @Comment("Prepares Captcha packets, consumes x8 more RAM, but improves CPU performance during bot attacks. It's recommended to disable it, if you have less than 2GB of RAM.")
       public boolean PREPARE_CAPTCHA_PACKETS = false;
       @Comment("List of paths to the background image to draw on captcha. Any format, 128x128 128x128 px (will be automatically resized and stretched to the correct size). [] if empty.")
       public List<String> BACKPLATE_PATHS = List.of("");
@@ -216,19 +227,136 @@ public class Settings extends YamlConfig {
       public int CURVE_SIZE = 2;
       @Comment("Set 0 to disable")
       public int CURVES_AMOUNT = 3;
-      public String CURVES_COLOR = "000000";
+      @Comment("RGB colors without #")
+      public List<String> CURVES_COLORS = List.of("000000");
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
-      public String PATTERN = "abcdefghijklmnopqrtuvwxyz1234567890";
+      public String PATTERN = "abcdefghijklmnopqrstuvwxyz1234567890";
       public int LENGTH = 3;
       public int IMAGES_COUNT = 1000;
+      public boolean NUMBER_SPELLING = false;
+      @Comment({
+          "Set to true if you want to verify the number spelling configuration.",
+          "The results will be saved to the number_spelling.txt file."
+      })
+      public boolean SAVE_NUMBER_SPELLING_OUTPUT = false;
+      public boolean EACH_WORD_ON_SEPARATE_LINE = true;
+      @Comment({
+          "If the number ends with any key specified here, the corresponding value will be used.",
+          "For example: if exception 11 is specified with value 'eleven', the number 411 will be spelt as 'four hundred eleven'."
+      })
+      public Map<String, String> NUMBER_SPELLING_EXCEPTIONS = Map.of(
+          "11", "eleven",
+          "12", "twelve",
+          "13", "thirteen",
+          "14", "fourteen",
+          "15", "fifteen",
+          "16", "sixteen",
+          "17", "seventeen",
+          "18", "eighteen",
+          "19", "nineteen"
+      );
+      @Comment({
+          "null or \"\" means that the digit should be skipped.",
+          "Note: all the characters used here (including the space) must be listed in pattern."
+      })
+      public List<List<String>> NUMBER_SPELLING_WORDS = List.of(
+          List.of("", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"),
+          List.of("", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"),
+          List.of("", "one hundred", "two hundred", "three hundred", "four hundred", "five hundred", "six hundred", "seven hundred", "eight hundred", "nine hundred")
+      );
       public List<String> RGB_COLOR_LIST = List.of("000000", "AA0000", "00AA00", "0000AA", "AAAA00", "AA00AA", "00AAAA");
+
+      @Create
+      public GRADIENT GRADIENT;
+
+      public static class GRADIENT {
+
+        public boolean GRADIENT_ENABLED = false;
+        public int GRADIENTS_COUNT = 32;
+        public double START_X = 0;
+        public double START_Y = 40;
+        public double END_X = 128;
+        public double END_Y = 80;
+        public double START_X_RANDOMNESS = 0;
+        public double START_Y_RANDOMNESS = 2;
+        public double END_X_RANDOMNESS = 0;
+        public double END_Y_RANDOMNESS = 2;
+        @Comment("Numbers ranging from 0.0 to 1.0 specifying the distribution of colors along the gradient. Can be empty.")
+        public List<Double> FRACTIONS = List.of(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9);
+      }
+    }
+
+    @Create
+    public FRAMED_CAPTCHA FRAMED_CAPTCHA;
+
+    public static class FRAMED_CAPTCHA {
+
+      public boolean FRAMED_CAPTCHA_ENABLED = false;
+      public int WIDTH = 3;
+      public int HEIGHT = 3;
+      public double FRAME_ROTATION_CHANCE = 0.33;
+      public boolean AUTOSCALE_FONT = true;
+
+      @Create
+      public COORDS COORDS;
+
+      public static class COORDS {
+
+        public int X = -3;
+        public int Y = 128;
+        public int Z = 2;
+
+        @Create
+        public OFFSET_1_7 OFFSET_1_7;
+
+        public static class OFFSET_1_7 {
+
+          public int X = 0;
+          public int Y = -2;
+          public int Z = 1;
+        }
+      }
     }
 
     @Comment(
         "Available dimensions: OVERWORLD, NETHER, THE_END"
     )
-    public String BOTFILTER_DIMENSION = "THE_END";
+    public Dimension BOTFILTER_DIMENSION = Dimension.THE_END;
+
+    @Create
+    public MAIN.TCP_LISTENER TCP_LISTENER;
+
+    public static class TCP_LISTENER {
+
+      @Comment({
+          "Experimental proxy check feature",
+          "Checks the proxy via comparing L4 (TCP PSH+ACK -> TCP ACK) and L7 (Minecraft KeepAlive) ping",
+          "Works better with falling check enabled (150+ falling-check-ticks)",
+          "Needs libpcap (libpcap-dev) on Linux; WinPcap/npcap on Windows",
+          "Needs CAP_NET_RAW (or super-user) on Linux",
+          "Doesn't work if Velocity is behind reverse-proxy (haproxy, protection services, etc)",
+      })
+      public boolean PROXY_DETECTOR_ENABLED = false;
+
+      @Comment("Difference between TCP (L4) and Minecraft (L7) ping in milliseconds to detect proxies.")
+      public int PROXY_DETECTOR_DIFFERENCE = 5;
+
+      public String INTERFACE_NAME = "any";
+
+      @Comment("How many bytes we should take from the each frame to analyse. 120 is enough for any TCP+IP header analysing")
+      public int SNAPLEN = 120;
+
+      @Comment("How many milliseconds should the delay be between frame analysis.")
+      public int LISTEN_DELAY = 50;
+
+      @Comment("Time in millis for capturing frames")
+      public int TIMEOUT = 10;
+
+      @Comment("Log L4 and L7 ping")
+      public boolean DEBUG_ON_FAIL = false;
+      public boolean DEBUG_ON_SUCCESS = false;
+    }
 
     @Create
     public MAIN.STRINGS STRINGS;
@@ -237,10 +365,10 @@ public class Settings extends YamlConfig {
     public static class STRINGS {
 
       public String RELOAD = "{PRFX} &aReloaded successfully!";
-      public String RELOAD_FAILED = "{PRFX} &cReload failed, check console for details.";
 
       public String CLIENT_SETTINGS_KICK = "{PRFX}{NL}&cYour client doesn't send settings packets.";
       public String CLIENT_BRAND_KICK = "{PRFX}{NL}&cYour client doesn't send brand packet or it's blocked.";
+      public String PROXY_CHECK_KICK = "{PRFX}{NL}&cYour connection is suspicious.";
 
       public String CHECKING_CHAT = "{PRFX} Bot-Filter check was started, please wait and don't move..";
       public String CHECKING_TITLE = "{PRFX}";
@@ -258,7 +386,7 @@ public class Settings extends YamlConfig {
       public String FALLING_CHECK_FAILED_KICK = "{PRFX}{NL}&cFalling Check was failed.{NL}&6Please, rejoin the server.";
       public String TIMES_UP = "{PRFX}{NL}&cYou have exceeded the maximum Bot-Filter check time.{NL}&6Please, rejoin the server.";
 
-      public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| Ping: &6&l{4}";
+      public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| L7 Ping: &6&l{4} &c&l| L4 Ping: &6&l{5}";
       public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
       public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,8 +19,11 @@ package net.elytrium.limbofilter.stats;
 
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.velocitypowered.api.scheduler.Scheduler;
+import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -35,6 +38,7 @@ public class Statistics {
   private final AtomicLong interpolatedCpsBefore = new AtomicLong();
   private final AtomicLong interpolatedPpsBefore = new AtomicLong();
   private final List<ScheduledTask> scheduledTaskList = new LinkedList<>();
+  private final Map<InetAddress, Integer> pingMap = new HashMap<>();
 
   public void addBlockedConnection() {
     this.blockedConnections.increment();
@@ -122,5 +126,23 @@ public class Statistics {
         .delay(delay, TimeUnit.MILLISECONDS)
         .repeat(delay, TimeUnit.MILLISECONDS)
         .schedule());
+  }
+
+  public void updatePing(InetAddress address, int currentPing) {
+    this.pingMap.merge(address, currentPing, (previousPing, newPing) -> (previousPing * 3 + newPing) / 4);
+  }
+
+  public int getPing(InetAddress address) {
+    Integer ping = this.pingMap.get(address);
+
+    if (ping == null) {
+      return -1;
+    } else {
+      return ping;
+    }
+  }
+
+  public void removeAddress(InetAddress address) {
+    this.pingMap.remove(address);
   }
 }

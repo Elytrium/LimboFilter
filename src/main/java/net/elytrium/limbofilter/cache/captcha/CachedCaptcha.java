@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -49,7 +49,7 @@ public class CachedCaptcha {
     this.lastHolders = new CaptchaHolder[threadsCount];
   }
 
-  public void addCaptchaPacket(String answer, MinecraftPacket[] mapDataPackets17, Function<MapPalette.MapVersion, MinecraftPacket> mapDataPacket) {
+  public void addCaptchaPacket(String answer, MinecraftPacket[] mapDataPackets17, Function<MapPalette.MapVersion, MinecraftPacket[]> mapDataPacket) {
     // It takes time to stop the generator thread, so we're stopping adding new packets there too.
     if (this.disposed) {
       return;
@@ -67,16 +67,16 @@ public class CachedCaptcha {
   }
 
   private CaptchaHolder getCaptchaHolder(String answer, CaptchaHolder next, MinecraftPacket[] mapDataPackets17,
-                                         Function<MapPalette.MapVersion, MinecraftPacket> mapDataPacket) {
-    MinecraftPacket[][] mapDataPacketEnum = new MinecraftPacket[ProtocolVersion.values().length][1];
+                                         Function<MapPalette.MapVersion, MinecraftPacket[]> mapDataPacket) {
+    MinecraftPacket[][] mapDataPacketEnum = new MinecraftPacket[ProtocolVersion.values().length][];
     LimboFactory limboFactory = this.plugin.getLimboFactory();
     ProtocolVersion prepareMinVersion = limboFactory.getPrepareMinVersion();
     ProtocolVersion prepareMaxVersion = limboFactory.getPrepareMaxVersion();
     for (MapPalette.MapVersion version : MapPalette.MapVersion.values()) {
       for (ProtocolVersion mapProtocolVersion : version.getVersions()) {
         if (prepareMinVersion.compareTo(mapProtocolVersion) <= 0 && prepareMaxVersion.compareTo(mapProtocolVersion) >= 0) {
-          MinecraftPacket packet = mapDataPacket.apply(version);
-          version.getVersions().forEach(protocolVersion -> mapDataPacketEnum[protocolVersion.ordinal()][0] = packet);
+          MinecraftPacket[] packets = mapDataPacket.apply(version);
+          version.getVersions().forEach(protocolVersion -> mapDataPacketEnum[protocolVersion.ordinal()] = packets);
           break;
         }
       }
@@ -84,9 +84,16 @@ public class CachedCaptcha {
 
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
       PreparedPacket prepared = this.plugin.getLimboFactory().createPreparedPacket();
+      if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+        for (int i = 0; i < Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH * Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT; i++) {
+          final int index = i;
+          prepared.prepare(version -> mapDataPacketEnum[version.ordinal()][index], ProtocolVersion.MINECRAFT_1_8);
+        }
+      } else {
+        prepared.prepare(version -> mapDataPacketEnum[version.ordinal()][0], ProtocolVersion.MINECRAFT_1_8);
+      }
       return new CaptchaHolder(answer, next, prepared
           .prepare(mapDataPackets17, ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_7_6)
-          .prepare(version -> mapDataPacketEnum[version.ordinal()][0], ProtocolVersion.MINECRAFT_1_8)
           .build()
       );
     } else {

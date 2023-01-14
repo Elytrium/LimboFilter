@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.PluginContainer;
@@ -37,26 +38,27 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.elytrium.java.commons.mc.serialization.Serializer;
-import net.elytrium.java.commons.mc.serialization.Serializers;
-import net.elytrium.java.commons.updates.UpdatesChecker;
 import net.elytrium.limboapi.BuildConstants;
+import net.elytrium.commons.kyori.serialization.Serializer;
+import net.elytrium.commons.kyori.serialization.Serializers;
+import net.elytrium.commons.utils.updates.UpdatesChecker;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
-import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.chunk.VirtualWorld;
 import net.elytrium.limboapi.api.file.SchematicFile;
 import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
-import net.elytrium.limboapi.api.player.GameMode;
+import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
+import net.elytrium.limboapi.api.protocol.packets.PacketMapping;
+import net.elytrium.limboapi.api.protocol.packets.data.MapData;
+import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.cache.CachedPackets;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
@@ -64,7 +66,12 @@ import net.elytrium.limbofilter.commands.LimboFilterCommand;
 import net.elytrium.limbofilter.commands.SendFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
+import net.elytrium.limbofilter.listener.TcpListener;
+import net.elytrium.limbofilter.protocol.packets.Interact;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
+import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
 import net.elytrium.limbofilter.stats.Statistics;
+import net.elytrium.pcap.PcapException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.ComponentSerializer;
 import org.apache.logging.log4j.Level;
@@ -84,8 +91,7 @@ import redis.clients.jedis.JedisPool;
     version = BuildConstants.LIMBO_VERSION,
     url = "https://elytrium.net/",
     authors = {
-        "hevav",
-        "mdxd44"
+        "Elytrium (https://elytrium.net/)",
     },
     dependencies = {
         @Dependency(id = "limboapi")
@@ -117,6 +123,7 @@ public class LimboFilter {
   private CaptchaGenerator generator;
   private CachedPackets packets;
   private boolean logsDisabled;
+  private TcpListener tcpListener;
 
   private JedisPool jedisPool;
   private final Matcher nicknameMatcher = Pattern.compile("[^a-zA-Z0-9_]+").matcher("");
@@ -140,11 +147,42 @@ public class LimboFilter {
   public void onProxyInitialization(ProxyInitializeEvent event) {
     Settings.IMP.setLogger(LOGGER);
 
+    this.limboFactory.registerPacket(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
+        new PacketMapping(0x02, ProtocolVersion.MINIMUM_VERSION, false),
+        new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_9, false),
+        new PacketMapping(0x0B, ProtocolVersion.MINECRAFT_1_12, false),
+        new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_12_1, false),
+        new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_13, false),
+        new PacketMapping(0x0E, ProtocolVersion.MINECRAFT_1_14, false),
+        new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_17, false),
+        new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19, false),
+        new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false),
+        new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19_3, false),
+    });
+
+    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
+        new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
+        new PacketMapping(0x39, ProtocolVersion.MINECRAFT_1_9, true),
+        new PacketMapping(0x3B, ProtocolVersion.MINECRAFT_1_12, true),
+        new PacketMapping(0x3C, ProtocolVersion.MINECRAFT_1_12_1, true),
+        new PacketMapping(0x3F, ProtocolVersion.MINECRAFT_1_13, true),
+        new PacketMapping(0x43, ProtocolVersion.MINECRAFT_1_14, true),
+        new PacketMapping(0x44, ProtocolVersion.MINECRAFT_1_15, true),
+        new PacketMapping(0x4D, ProtocolVersion.MINECRAFT_1_17, true),
+        new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
+        new PacketMapping(0x4E, ProtocolVersion.MINECRAFT_1_19_3, true),
+    });
+
+    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
+        new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
+        new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
+    });
+
     this.reload();
 
     Metrics metrics = this.metricsFactory.make(this, 13699);
     Settings.MAIN main = Settings.IMP.MAIN;
-    metrics.addCustomChart(new SimplePie("filter_type", () -> main.CHECK_STATE));
+    metrics.addCustomChart(new SimplePie("filter_type", () -> String.valueOf(main.CHECK_STATE)));
     metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(main.LOAD_WORLD)));
     metrics.addCustomChart(new SimplePie("check_brand", () -> String.valueOf(main.CHECK_CLIENT_BRAND)));
     metrics.addCustomChart(new SimplePie("check_settings", () -> String.valueOf(main.CHECK_CLIENT_SETTINGS)));
@@ -181,12 +219,37 @@ public class LimboFilter {
       }
     }
 
-    ComponentSerializer<Component, Component, String> serializer = Serializers.valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
+    ComponentSerializer<Component, Component, String> serializer = Settings.IMP.SERIALIZER.getSerializer();
     if (serializer == null) {
       LOGGER.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
       setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
     } else {
       setSerializer(new Serializer(serializer));
+    }
+
+    long captchaGeneratorRamConsumed = (long) MapData.MAP_SIZE * Settings.IMP.MAIN.CAPTCHA_GENERATOR.IMAGES_COUNT;
+
+    if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+      captchaGeneratorRamConsumed *= (long) Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH * Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT;
+    }
+
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.PREPARE_CAPTCHA_PACKETS) {
+      captchaGeneratorRamConsumed *= ProtocolVersion.values().length / 2f;
+    } else {
+      captchaGeneratorRamConsumed *= MapPalette.MapVersion.values().length;
+    }
+
+    double captchaGeneratorRamGigabytesConsumed = captchaGeneratorRamConsumed / 1024.0 / 1024.0 / 1024.0;
+
+    String ramWarning = String.format("Current captcha generator settings will consume %.2fGB RAM normally and %.2fGB RAM on reloads",
+        captchaGeneratorRamGigabytesConsumed, captchaGeneratorRamGigabytesConsumed * 2);
+
+    if (captchaGeneratorRamConsumed > Runtime.getRuntime().maxMemory() * 2 / 3) {
+      LOGGER.warn(ramWarning);
+      LOGGER.warn("Modify the config to decrease RAM consumption");
+    } else {
+      LOGGER.info(ramWarning);
+      LOGGER.info("Modify the config to decrease RAM consumption");
     }
 
     BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L); // One tick == 50 millis
@@ -225,13 +288,13 @@ public class LimboFilter {
       try {
         this.cachedFilterChecks.put(username, new CachedUser(InetAddress.getByName(ip), Long.MAX_VALUE));
       } catch (UnknownHostException e) {
-        e.printStackTrace();
+        throw new IllegalArgumentException(e);
       }
     });
 
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
     this.filterWorld = this.limboFactory.createVirtualWorld(
-        Dimension.valueOf(Settings.IMP.MAIN.BOTFILTER_DIMENSION),
+        Settings.IMP.MAIN.BOTFILTER_DIMENSION,
         captchaCoords.CAPTCHA_X, captchaCoords.CAPTCHA_Y, captchaCoords.CAPTCHA_Z,
         (float) captchaCoords.CAPTCHA_YAW, (float) captchaCoords.CAPTCHA_PITCH
     );
@@ -259,7 +322,7 @@ public class LimboFilter {
         Settings.MAIN.WORLD_COORDS coords = Settings.IMP.MAIN.WORLD_COORDS;
         file.toWorld(this.limboFactory, this.filterWorld, coords.X, coords.Y, coords.Z, Settings.IMP.MAIN.WORLD_LIGHT_LEVEL);
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new IllegalArgumentException(e);
       }
     }
 
@@ -271,7 +334,7 @@ public class LimboFilter {
         .setName("LimboFilter")
         .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
-        .setGameMode(GameMode.valueOf(Settings.IMP.MAIN.GAME_MODE))
+        .setGameMode(Settings.IMP.MAIN.GAME_MODE)
         .setShouldRespawn(false);
 
     CommandManager manager = this.server.getCommandManager();
@@ -283,6 +346,21 @@ public class LimboFilter {
 
     this.server.getEventManager().unregisterListeners(this);
     this.server.getEventManager().register(this, new FilterListener(this));
+
+    if (this.tcpListener != null) {
+      this.tcpListener.stop();
+      this.tcpListener = null;
+    }
+
+    if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED) {
+      try {
+        LOGGER.info("Initializing TCP Listener");
+        this.tcpListener = new TcpListener(this);
+        this.tcpListener.start();
+      } catch (PcapException e) {
+        new Exception("Got exception when starting TCP listener. Disable it if you are unsure what does it does.", e).printStackTrace();
+      }
+    }
 
     if (this.purgeCacheTask != null) {
       this.purgeCacheTask.cancel();
@@ -312,6 +390,10 @@ public class LimboFilter {
         username,
         new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis() + Settings.IMP.MAIN.PURGE_CACHE_MILLIS)
     );
+  }
+
+  public void resetCacheForFilterUser(Player player) {
+    this.cachedFilterChecks.remove(player.getUsername());
   }
 
   public boolean shouldCheck(Player player) {
@@ -348,6 +430,10 @@ public class LimboFilter {
 
   public void sendToFilterServer(Player player) {
     try {
+      if (this.tcpListener != null) {
+        this.tcpListener.registerAddress(player.getRemoteAddress().getAddress());
+      }
+
       this.checkLoggerToDisable();
       this.filterServer.spawnPlayer(player, new BotFilterSessionHandler(player, this));
     } catch (Throwable t) {
@@ -435,6 +521,10 @@ public class LimboFilter {
 
   public Statistics getStatistics() {
     return this.statistics;
+  }
+
+  public TcpListener getTcpListener() {
+    return this.tcpListener;
   }
 
   public CaptchaHolder getNextCaptcha() {

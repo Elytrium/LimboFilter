@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,6 +22,8 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
 import com.velocitypowered.proxy.protocol.packet.PluginMessage;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.elytrium.limboapi.api.Limbo;
@@ -31,6 +33,11 @@ import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
+import net.elytrium.limbofilter.listener.TcpListener;
+import net.elytrium.limbofilter.protocol.data.EntityMetadata;
+import net.elytrium.limbofilter.protocol.data.ItemFrame;
+import net.elytrium.limbofilter.protocol.packets.Interact;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
 import net.elytrium.limbofilter.stats.Statistics;
 
 public class BotFilterSessionHandler implements LimboSessionHandler {
@@ -38,6 +45,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private static final double[] LOADED_CHUNK_SPEED_CACHE = new double[Settings.IMP.MAIN.FALLING_CHECK_TICKS];
   private static long FALLING_CHECK_TOTAL_TIME;
 
+  private final Map<Integer, Integer> frameRotation = new HashMap<>();
   private final Player proxyPlayer;
   private final ProtocolVersion version;
   private final LimboFilter plugin;
@@ -88,9 +96,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.posY = this.validY;
     this.posZ = this.validZ;
 
-    this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
-        ? CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE)
-        : CheckState.valueOf(Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED);
+    if (proxyPlayer.getRemoteAddress().getPort() == 0) {
+      this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
+          ? Settings.IMP.MAIN.GEYSER_CHECK_STATE : Settings.IMP.MAIN.GEYSER_CHECK_STATE_NON_TOGGLED;
+    } else {
+      this.state = plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.CHECK_STATE_TOGGLE)
+          ? Settings.IMP.MAIN.CHECK_STATE : Settings.IMP.MAIN.CHECK_STATE_NON_TOGGLED;
+    }
   }
 
   @Override
@@ -100,7 +112,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.joinTime = System.currentTimeMillis();
     if (this.state == CheckState.ONLY_CAPTCHA) {
-      this.server.respawnPlayer(this.proxyPlayer);
+      this.setCaptchaPositionAndDisableFalling();
       this.sendCaptcha();
     } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
       this.sendFallingCheckPackets();
@@ -170,16 +182,16 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
         ++this.ignoredTicks;
         return;
       }
+      if (this.ignoredTicks > Settings.IMP.MAIN.NON_VALID_POSITION_Y_ATTEMPTS) {
+        this.fallingCheckFailed("A lot of non-valid Y attempts");
+        return;
+      }
       if (this.ticks >= Settings.IMP.MAIN.FALLING_CHECK_TICKS) {
         if (this.state == CheckState.CAPTCHA_POSITION) {
           this.changeStateToCaptcha();
         } else {
           this.finishCheck();
         }
-        return;
-      }
-      if (this.ignoredTicks > Settings.IMP.MAIN.NON_VALID_POSITION_Y_ATTEMPTS) {
-        this.fallingCheckFailed("A lot of non-valid Y attempts");
         return;
       }
       if (this.checkY()) {
@@ -211,14 +223,21 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private void logPosition() {
     LimboFilter.getLogger().info(
-        "lastY=" + this.lastY + "; y=" + this.posY + "; diff=" + (this.lastY - this.posY) + "; need=" + getLoadedChunkSpeed(this.ticks)
+        "lastY=" + this.lastY + "; y=" + this.posY + "; delta=" + (this.lastY - this.posY) + "; need=" + getLoadedChunkSpeed(this.ticks)
             + "; x=" + this.posX + "; z=" + this.posZ + "; validX=" + this.validX + "; validY=" + this.validY + "; validZ=" + this.validZ
             + "; ticks=" + this.ticks + "; ignoredTicks=" + this.ignoredTicks + "; state=" + this.state
+            + "; diff=" + (this.lastY - this.posY - getLoadedChunkSpeed(this.ticks))
     );
   }
 
   private boolean checkY() {
-    return Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE;
+    while (this.ticks < LOADED_CHUNK_SPEED_CACHE.length
+        && Math.abs(this.lastY - this.posY - getLoadedChunkSpeed(this.ticks)) > Settings.IMP.MAIN.MAX_VALID_POSITION_DIFFERENCE) {
+      ++this.ticks;
+      ++this.ignoredTicks;
+    }
+
+    return this.ticks >= LOADED_CHUNK_SPEED_CACHE.length;
   }
 
   @Override
@@ -239,7 +258,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   @Override
   public void onChat(String message) {
     if (this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA) {
-      if (message.equals(this.captchaAnswer)) {
+      if (message.equals(this.captchaAnswer) || (message.startsWith("/") && message.substring(1).equals(this.captchaAnswer))) {
         this.player.writePacketAndFlush(this.plugin.getPackets().getResetSlot());
         this.finishCheck();
       } else if (--this.attempts != 0) {
@@ -265,12 +284,24 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
         this.checkedBySettings = true;
       }
+    } else if (packet instanceof Interact) {
+      Interact interact = (Interact) packet;
+      if (interact.getType() == 0 || interact.getType() == 1) {
+        int rotation = this.frameRotation.compute(interact.getEntityId(), (k, v) -> (v != null ? v : 0) + 1);
+        EntityMetadata metadata = ItemFrame.createRotationMetadata(this.version, rotation);
+        this.player.writePacketAndFlush(new SetEntityMetadata(interact.getEntityId(), metadata));
+      }
     }
   }
 
   @Override
   public void onDisconnect() {
     this.filterMainTask.cancel(true);
+
+    TcpListener tcpListener = this.plugin.getTcpListener();
+    if (tcpListener != null) {
+      tcpListener.removeAddress(this.proxyPlayer.getRemoteAddress().getAddress());
+    }
   }
 
   private void finishCheck() {
@@ -297,16 +328,40 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       return;
     }
 
+    if (this.checkPing()) {
+      return;
+    }
+
     this.state = CheckState.SUCCESSFUL;
     this.plugin.cacheFilterUser(this.proxyPlayer);
 
-    if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
-        || this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.NEED_TO_RECONNECT)) {
+    if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.NEED_TO_RECONNECT)) {
       this.disconnect(this.plugin.getPackets().getSuccessfulBotFilterDisconnect(), false);
     } else {
       this.player.writePacketAndFlush(this.plugin.getPackets().getSuccessfulBotFilterChat());
       this.player.disconnect();
     }
+  }
+
+  private boolean checkPing() {
+    int l7Ping = this.player.getPing();
+    int l4Ping = this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress());
+
+    if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED && (l7Ping - l4Ping) > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFFERENCE) {
+      this.disconnect(this.plugin.getPackets().getKickProxyCheck(), true);
+
+      if (Settings.IMP.MAIN.TCP_LISTENER.DEBUG_ON_FAIL) {
+        LimboFilter.getLogger().info("{} failed proxy check: L4 ping {}, L7 ping {}", this.proxyPlayer, l4Ping, l7Ping);
+      }
+
+      return true;
+    }
+
+    if (Settings.IMP.MAIN.TCP_LISTENER.DEBUG_ON_SUCCESS) {
+      LimboFilter.getLogger().info("{} passed proxy check: L4 ping {}, L7 ping {}", this.proxyPlayer, l4Ping, l7Ping);
+    }
+
+    return false;
   }
 
   private void changeStateToCaptcha() {
@@ -335,6 +390,11 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     }
 
     this.captchaAnswer = captchaHolder.getAnswer();
+
+    PreparedPacket framedCaptchaPacket = this.plugin.getPackets().getFramedCaptchaPackets();
+    if (framedCaptchaPacket != null) {
+      this.player.writePacket(framedCaptchaPacket);
+    }
 
     this.player.writePacket(this.plugin.getPackets().getCaptchaAttemptsPacket(this.attempts));
     for (Object packet : captchaHolder.getMapPacket(this.version)) {

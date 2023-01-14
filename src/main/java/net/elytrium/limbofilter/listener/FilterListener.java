@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@ package net.elytrium.limbofilter.listener;
 
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.event.query.ProxyQueryEvent;
@@ -26,6 +27,7 @@ import com.velocitypowered.api.proxy.Player;
 import net.elytrium.limboapi.api.event.LoginLimboRegisterEvent;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
+import net.elytrium.limbofilter.stats.Statistics;
 
 public class FilterListener {
 
@@ -42,6 +44,14 @@ public class FilterListener {
     if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.ONLINE_MODE_VERIFY)
         && this.plugin.shouldCheck(event.getUsername(), event.getConnection().getRemoteAddress().getAddress())) {
       event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
+    }
+  }
+
+  @Subscribe
+  public void onProxyDisconnect(DisconnectEvent event) {
+    Statistics statistics = this.plugin.getStatistics();
+    if (statistics != null) {
+      statistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
     }
   }
 

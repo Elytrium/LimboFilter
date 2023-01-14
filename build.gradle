@@ -9,7 +9,7 @@ plugins {
 }
 
 setGroup("net.elytrium")
-setVersion("1.0.6-SNAPSHOT")
+setVersion("1.1.0")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
@@ -34,28 +34,32 @@ repositories {
 }
 
 dependencies {
-    compileOnly("net.elytrium:limboapi-api:1.0.6-SNAPSHOT")
+    compileOnly("net.elytrium.limboapi:api:$limboapiVersion")
 
-    compileOnly("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
-    annotationProcessor("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
-    compileOnly("com.velocitypowered:velocity-proxy:3.1.2-SNAPSHOT") // From Elytrium Repo.
+    compileOnly("com.velocitypowered:velocity-api:$velocityVersion")
+    annotationProcessor("com.velocitypowered:velocity-api:$velocityVersion")
+    compileOnly("com.velocitypowered:velocity-proxy:$velocityVersion") // From Elytrium Repo.
 
     // Needs for some velocity methods.
-    compileOnly("io.netty:netty-codec:4.1.77.Final")
-    compileOnly("it.unimi.dsi:fastutil-core:8.5.8")
-    compileOnly("org.apache.logging.log4j:log4j-api:2.17.2")
-    compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
+    compileOnly("io.netty:netty-codec:$nettyVersion")
+    compileOnly("it.unimi.dsi:fastutil-core:$fastutilVersion")
+    compileOnly("org.apache.logging.log4j:log4j-api:$log4jVersion")
+    compileOnly("org.apache.logging.log4j:log4j-core:$log4jVersion")
 
-    implementation("org.bstats:bstats-velocity:3.0.0")
+    implementation("org.bstats:bstats-velocity:$bstatsVersion")
+    implementation("net.elytrium:pcap:$pcapVersion")
     implementation("redis.clients:jedis:4.2.3")
 
-    compileOnly("com.github.spotbugs:spotbugs-annotations:4.6.0")
+    compileOnly("com.github.spotbugs:spotbugs-annotations:$spotbugsVersion")
 }
 
 shadowJar {
     getArchiveClassifier().set("")
 
     relocate("org.bstats", "net.elytrium.limbofilter.thirdparty.org.bstats")
+    relocate("net.elytrium.commons.velocity", "net.elytrium.limboapi.thirdparty.commons.velocity")
+    relocate("net.elytrium.commons.kyori", "net.elytrium.limboapi.thirdparty.commons.kyori")
+    relocate("net.elytrium.commons.config", "net.elytrium.limboapi.thirdparty.commons.config")
 }
 
 license {

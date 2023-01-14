@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,10 +27,11 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import net.elytrium.limboapi.api.protocol.packets.data.MapData;
+import java.util.stream.Collectors;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.Settings;
 
@@ -39,28 +40,42 @@ public class CaptchaPainter {
   private final ThreadLocalRandom random = ThreadLocalRandom.current();
   private final ThreadLocal<byte[][]> buffers;
   private final List<CaptchaEffect> effects = new LinkedList<>();
-  private final Color curveColor = new Color(Integer.parseInt(Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLOR, 16));
+  private final List<Color> curveColor;
+  private final int width;
+  private final int height;
+  private ThreadLocal<Iterator<Color>> curveColorIterator;
 
-  public CaptchaPainter() {
+  public CaptchaPainter(int width, int height) {
     if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE) {
       RippleEffect.AxisConfig vertical = new RippleEffect.AxisConfig(
           this.random.nextDouble() * 2 * Math.PI, (1 + this.random.nextDouble() * 2) * Math.PI,
-          MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_HEIGHT
+          height / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_HEIGHT
       );
       RippleEffect.AxisConfig horizontal = new RippleEffect.AxisConfig(
           this.random.nextDouble() * 2 * Math.PI, (2 + this.random.nextDouble() * 2) * Math.PI,
-          MapData.MAP_DIM_SIZE / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_WIDTH
+          width / Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_RIPPLE_AMPLITUDE_WIDTH
       );
-      this.effects.add(new RippleEffect(vertical, horizontal, MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE));
+      this.effects.add(new RippleEffect(vertical, horizontal, width, height));
     }
 
     this.effects.add(new OutlineEffect(Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_OUTLINE_OVERRIDE_RADIUS));
 
     int length = (int) this.effects.stream().filter(CaptchaEffect::shouldCopy).count();
-    this.buffers = ThreadLocal.withInitial(() -> new byte[length + 1][MapData.MAP_SIZE]);
+    this.buffers = ThreadLocal.withInitial(() -> new byte[length + 1][width * height]);
+    this.width = width;
+    this.height = height;
+
+    if (!Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.isEmpty()) {
+      this.curveColor = Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.stream()
+          .map(c -> new Color(Integer.parseInt(c, 16)))
+          .collect(Collectors.toUnmodifiableList());
+      this.curveColorIterator = ThreadLocal.withInitial(this.curveColor::iterator);
+    } else {
+      this.curveColor = null;
+    }
   }
 
-  public byte[] drawCaptcha(RenderedFont font, byte foreground, String text) {
+  public byte[] drawCaptcha(RenderedFont font, byte[] foreground, String text) {
     int bufferCnt = 0;
     byte[][] buffers = this.buffers.get();
     byte[] image = buffers[bufferCnt];
@@ -71,10 +86,10 @@ public class CaptchaPainter {
       if (e.shouldCopy()) {
         byte[] newImage = buffers[++bufferCnt];
         Arrays.fill(newImage, MapPalette.TRANSPARENT);
-        e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, newImage);
+        e.filter(this.width, this.height, image, newImage);
         image = newImage;
       } else {
-        e.filter(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, image, image);
+        e.filter(this.width, this.height, image, image);
       }
     }
 
@@ -82,9 +97,17 @@ public class CaptchaPainter {
   }
 
   public int[] drawCurves() {
+    if (this.curveColor == null || Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT == 0) {
+      return null;
+    }
+
     BufferedImage bufferedImage = this.createImage();
     Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
-    graphics.setColor(this.curveColor);
+    if (!this.curveColorIterator.get().hasNext()) {
+      this.curveColorIterator.set(this.curveColor.iterator());
+    }
+
+    graphics.setColor(this.curveColorIterator.get().next());
 
     for (int i = 0; i < Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_AMOUNT; ++i) {
       this.addCurve(graphics);
@@ -93,16 +116,24 @@ public class CaptchaPainter {
     return ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
   }
 
-  private void drawText(byte[] image, RenderedFont font, byte color, String text) {
-    int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X;
-    int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y;
+  private void drawText(byte[] image, RenderedFont font, byte[] colors, String text) {
+    boolean scaleFont = Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED && Settings.IMP.MAIN.FRAMED_CAPTCHA.AUTOSCALE_FONT;
+    int multiplierX = scaleFont ? Settings.IMP.MAIN.FRAMED_CAPTCHA.WIDTH : 1;
+    int multiplierY = scaleFont ? Settings.IMP.MAIN.FRAMED_CAPTCHA.HEIGHT : 1;
+
+    int offsetX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_X * multiplierX;
+    int offsetY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.LETTER_OFFSET_Y * multiplierY;
     int x = offsetX;
     int y = offsetY;
-    int spacingX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_X;
-    int spacingY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_Y;
+    int spacingX = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_X * multiplierX;
+    int spacingY = Settings.IMP.MAIN.CAPTCHA_GENERATOR.FONT_LETTER_SPACING_Y * multiplierY;
+    boolean eachWordOnSeparateLine = Settings.IMP.MAIN.CAPTCHA_GENERATOR.EACH_WORD_ON_SEPARATE_LINE;
 
     for (char c : text.toCharArray()) {
       RenderedFont.Glyph glyph = font.getGlyph(c);
+      if (glyph == null) {
+        throw new IllegalStateException("Missing glyph: " + c);
+      }
       BitSet data = glyph.getGlyphData();
 
       int width = glyph.getWidth();
@@ -113,15 +144,15 @@ public class CaptchaPainter {
           if (data.get(j * width + i)) {
             int localX = i + x;
             int localY = j + y;
-            if (localX >= 0 && localY >= y && localX < MapData.MAP_DIM_SIZE && localY < MapData.MAP_DIM_SIZE) {
-              image[localY * MapData.MAP_DIM_SIZE + localX] = color;
+            if (localX >= 0 && localY >= y && localX < this.width && localY < this.height) {
+              image[localY * this.width + localX] = colors[(localY * this.width + localX) % colors.length];
             }
           }
         }
       }
 
       x += spacingX + width;
-      if (x > MapData.MAP_DIM_SIZE - offsetX) {
+      if (x > this.width - offsetX || (eachWordOnSeparateLine && c == ' ')) {
         x = offsetX;
         y += spacingY + (height / 2);
       }
@@ -129,7 +160,7 @@ public class CaptchaPainter {
   }
 
   private BufferedImage createImage() {
-    return new BufferedImage(MapData.MAP_DIM_SIZE, MapData.MAP_DIM_SIZE, BufferedImage.TYPE_INT_ARGB);
+    return new BufferedImage(this.width, this.height, BufferedImage.TYPE_INT_ARGB);
   }
 
   private void addCurve(Graphics2D graphics) {
@@ -138,17 +169,17 @@ public class CaptchaPainter {
 
       if (this.random.nextBoolean()) {
         cubicCurve = new CubicCurve2D.Double(
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, (0.8 + 0.1 * this.random.nextDouble()) * MapData.MAP_DIM_SIZE
+            this.random.nextDouble() * this.width, this.random.nextDouble() * 0.1 * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, (0.8 + 0.1 * this.random.nextDouble()) * this.height
         );
       } else {
         cubicCurve = new CubicCurve2D.Double(
-            this.random.nextDouble() * 0.1 * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            this.random.nextDouble() * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE,
-            (0.8 + 0.1 * this.random.nextDouble()) * MapData.MAP_DIM_SIZE, this.random.nextDouble() * MapData.MAP_DIM_SIZE
+            this.random.nextDouble() * 0.1 * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            this.random.nextDouble() * this.width, this.random.nextDouble() * this.height,
+            (0.8 + 0.1 * this.random.nextDouble()) * this.width, this.random.nextDouble() * this.height
         );
       }
 
@@ -171,5 +202,13 @@ public class CaptchaPainter {
         pathIterator.next();
       }
     }
+  }
+
+  public int getWidth() {
+    return this.width;
+  }
+
+  public int getHeight() {
+    return this.height;
   }
 }

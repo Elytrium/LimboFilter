@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2022 Elytrium
+ * Copyright (C) 2021 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,8 +25,8 @@ public class OutlineEffect implements CaptchaEffect {
   }
 
   public void filter(int width, int height, byte[] src, byte[] dest) {
-    for (int x = this.borderRadius; x < height - this.borderRadius; x++) {
-      for (int y = this.borderRadius; y < width - this.borderRadius; y++) {
+    for (int x = this.borderRadius; x < width - this.borderRadius; x++) {
+      for (int y = this.borderRadius; y < height - this.borderRadius; y++) {
         if (src[y * width + x] != 0) {
           boolean found = false;
           for (int blurX = x - this.borderRadius; blurX <= x + this.borderRadius; blurX++) {
