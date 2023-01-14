@@ -19,9 +19,9 @@ package net.elytrium.limbofilter;
 
 import java.util.List;
 import java.util.Map;
-import net.elytrium.limboapi.BuildConstants;
 import net.elytrium.commons.config.YamlConfig;
 import net.elytrium.commons.kyori.serialization.Serializers;
+import net.elytrium.limboapi.BuildConstants;
 import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
