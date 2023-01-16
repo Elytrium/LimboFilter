@@ -131,11 +131,15 @@ public class Settings extends YamlConfig {
       public int TELEPORT_ID = 44;
     }
 
-    @Comment("A \"USERNAME:IP\" map containing information about players who should join the server without verification.")
-    public Map<String, String> WHITELISTED_PLAYERS = Map.of(
-        "TestBot1234", "127.0.0.1",
-        "TestBot4321", "127.0.0.1"
-    );
+    @Comment("A \"USERNAME - IP\" list containing information about players who should join the server without verification.")
+    public List<WHITELISTED_PLAYER> WHITELISTED_PLAYERS = List.of(YamlConfig.createNodeSequence(WHITELISTED_PLAYER.class));
+
+    @NodeSequence
+    public static class WHITELISTED_PLAYER {
+
+      public String USERNAME = "TestUser123";
+      public String IP = "127.0.0.1";
+    }
 
     @Create
     public FILTER_AUTO_TOGGLE FILTER_AUTO_TOGGLE;

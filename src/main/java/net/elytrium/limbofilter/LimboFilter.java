@@ -266,9 +266,9 @@ public class LimboFilter {
 
     this.cachedFilterChecks.clear();
 
-    Settings.IMP.MAIN.WHITELISTED_PLAYERS.forEach((username, ip) -> {
+    Settings.IMP.MAIN.WHITELISTED_PLAYERS.forEach(player -> {
       try {
-        this.cachedFilterChecks.put(username, new CachedUser(InetAddress.getByName(ip), Long.MAX_VALUE));
+        this.cachedFilterChecks.put(player.USERNAME, new CachedUser(InetAddress.getByName(player.IP), Long.MAX_VALUE));
       } catch (UnknownHostException e) {
         throw new IllegalArgumentException(e);
       }
