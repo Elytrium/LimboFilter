@@ -23,6 +23,7 @@ import net.elytrium.commons.config.YamlConfig;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.player.GameMode;
+import net.elytrium.limbofilter.commands.CommandPermissionState;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 
 public class Settings extends YamlConfig {
@@ -328,6 +329,21 @@ public class Settings extends YamlConfig {
     public Dimension BOTFILTER_DIMENSION = Dimension.THE_END;
 
     @Create
+    public COORDS COORDS;
+
+    public static class COORDS {
+
+      public double CAPTCHA_X = 0;
+      @Comment("If your server supports Minecraft 1.7, don't set captcha-y to 0. https://media.discordapp.net/attachments/878241549857738793/915165038464098314/unknown.png")
+      public double CAPTCHA_Y = 0;
+      public double CAPTCHA_Z = 0;
+      public double CAPTCHA_YAW = 90;
+      public double CAPTCHA_PITCH = 38;
+      public double FALLING_CHECK_YAW = 90;
+      public double FALLING_CHECK_PITCH = 10;
+    }
+
+    @Create
     public MAIN.TCP_LISTENER TCP_LISTENER;
 
     public static class TCP_LISTENER {
@@ -359,6 +375,26 @@ public class Settings extends YamlConfig {
       @Comment("Log L4 and L7 ping")
       public boolean DEBUG_ON_FAIL = false;
       public boolean DEBUG_ON_SUCCESS = false;
+    }
+
+    @Create
+    public MAIN.COMMAND_PERMISSION_STATE COMMAND_PERMISSION_STATE;
+
+    @Comment({
+        "Available values: FALSE, TRUE, PERMISSION",
+        " FALSE - the command will be disallowed",
+        " TRUE - the command will be allowed if player has false permission state",
+        " PERMISSION - the command will be allowed if player has true permission state"
+    })
+    public static class COMMAND_PERMISSION_STATE {
+      @Comment("Permission: limbofilter.admin.sendfilter")
+      public CommandPermissionState SEND_FILTER = CommandPermissionState.PERMISSION;
+      @Comment("Permission: limbofilter.admin.reload")
+      public CommandPermissionState RELOAD = CommandPermissionState.PERMISSION;
+      @Comment("Permission: limbofilter.admin.stats")
+      public CommandPermissionState STATS = CommandPermissionState.PERMISSION;
+      @Comment("Permission: limbofilter.admin.help")
+      public CommandPermissionState HELP = CommandPermissionState.TRUE;
     }
 
     @Create
@@ -398,21 +434,6 @@ public class Settings extends YamlConfig {
       public String SEND_FAILED = "{PRFX} There is no registered servers or connected players named {0}.";
 
       public String CAPTCHA_NOT_READY_YET = "{PRFX} Captcha is not ready yet. Try again in a few seconds";
-    }
-
-    @Create
-    public COORDS COORDS;
-
-    public static class COORDS {
-
-      public double CAPTCHA_X = 0;
-      @Comment("If your server supports Minecraft 1.7, don't set captcha-y to 0. https://media.discordapp.net/attachments/878241549857738793/915165038464098314/unknown.png")
-      public double CAPTCHA_Y = 0;
-      public double CAPTCHA_Z = 0;
-      public double CAPTCHA_YAW = 90;
-      public double CAPTCHA_PITCH = 38;
-      public double FALLING_CHECK_YAW = 90;
-      public double FALLING_CHECK_PITCH = 10;
     }
   }
 }
