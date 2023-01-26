@@ -22,6 +22,7 @@ import java.util.Map;
 import net.elytrium.commons.config.YamlConfig;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.limboapi.api.chunk.Dimension;
+import net.elytrium.limboapi.api.file.BuiltInWorldFileType;
 import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limbofilter.commands.CommandPermissionState;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
@@ -96,8 +97,13 @@ public class Settings extends YamlConfig {
     public BotFilterSessionHandler.CheckState GEYSER_CHECK_STATE_NON_TOGGLED = BotFilterSessionHandler.CheckState.CAPTCHA_ON_POSITION_FAILED;
 
     public boolean LOAD_WORLD = false;
-    @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (any Minecraft version is supported, but the latest one is recommended)")
-    public String WORLD_FILE_TYPE = "structure";
+    @Comment({
+        "World file type:",
+        " SCHEMATIC (MCEdit .schematic, 1.12.2 and lower, not recommended)",
+        " STRUCTURE (structure block .nbt, any Minecraft version is supported, but the latest one is recommended).",
+        " WORLDEDIT_SCHEM (WorldEdit .schem, any Minecraft version is supported, but the latest one is recommended)."
+    })
+    public BuiltInWorldFileType WORLD_FILE_TYPE = BuiltInWorldFileType.STRUCTURE;
     public String WORLD_FILE_PATH = "world.nbt";
 
     @Comment("World time in ticks (24000 ticks == 1 in-game day)")
@@ -133,10 +139,9 @@ public class Settings extends YamlConfig {
     }
 
     @Comment("A \"USERNAME - IP\" list containing information about players who should join the server without verification.")
-    public List<WHITELISTED_PLAYER> WHITELISTED_PLAYERS = List.of(YamlConfig.createNodeSequence(WHITELISTED_PLAYER.class));
+    public List<WhitelistedPlayer> WHITELISTED_PLAYERS = List.of(new WhitelistedPlayer());
 
-    @NodeSequence
-    public static class WHITELISTED_PLAYER {
+    public static class WhitelistedPlayer {
 
       public String USERNAME = "TestUser123";
       public String IP = "127.0.0.1";

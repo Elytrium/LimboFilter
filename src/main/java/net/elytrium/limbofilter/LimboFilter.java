@@ -48,8 +48,6 @@ import net.elytrium.commons.utils.updates.UpdatesChecker;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.VirtualWorld;
-import net.elytrium.limboapi.api.file.SchematicFile;
-import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
@@ -284,22 +282,7 @@ public class LimboFilter {
     if (Settings.IMP.MAIN.LOAD_WORLD) {
       try {
         Path path = this.dataDirectory.resolve(Settings.IMP.MAIN.WORLD_FILE_PATH);
-        WorldFile file;
-        switch (Settings.IMP.MAIN.WORLD_FILE_TYPE) {
-          case "schematic": {
-            file = new SchematicFile(path);
-            break;
-          }
-          case "structure": {
-            file = new StructureFile(path);
-            break;
-          }
-          default: {
-            LOGGER.error("Incorrect world file type.");
-            this.server.shutdown();
-            return;
-          }
-        }
+        WorldFile file = this.limboFactory.openWorldFile(Settings.IMP.MAIN.WORLD_FILE_TYPE, path);
 
         Settings.MAIN.WORLD_COORDS coords = Settings.IMP.MAIN.WORLD_COORDS;
         file.toWorld(this.limboFactory, this.filterWorld, coords.X, coords.Y, coords.Z, Settings.IMP.MAIN.WORLD_LIGHT_LEVEL);
