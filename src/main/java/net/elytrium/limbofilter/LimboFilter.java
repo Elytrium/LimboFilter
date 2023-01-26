@@ -317,7 +317,8 @@ public class LimboFilter {
         .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
         .setGameMode(Settings.IMP.MAIN.GAME_MODE)
-        .setShouldRespawn(false);
+        .setShouldRespawn(false)
+        .setShouldUpdateTags(false);
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
