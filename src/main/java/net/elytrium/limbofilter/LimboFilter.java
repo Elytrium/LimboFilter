@@ -291,6 +291,10 @@ public class LimboFilter {
       }
     }
 
+    if (Settings.IMP.MAIN.WORLD_OVERRIDE_BLOCK_LIGHT_LEVEL) {
+      this.filterWorld.fillBlockLight(Settings.IMP.MAIN.WORLD_LIGHT_LEVEL);
+    }
+
     if (this.filterServer != null) {
       this.filterServer.dispose();
     }

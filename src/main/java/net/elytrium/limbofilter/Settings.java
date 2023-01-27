@@ -112,6 +112,9 @@ public class Settings extends YamlConfig {
     @Comment("World light level (from 0 to 15)")
     public int WORLD_LIGHT_LEVEL = 15;
 
+    @Comment("Should we override block light level (to light up the nether and the end)")
+    public boolean WORLD_OVERRIDE_BLOCK_LIGHT_LEVEL = true;
+
     @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
     public GameMode GAME_MODE = GameMode.ADVENTURE;
 
