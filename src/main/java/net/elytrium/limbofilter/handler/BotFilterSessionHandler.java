@@ -166,10 +166,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       this.lastY = this.validY;
       ++this.nonValidPacketsSize;
     }
-    if (this.startedListening && this.state != CheckState.SUCCESSFUL) {
-      if (this.onGround) {
-        return;
-      }
+    if (this.startedListening && this.state != CheckState.SUCCESSFUL && this.state != CheckState.ONLY_CAPTCHA && !this.onGround) {
       if (this.lastY - this.posY == 0) {
         ++this.ignoredTicks;
         return;
