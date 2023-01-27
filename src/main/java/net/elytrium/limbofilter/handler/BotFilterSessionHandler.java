@@ -77,7 +77,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private boolean startedListening;
   private boolean checkedBySettings;
   private boolean checkedByBrand;
-  private boolean fallingDisabled;
 
   public BotFilterSessionHandler(Player proxyPlayer, LimboFilter plugin) {
     this.proxyPlayer = proxyPlayer;
@@ -112,8 +111,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.joinTime = System.currentTimeMillis();
     if (this.state == CheckState.ONLY_CAPTCHA) {
-      this.setCaptchaPositionAndDisableFalling();
-      this.sendCaptcha();
+      this.changeStateToCaptcha();
     } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
       this.sendFallingCheckPackets();
       this.sendFallingCheckTitleAndChat();
@@ -170,12 +168,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     }
     if (this.startedListening && this.state != CheckState.SUCCESSFUL) {
       if (this.onGround) {
-        return;
-      }
-      if (this.state == CheckState.ONLY_CAPTCHA) {
-        if (!this.fallingDisabled) {
-          this.setCaptchaPositionAndDisableFalling();
-        }
         return;
       }
       if (this.lastY - this.posY == 0) {
@@ -366,19 +358,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private void changeStateToCaptcha() {
     this.state = CheckState.ONLY_CAPTCHA;
-    //this.joinTime = System.currentTimeMillis() + this.fallingCheckTotalTime;
-    this.setCaptchaPositionAndDisableFalling();
-    if (this.captchaAnswer == null) {
-      this.sendCaptcha();
-    }
-  }
-
-  private void setCaptchaPositionAndDisableFalling() {
     this.server.respawnPlayer(this.proxyPlayer);
     this.player.writePacketAndFlush(this.plugin.getPackets().getNoAbilities());
 
-    this.fallingDisabled = true;
     this.waitingTeleportId = this.validTeleportId;
+    if (this.captchaAnswer == null) {
+      this.sendCaptcha();
+    }
   }
 
   private void sendCaptcha() {
@@ -393,7 +379,9 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     PreparedPacket framedCaptchaPacket = this.plugin.getPackets().getFramedCaptchaPackets();
     if (framedCaptchaPacket != null) {
-      this.player.writePacket(framedCaptchaPacket);
+      // Postpone captcha packets because we must receive neighbor-chunks
+      // The delay is 150 milliseconds = 3 ticks
+      this.player.getScheduledExecutor().schedule(() -> this.player.writePacketAndFlush(framedCaptchaPacket), 150L, TimeUnit.MILLISECONDS);
     }
 
     this.player.writePacket(this.plugin.getPackets().getCaptchaAttemptsPacket(this.attempts));
