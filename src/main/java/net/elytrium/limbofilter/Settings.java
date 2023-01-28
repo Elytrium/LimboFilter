@@ -244,6 +244,8 @@ public class Settings extends YamlConfig {
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
       public String PATTERN = "abcdefghijklmnopqrstuvwxyz1234567890";
+      @Comment("If enabled, both lowercase and uppercase captcha answers entered by players will be correct")
+      public boolean IGNORE_CASE = true;
       public int LENGTH = 3;
       public int IMAGES_COUNT = 1000;
       public boolean NUMBER_SPELLING = false;

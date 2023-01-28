@@ -117,6 +117,10 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       this.sendFallingCheckTitleAndChat();
     } else if (this.state == CheckState.CAPTCHA_POSITION) {
       this.sendFallingCheckPackets();
+
+      if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+        this.sendFallingCheckTitleAndChat();
+      }
     }
 
     this.player.flushPackets();
@@ -154,7 +158,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       if (this.posX == this.validX && this.posZ == this.validZ) {
         this.startedListening = true;
 
-        if (this.state == CheckState.CAPTCHA_POSITION) {
+        if (this.state == CheckState.CAPTCHA_POSITION && !Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
           this.sendCaptcha();
         }
       }
@@ -247,7 +251,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   @Override
   public void onChat(String message) {
     if (this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA) {
-      if (message.equals(this.captchaAnswer) || (message.startsWith("/") && message.substring(1).equals(this.captchaAnswer))) {
+      if (this.equalsCaptchaAnswer(message) || (message.startsWith("/") && this.equalsCaptchaAnswer(message.substring(1)))) {
         this.player.writePacketAndFlush(this.plugin.getPackets().getResetSlot());
         this.finishCheck();
       } else if (--this.attempts != 0) {
@@ -255,6 +259,14 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       } else {
         this.disconnect(this.plugin.getPackets().getCaptchaFailed(), true);
       }
+    }
+  }
+
+  private boolean equalsCaptchaAnswer(String message) {
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.IGNORE_CASE) {
+      return message.equalsIgnoreCase(this.captchaAnswer);
+    } else {
+      return message.equals(this.captchaAnswer);
     }
   }
 
