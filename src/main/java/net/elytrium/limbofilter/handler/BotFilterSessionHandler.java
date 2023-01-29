@@ -388,9 +388,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     PreparedPacket framedCaptchaPacket = this.plugin.getPackets().getFramedCaptchaPackets();
     if (framedCaptchaPacket != null) {
-      // Postpone captcha packets because we must receive neighbor-chunks
-      // The delay is 150 milliseconds = 3 ticks
-      this.player.getScheduledExecutor().schedule(() -> this.player.writePacketAndFlush(framedCaptchaPacket), 150L, TimeUnit.MILLISECONDS);
+      this.player.writePacket(framedCaptchaPacket);
     }
 
     this.player.writePacket(this.plugin.getPackets().getCaptchaAttemptsPacket(this.attempts));
