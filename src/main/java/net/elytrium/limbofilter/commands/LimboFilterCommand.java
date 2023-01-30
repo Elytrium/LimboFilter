@@ -126,6 +126,12 @@ public class LimboFilterCommand implements SimpleCommand {
     }
   }
 
+  @Override
+  public boolean hasPermission(Invocation invocation) {
+    return Settings.IMP.MAIN.COMMAND_PERMISSION_STATE.HELP
+        .hasPermission(invocation.source(), "limbofilter.commands.help");
+  }
+
   private void showHelp(CommandSource source) {
     HELP_MESSAGE.forEach(source::sendMessage);
 
@@ -157,38 +163,42 @@ public class LimboFilterCommand implements SimpleCommand {
   }
 
   private enum Subcommand {
-    RELOAD("Reload config.", (LimboFilterCommand parent, CommandSource source, String[] args) -> {
-      parent.plugin.reload();
-      source.sendMessage(parent.reloadComponent);
-    }),
-    STATS("Enable/Disable statistics of connections and blocked bots.", (LimboFilterCommand parent, CommandSource source, String[] args) -> {
-      if (source instanceof Player) {
-        Player player = (Player) source;
-        UUID playerUuid = player.getUniqueId();
-        if (PLAYERS_WITH_STATS.contains(playerUuid)) {
-          PLAYERS_WITH_STATS.remove(playerUuid);
-          source.sendMessage(parent.statsDisabledComponent);
-        } else {
-          PLAYERS_WITH_STATS.add(playerUuid);
-          source.sendMessage(parent.statsEnabledComponent);
-        }
-      } else {
-        source.sendMessage(parent.createStatsComponent(null, -1));
-      }
-    });
+    RELOAD("Reload config.", Settings.IMP.MAIN.COMMAND_PERMISSION_STATE.RELOAD,
+        (LimboFilterCommand parent, CommandSource source, String[] args) -> {
+          parent.plugin.reload();
+          source.sendMessage(parent.reloadComponent);
+        }),
+    STATS("Enable/Disable statistics of connections and blocked bots.", Settings.IMP.MAIN.COMMAND_PERMISSION_STATE.STATS,
+        (LimboFilterCommand parent, CommandSource source, String[] args) -> {
+          if (source instanceof Player) {
+            Player player = (Player) source;
+            UUID playerUuid = player.getUniqueId();
+            if (PLAYERS_WITH_STATS.contains(playerUuid)) {
+              PLAYERS_WITH_STATS.remove(playerUuid);
+              source.sendMessage(parent.statsDisabledComponent);
+            } else {
+              PLAYERS_WITH_STATS.add(playerUuid);
+              source.sendMessage(parent.statsEnabledComponent);
+            }
+          } else {
+            source.sendMessage(parent.createStatsComponent(null, -1));
+          }
+        });
 
     private final String command;
     private final String description;
+    private final CommandPermissionState permissionState;
     private final SubcommandExecutor executor;
 
-    Subcommand(String description, SubcommandExecutor executor) {
+    Subcommand(String description, CommandPermissionState permissionState, SubcommandExecutor executor) {
+      this.permissionState = permissionState;
       this.command = this.name().toLowerCase(Locale.ROOT);
       this.description = description;
       this.executor = executor;
     }
 
     public boolean hasPermission(CommandSource source) {
-      return source.hasPermission("limbofilter.admin." + this.command);
+      return this.permissionState.hasPermission(source, "limbofilter.admin." + this.command);
     }
 
     public Component getMessageLine() {

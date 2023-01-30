@@ -77,7 +77,6 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private boolean startedListening;
   private boolean checkedBySettings;
   private boolean checkedByBrand;
-  private boolean fallingDisabled;
 
   public BotFilterSessionHandler(Player proxyPlayer, LimboFilter plugin) {
     this.proxyPlayer = proxyPlayer;
@@ -112,13 +111,16 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.joinTime = System.currentTimeMillis();
     if (this.state == CheckState.ONLY_CAPTCHA) {
-      this.setCaptchaPositionAndDisableFalling();
-      this.sendCaptcha();
+      this.changeStateToCaptcha();
     } else if (this.state == CheckState.ONLY_POSITION || this.state == CheckState.CAPTCHA_ON_POSITION_FAILED) {
       this.sendFallingCheckPackets();
       this.sendFallingCheckTitleAndChat();
     } else if (this.state == CheckState.CAPTCHA_POSITION) {
       this.sendFallingCheckPackets();
+
+      if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+        this.sendFallingCheckTitleAndChat();
+      }
     }
 
     this.player.flushPackets();
@@ -156,7 +158,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       if (this.posX == this.validX && this.posZ == this.validZ) {
         this.startedListening = true;
 
-        if (this.state == CheckState.CAPTCHA_POSITION) {
+        if (this.state == CheckState.CAPTCHA_POSITION && !Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
           this.sendCaptcha();
         }
       }
@@ -168,16 +170,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       this.lastY = this.validY;
       ++this.nonValidPacketsSize;
     }
-    if (this.startedListening && this.state != CheckState.SUCCESSFUL) {
-      if (this.onGround) {
-        return;
-      }
-      if (this.state == CheckState.ONLY_CAPTCHA) {
-        if (!this.fallingDisabled) {
-          this.setCaptchaPositionAndDisableFalling();
-        }
-        return;
-      }
+    if (this.startedListening && this.state != CheckState.SUCCESSFUL && this.state != CheckState.ONLY_CAPTCHA && !this.onGround) {
       if (this.lastY - this.posY == 0) {
         ++this.ignoredTicks;
         return;
@@ -258,7 +251,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   @Override
   public void onChat(String message) {
     if (this.state == CheckState.CAPTCHA_POSITION || this.state == CheckState.ONLY_CAPTCHA) {
-      if (message.equals(this.captchaAnswer) || (message.startsWith("/") && message.substring(1).equals(this.captchaAnswer))) {
+      if (this.equalsCaptchaAnswer(message) || (message.startsWith("/") && this.equalsCaptchaAnswer(message.substring(1)))) {
         this.player.writePacketAndFlush(this.plugin.getPackets().getResetSlot());
         this.finishCheck();
       } else if (--this.attempts != 0) {
@@ -266,6 +259,14 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       } else {
         this.disconnect(this.plugin.getPackets().getCaptchaFailed(), true);
       }
+    }
+  }
+
+  private boolean equalsCaptchaAnswer(String message) {
+    if (Settings.IMP.MAIN.CAPTCHA_GENERATOR.IGNORE_CASE) {
+      return message.equalsIgnoreCase(this.captchaAnswer);
+    } else {
+      return message.equals(this.captchaAnswer);
     }
   }
 
@@ -366,19 +367,13 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private void changeStateToCaptcha() {
     this.state = CheckState.ONLY_CAPTCHA;
-    //this.joinTime = System.currentTimeMillis() + this.fallingCheckTotalTime;
-    this.setCaptchaPositionAndDisableFalling();
-    if (this.captchaAnswer == null) {
-      this.sendCaptcha();
-    }
-  }
-
-  private void setCaptchaPositionAndDisableFalling() {
     this.server.respawnPlayer(this.proxyPlayer);
     this.player.writePacketAndFlush(this.plugin.getPackets().getNoAbilities());
 
-    this.fallingDisabled = true;
     this.waitingTeleportId = this.validTeleportId;
+    if (this.captchaAnswer == null) {
+      this.sendCaptcha();
+    }
   }
 
   private void sendCaptcha() {

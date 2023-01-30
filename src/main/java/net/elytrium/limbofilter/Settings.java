@@ -23,7 +23,9 @@ import net.elytrium.commons.config.YamlConfig;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.limboapi.BuildConstants;
 import net.elytrium.limboapi.api.chunk.Dimension;
+import net.elytrium.limboapi.api.file.BuiltInWorldFileType;
 import net.elytrium.limboapi.api.player.GameMode;
+import net.elytrium.limbofilter.commands.CommandPermissionState;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 
 public class Settings extends YamlConfig {
@@ -96,8 +98,13 @@ public class Settings extends YamlConfig {
     public BotFilterSessionHandler.CheckState GEYSER_CHECK_STATE_NON_TOGGLED = BotFilterSessionHandler.CheckState.CAPTCHA_ON_POSITION_FAILED;
 
     public boolean LOAD_WORLD = false;
-    @Comment("World file type: \"schematic\" (1.12.2 and lower, not recommended), \"structure\" block .nbt (any Minecraft version is supported, but the latest one is recommended)")
-    public String WORLD_FILE_TYPE = "structure";
+    @Comment({
+        "World file type:",
+        " SCHEMATIC (MCEdit .schematic, 1.12.2 and lower, not recommended)",
+        " STRUCTURE (structure block .nbt, any Minecraft version is supported, but the latest one is recommended).",
+        " WORLDEDIT_SCHEM (WorldEdit .schem, any Minecraft version is supported, but the latest one is recommended)."
+    })
+    public BuiltInWorldFileType WORLD_FILE_TYPE = BuiltInWorldFileType.STRUCTURE;
     public String WORLD_FILE_PATH = "world.nbt";
 
     @Comment("World time in ticks (24000 ticks == 1 in-game day)")
@@ -105,6 +112,9 @@ public class Settings extends YamlConfig {
 
     @Comment("World light level (from 0 to 15)")
     public int WORLD_LIGHT_LEVEL = 15;
+
+    @Comment("Should we override block light level (to light up the nether and the end)")
+    public boolean WORLD_OVERRIDE_BLOCK_LIGHT_LEVEL = true;
 
     @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
     public GameMode GAME_MODE = GameMode.ADVENTURE;
@@ -132,11 +142,14 @@ public class Settings extends YamlConfig {
       public int TELEPORT_ID = 44;
     }
 
-    @Comment("A \"USERNAME:IP\" map containing information about players who should join the server without verification.")
-    public Map<String, String> WHITELISTED_PLAYERS = Map.of(
-        "TestBot1234", "127.0.0.1",
-        "TestBot4321", "127.0.0.1"
-    );
+    @Comment("A \"USERNAME - IP\" list containing information about players who should join the server without verification.")
+    public List<WhitelistedPlayer> WHITELISTED_PLAYERS = List.of(new WhitelistedPlayer());
+
+    public static class WhitelistedPlayer {
+
+      public String USERNAME = "TestUser123";
+      public String IP = "127.0.0.1";
+    }
 
     @Create
     public FILTER_AUTO_TOGGLE FILTER_AUTO_TOGGLE;
@@ -232,6 +245,8 @@ public class Settings extends YamlConfig {
       public boolean STRIKETHROUGH = false;
       public boolean UNDERLINE = true;
       public String PATTERN = "abcdefghijklmnopqrstuvwxyz1234567890";
+      @Comment("If enabled, both lowercase and uppercase captcha answers entered by players will be correct")
+      public boolean IGNORE_CASE = true;
       public int LENGTH = 3;
       public int IMAGES_COUNT = 1000;
       public boolean NUMBER_SPELLING = false;
@@ -325,6 +340,21 @@ public class Settings extends YamlConfig {
     public Dimension BOTFILTER_DIMENSION = Dimension.THE_END;
 
     @Create
+    public COORDS COORDS;
+
+    public static class COORDS {
+
+      public double CAPTCHA_X = 0;
+      @Comment("If your server supports Minecraft 1.7, don't set captcha-y to 0. https://media.discordapp.net/attachments/878241549857738793/915165038464098314/unknown.png")
+      public double CAPTCHA_Y = 0;
+      public double CAPTCHA_Z = 0;
+      public double CAPTCHA_YAW = 90;
+      public double CAPTCHA_PITCH = 38;
+      public double FALLING_CHECK_YAW = 90;
+      public double FALLING_CHECK_PITCH = 10;
+    }
+
+    @Create
     public MAIN.TCP_LISTENER TCP_LISTENER;
 
     public static class TCP_LISTENER {
@@ -356,6 +386,26 @@ public class Settings extends YamlConfig {
       @Comment("Log L4 and L7 ping")
       public boolean DEBUG_ON_FAIL = false;
       public boolean DEBUG_ON_SUCCESS = false;
+    }
+
+    @Create
+    public MAIN.COMMAND_PERMISSION_STATE COMMAND_PERMISSION_STATE;
+
+    @Comment({
+        "Available values: FALSE, TRUE, PERMISSION",
+        " FALSE - the command will be disallowed",
+        " TRUE - the command will be allowed if player has false permission state",
+        " PERMISSION - the command will be allowed if player has true permission state"
+    })
+    public static class COMMAND_PERMISSION_STATE {
+      @Comment("Permission: limbofilter.admin.sendfilter")
+      public CommandPermissionState SEND_FILTER = CommandPermissionState.PERMISSION;
+      @Comment("Permission: limbofilter.admin.reload")
+      public CommandPermissionState RELOAD = CommandPermissionState.PERMISSION;
+      @Comment("Permission: limbofilter.admin.stats")
+      public CommandPermissionState STATS = CommandPermissionState.PERMISSION;
+      @Comment("Permission: limbofilter.admin.help")
+      public CommandPermissionState HELP = CommandPermissionState.TRUE;
     }
 
     @Create

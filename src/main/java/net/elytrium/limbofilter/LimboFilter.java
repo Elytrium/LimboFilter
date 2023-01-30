@@ -51,8 +51,6 @@ import net.elytrium.limboapi.BuildConstants;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.VirtualWorld;
-import net.elytrium.limboapi.api.file.SchematicFile;
-import net.elytrium.limboapi.api.file.StructureFile;
 import net.elytrium.limboapi.api.file.WorldFile;
 import net.elytrium.limboapi.api.protocol.PacketDirection;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
@@ -284,9 +282,9 @@ public class LimboFilter {
 
     this.cachedFilterChecks.clear();
 
-    Settings.IMP.MAIN.WHITELISTED_PLAYERS.forEach((username, ip) -> {
+    Settings.IMP.MAIN.WHITELISTED_PLAYERS.forEach(player -> {
       try {
-        this.cachedFilterChecks.put(username, new CachedUser(InetAddress.getByName(ip), Long.MAX_VALUE));
+        this.cachedFilterChecks.put(player.USERNAME, new CachedUser(InetAddress.getByName(player.IP), Long.MAX_VALUE));
       } catch (UnknownHostException e) {
         throw new IllegalArgumentException(e);
       }
@@ -302,28 +300,17 @@ public class LimboFilter {
     if (Settings.IMP.MAIN.LOAD_WORLD) {
       try {
         Path path = this.dataDirectory.resolve(Settings.IMP.MAIN.WORLD_FILE_PATH);
-        WorldFile file;
-        switch (Settings.IMP.MAIN.WORLD_FILE_TYPE) {
-          case "schematic": {
-            file = new SchematicFile(path);
-            break;
-          }
-          case "structure": {
-            file = new StructureFile(path);
-            break;
-          }
-          default: {
-            LOGGER.error("Incorrect world file type.");
-            this.server.shutdown();
-            return;
-          }
-        }
+        WorldFile file = this.limboFactory.openWorldFile(Settings.IMP.MAIN.WORLD_FILE_TYPE, path);
 
         Settings.MAIN.WORLD_COORDS coords = Settings.IMP.MAIN.WORLD_COORDS;
         file.toWorld(this.limboFactory, this.filterWorld, coords.X, coords.Y, coords.Z, Settings.IMP.MAIN.WORLD_LIGHT_LEVEL);
       } catch (IOException e) {
         throw new IllegalArgumentException(e);
       }
+    }
+
+    if (Settings.IMP.MAIN.WORLD_OVERRIDE_BLOCK_LIGHT_LEVEL) {
+      this.filterWorld.fillBlockLight(Settings.IMP.MAIN.WORLD_LIGHT_LEVEL);
     }
 
     if (this.filterServer != null) {
@@ -335,7 +322,8 @@ public class LimboFilter {
         .setReadTimeout(Settings.IMP.MAIN.MAX_PING)
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
         .setGameMode(Settings.IMP.MAIN.GAME_MODE)
-        .setShouldRespawn(false);
+        .setShouldRespawn(false)
+        .setShouldUpdateTags(false);
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");

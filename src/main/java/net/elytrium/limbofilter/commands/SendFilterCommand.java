@@ -75,6 +75,7 @@ public class SendFilterCommand implements SimpleCommand {
 
   @Override
   public boolean hasPermission(SimpleCommand.Invocation invocation) {
-    return invocation.source().hasPermission("limbofilter.commands.sendfilter");
+    return Settings.IMP.MAIN.COMMAND_PERMISSION_STATE.SEND_FILTER
+        .hasPermission(invocation.source(), "limbofilter.admin.sendfilter");
   }
 }
