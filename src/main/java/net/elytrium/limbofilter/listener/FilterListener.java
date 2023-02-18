@@ -49,9 +49,9 @@ public class FilterListener {
 
   @Subscribe
   public void onProxyDisconnect(DisconnectEvent event) {
-    Statistics IStatistics = this.plugin.getStatistics();
-    if (IStatistics != null) {
-      IStatistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
+    Statistics statistics = this.plugin.getStatistics();
+    if (statistics != null) {
+      statistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
     }
   }
 
