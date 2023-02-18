@@ -148,16 +148,16 @@ public class LimboFilterCommand implements SimpleCommand {
   }
 
   private Component createStatsComponent(InetAddress address, long ping) {
-    Statistics statistics = this.plugin.getStatistics();
+    Statistics IStatistics = this.plugin.getStatistics();
     return LimboFilter.getSerializer().deserialize(
         MessageFormat.format(
             Settings.IMP.MAIN.STRINGS.STATS_FORMAT,
-            statistics.getBlockedConnections(),
-            statistics.getConnections() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_CPS,
-            statistics.getPings() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_PPS,
-            statistics.getTotalConnection(),
+            IStatistics.getBlockedConnections(),
+            IStatistics.getConnections() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_CPS,
+            IStatistics.getPings() + "/" + Settings.IMP.MAIN.UNIT_OF_TIME_PPS,
+            IStatistics.getTotalConnection(),
             ping,
-            statistics.getPing(address)
+            IStatistics.getPing(address)
         )
     );
   }

@@ -26,6 +26,8 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.commons.velocity.commands.SuggestUtils;
 import net.elytrium.limbofilter.LimboFilter;
@@ -56,7 +58,8 @@ public class SendFilterCommand implements SimpleCommand {
       Optional<RegisteredServer> registeredServer = server.getServer(target);
       if (registeredServer.isPresent()) {
         Collection<Player> players = registeredServer.get().getPlayersConnected();
-        players.forEach(this.plugin::resetCacheForFilterUser);
+        this.plugin.resetCacheMultiple(players.stream().map(Player::getUsername).collect(Collectors.toList()));
+        // players.forEach(this.plugin::resetCacheForFilterUser);
         players.forEach(this.plugin::sendToFilterServer);
         source.sendMessage(serializer.deserialize(MessageFormat.format(Settings.IMP.MAIN.STRINGS.SEND_SERVER_SUCCESSFUL, players.size(), target)));
       } else {

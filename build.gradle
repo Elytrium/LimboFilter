@@ -48,6 +48,7 @@ dependencies {
 
     implementation("org.bstats:bstats-velocity:$bstatsVersion")
     implementation("net.elytrium:pcap:$pcapVersion")
+    implementation("redis.clients:jedis:4.3.0")
 
     compileOnly("com.github.spotbugs:spotbugs-annotations:$spotbugsVersion")
 }

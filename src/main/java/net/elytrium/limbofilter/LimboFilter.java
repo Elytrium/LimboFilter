@@ -38,10 +38,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
 import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.commons.utils.updates.UpdatesChecker;
@@ -55,6 +55,8 @@ import net.elytrium.limboapi.api.protocol.packets.PacketMapping;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.cache.CachedPackets;
+import net.elytrium.limbofilter.cache.checks.FilterCacheJava;
+import net.elytrium.limbofilter.cache.checks.FilterCache;
 import net.elytrium.limbofilter.captcha.CaptchaGenerator;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
 import net.elytrium.limbofilter.commands.LimboFilterCommand;
@@ -66,6 +68,7 @@ import net.elytrium.limbofilter.protocol.packets.Interact;
 import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
 import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
 import net.elytrium.limbofilter.stats.Statistics;
+import net.elytrium.limbofilter.stats.StatisticsJava;
 import net.elytrium.pcap.PcapException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.ComponentSerializer;
@@ -97,13 +100,13 @@ public class LimboFilter {
   @MonotonicNonNull
   private static Serializer SERIALIZER;
 
-  private final Map<String, CachedUser> cachedFilterChecks = new ConcurrentHashMap<>();
+  private final FilterCache cachedFilterChecks = new FilterCacheJava();
 
   private final Path dataDirectory;
   private final File configFile;
   private final Metrics.Factory metricsFactory;
   private final ProxyServer server;
-  private final Statistics statistics;
+  private final Statistics IStatistics;
   private final LimboFactory limboFactory;
   private final PacketFactory packetFactory;
   private final Level initialLogLevel;
@@ -126,7 +129,7 @@ public class LimboFilter {
     this.metricsFactory = metricsFactory;
     this.dataDirectory = dataDirectory;
     this.configFile = this.dataDirectory.resolve("config.yml").toFile();
-    this.statistics = new Statistics();
+    this.IStatistics = new StatisticsJava();
 
     this.limboFactory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
     this.packetFactory = this.limboFactory.getPacketFactory();
@@ -180,8 +183,8 @@ public class LimboFilter {
         new SimplePie("has_backplate",
             () -> String.valueOf(!main.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty() && !main.CAPTCHA_GENERATOR.BACKPLATE_PATHS.get(0).isEmpty()))
     );
-    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings()))); // Total pings
-    metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
+    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.IStatistics.getPings()))); // Total pings
+    metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.IStatistics.getConnections())));
 
     if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
       LOGGER.error("****************************************");
@@ -234,7 +237,7 @@ public class LimboFilter {
 
     BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L); // One tick == 50 millis
 
-    this.statistics.restartUpdateTasks(this, this.server.getScheduler());
+    this.IStatistics.restartUpdateTasks(this, this.server.getScheduler());
 
     if (this.refreshCaptchaTask != null) {
       this.refreshCaptchaTask.cancel();
@@ -337,7 +340,7 @@ public class LimboFilter {
     }
 
     this.purgeCacheTask = this.server.getScheduler()
-        .buildTask(this, () -> this.checkCache(this.cachedFilterChecks))
+        .buildTask(this, cachedFilterChecks::checkCache)
         .delay(Settings.IMP.MAIN.PURGE_CACHE_MILLIS, TimeUnit.MILLISECONDS)
         .repeat(Settings.IMP.MAIN.PURGE_CACHE_MILLIS, TimeUnit.MILLISECONDS)
         .schedule();
@@ -355,11 +358,17 @@ public class LimboFilter {
 
   public void cacheFilterUser(Player player) {
     String username = player.getUsername();
-    this.cachedFilterChecks.remove(username);
+    // Put overwrites it anyway, why would we remove first?
+    // this.cachedFilterChecks.remove(username);
     this.cachedFilterChecks.put(
         username,
         new CachedUser(player.getRemoteAddress().getAddress(), System.currentTimeMillis() + Settings.IMP.MAIN.PURGE_CACHE_MILLIS)
     );
+  }
+
+  // Some storages benefit by batch removing
+  public void resetCacheMultiple(Collection<String> players) {
+    this.cachedFilterChecks.removeMultiple(players);
   }
 
   public void resetCacheForFilterUser(Player player) {
@@ -399,12 +408,13 @@ public class LimboFilter {
     }
   }
 
-  private void checkCache(Map<String, CachedUser> userMap) {
+  // Makes sense for storage to handle this on it's own
+  /*private void checkCache(Map<String, CachedUser> userMap) {
     userMap.entrySet().stream()
         .filter(user -> user.getValue().getCheckTime() <= System.currentTimeMillis())
         .map(Map.Entry::getKey)
         .forEach(userMap::remove);
-  }
+  }*/
 
   private void checkLoggerToEnable() {
     if (this.logsDisabled && !this.checkLoggerCps()) {
@@ -433,7 +443,7 @@ public class LimboFilter {
 
   public boolean checkCpsLimit(int limit) {
     if (limit != -1) {
-      return limit <= this.statistics.getConnections();
+      return limit <= this.IStatistics.getConnections();
     } else {
       return false;
     }
@@ -441,7 +451,7 @@ public class LimboFilter {
 
   public boolean checkPpsLimit(int limit) {
     if (limit != -1) {
-      return limit <= this.statistics.getPings();
+      return limit <= this.IStatistics.getPings();
     } else {
       return false;
     }
@@ -478,7 +488,7 @@ public class LimboFilter {
   }
 
   public Statistics getStatistics() {
-    return this.statistics;
+    return this.IStatistics;
   }
 
   public TcpListener getTcpListener() {
@@ -509,7 +519,7 @@ public class LimboFilter {
     return SERIALIZER;
   }
 
-  private static class CachedUser {
+  public static class CachedUser {
 
     private final InetAddress inetAddress;
     private final long checkTime;
