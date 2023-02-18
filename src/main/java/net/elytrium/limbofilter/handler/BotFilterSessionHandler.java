@@ -49,7 +49,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private final Player proxyPlayer;
   private final ProtocolVersion version;
   private final LimboFilter plugin;
-  private final Statistics IStatistics;
+  private final Statistics statistics;
   private final int validX;
   private final int validY;
   private final int validZ;
@@ -83,7 +83,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
     this.version = this.proxyPlayer.getProtocolVersion();
     this.plugin = plugin;
 
-    this.IStatistics = this.plugin.getStatistics();
+    this.statistics = this.plugin.getStatistics();
 
     Settings.MAIN.FALLING_COORDS fallingCoords = Settings.IMP.MAIN.FALLING_COORDS;
     this.validX = fallingCoords.X;
@@ -346,7 +346,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   private boolean checkPing() {
     int l7Ping = this.player.getPing();
-    int l4Ping = this.IStatistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress());
+    int l4Ping = this.statistics.getPing(this.proxyPlayer.getRemoteAddress().getAddress());
 
     if (Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_ENABLED && (l7Ping - l4Ping) > Settings.IMP.MAIN.TCP_LISTENER.PROXY_DETECTOR_DIFFERENCE) {
       this.disconnect(this.plugin.getPackets().getKickProxyCheck(), true);
@@ -402,7 +402,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   private void disconnect(PreparedPacket reason, boolean blocked) {
     this.player.closeWith(reason);
     if (blocked) {
-      this.IStatistics.addBlockedConnection();
+      this.statistics.addBlockedConnection();
     }
   }
 

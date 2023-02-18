@@ -106,7 +106,7 @@ public class LimboFilter {
   private final File configFile;
   private final Metrics.Factory metricsFactory;
   private final ProxyServer server;
-  private final Statistics IStatistics;
+  private final Statistics statistics;
   private final LimboFactory limboFactory;
   private final PacketFactory packetFactory;
   private final Level initialLogLevel;
@@ -129,7 +129,7 @@ public class LimboFilter {
     this.metricsFactory = metricsFactory;
     this.dataDirectory = dataDirectory;
     this.configFile = this.dataDirectory.resolve("config.yml").toFile();
-    this.IStatistics = new StatisticsJava();
+    this.statistics = new StatisticsJava();
 
     this.limboFactory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
     this.packetFactory = this.limboFactory.getPacketFactory();
@@ -183,8 +183,8 @@ public class LimboFilter {
         new SimplePie("has_backplate",
             () -> String.valueOf(!main.CAPTCHA_GENERATOR.BACKPLATE_PATHS.isEmpty() && !main.CAPTCHA_GENERATOR.BACKPLATE_PATHS.get(0).isEmpty()))
     );
-    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.IStatistics.getPings()))); // Total pings
-    metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.IStatistics.getConnections())));
+    metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings()))); // Total pings
+    metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
 
     if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
       LOGGER.error("****************************************");
@@ -237,7 +237,7 @@ public class LimboFilter {
 
     BotFilterSessionHandler.setFallingCheckTotalTime(Settings.IMP.MAIN.FALLING_CHECK_TICKS * 50L); // One tick == 50 millis
 
-    this.IStatistics.restartUpdateTasks(this, this.server.getScheduler());
+    this.statistics.restartUpdateTasks(this, this.server.getScheduler());
 
     if (this.refreshCaptchaTask != null) {
       this.refreshCaptchaTask.cancel();
@@ -443,7 +443,7 @@ public class LimboFilter {
 
   public boolean checkCpsLimit(int limit) {
     if (limit != -1) {
-      return limit <= this.IStatistics.getConnections();
+      return limit <= this.statistics.getConnections();
     } else {
       return false;
     }
@@ -451,7 +451,7 @@ public class LimboFilter {
 
   public boolean checkPpsLimit(int limit) {
     if (limit != -1) {
-      return limit <= this.IStatistics.getPings();
+      return limit <= this.statistics.getPings();
     } else {
       return false;
     }
@@ -488,7 +488,7 @@ public class LimboFilter {
   }
 
   public Statistics getStatistics() {
-    return this.IStatistics;
+    return this.statistics;
   }
 
   public TcpListener getTcpListener() {
