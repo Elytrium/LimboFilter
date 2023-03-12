@@ -343,10 +343,10 @@ public class Settings extends YamlConfig {
 
     public static class COORDS {
 
-      public double CAPTCHA_X = 0;
+      public double CAPTCHA_X = -1.5;
       @Comment("If your server supports Minecraft 1.7, don't set captcha-y to 0. https://media.discordapp.net/attachments/878241549857738793/915165038464098314/unknown.png")
-      public double CAPTCHA_Y = 0;
-      public double CAPTCHA_Z = 0;
+      public double CAPTCHA_Y = 128;
+      public double CAPTCHA_Z = 0.5;
       public double CAPTCHA_YAW = 90;
       public double CAPTCHA_PITCH = 38;
       public double FALLING_CHECK_YAW = 90;
