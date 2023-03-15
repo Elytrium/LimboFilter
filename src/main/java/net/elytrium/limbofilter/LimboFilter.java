@@ -168,6 +168,7 @@ public class LimboFilter {
     this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
         new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
         new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
+        new PacketMapping(0x01, ProtocolVersion.MINECRAFT_1_19_4, true),
     });
 
     this.reload();
