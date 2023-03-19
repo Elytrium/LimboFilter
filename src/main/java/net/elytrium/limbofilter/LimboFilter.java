@@ -186,11 +186,13 @@ public class LimboFilter {
     metrics.addCustomChart(new SingleLineChart("pings", () -> Math.toIntExact(this.statistics.getPings()))); // Total pings
     metrics.addCustomChart(new SingleLineChart("connections", () -> Math.toIntExact(this.statistics.getConnections())));
 
-    if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
-      LOGGER.error("****************************************");
-      LOGGER.warn("The new LimboFilter update was found, please update.");
-      LOGGER.error("https://github.com/Elytrium/LimboFilter/releases/");
-      LOGGER.error("****************************************");
+    if (Settings.IMP.MAIN.CHECK_FOR_UPDATES) {
+      if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboFilter/master/VERSION", Settings.IMP.VERSION)) {
+        LOGGER.error("****************************************");
+        LOGGER.warn("The new LimboFilter update was found, please update.");
+        LOGGER.error("https://github.com/Elytrium/LimboFilter/releases/");
+        LOGGER.error("****************************************");
+      }
     }
 
     // Not letting VelocityConsole to inherit root logger since we can disable it

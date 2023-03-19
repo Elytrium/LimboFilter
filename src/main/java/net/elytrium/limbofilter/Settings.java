@@ -52,6 +52,8 @@ public class Settings extends YamlConfig {
   @Comment("Don't use \\n, use {NL} for new line, and {PRFX} for prefix.")
   public static class MAIN {
 
+    public boolean CHECK_FOR_UPDATES = true;
+
     @Comment("Check if player's Minecraft client sends the network packet with the settings.")
     public boolean CHECK_CLIENT_SETTINGS = true;
     @Comment("Check if player's Minecraft client has a brand.")
