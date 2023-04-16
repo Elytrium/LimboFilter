@@ -17,6 +17,7 @@
 
 package net.elytrium.limbofilter.handler;
 
+import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.protocol.packet.ClientSettings;
@@ -33,6 +34,7 @@ import net.elytrium.limboapi.api.protocol.PreparedPacket;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.captcha.CaptchaHolder;
+import net.elytrium.limbofilter.event.CheckFinishedEvent;
 import net.elytrium.limbofilter.listener.TcpListener;
 import net.elytrium.limbofilter.protocol.data.EntityMetadata;
 import net.elytrium.limbofilter.protocol.data.ItemFrame;
@@ -335,6 +337,9 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
     this.state = CheckState.SUCCESSFUL;
     this.plugin.cacheFilterUser(this.proxyPlayer);
+
+    EventManager eventManager = this.plugin.getServer().getEventManager();
+    eventManager.fireAndForget(new CheckFinishedEvent(player));
 
     if (this.plugin.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.NEED_TO_RECONNECT)) {
       this.disconnect(this.plugin.getPackets().getSuccessfulBotFilterDisconnect(), false);
