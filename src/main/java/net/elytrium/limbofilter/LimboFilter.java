@@ -145,37 +145,6 @@ public class LimboFilter {
   public void onProxyInitialization(ProxyInitializeEvent event) {
     Settings.IMP.setLogger(LOGGER);
 
-    this.limboFactory.registerPacket(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
-        new PacketMapping(0x02, ProtocolVersion.MINIMUM_VERSION, false),
-        new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_9, false),
-        new PacketMapping(0x0B, ProtocolVersion.MINECRAFT_1_12, false),
-        new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_12_1, false),
-        new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_13, false),
-        new PacketMapping(0x0E, ProtocolVersion.MINECRAFT_1_14, false),
-        new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_17, false),
-        new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19, false),
-        new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false),
-        new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19_3, false),
-    });
-
-    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
-        new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
-        new PacketMapping(0x39, ProtocolVersion.MINECRAFT_1_9, true),
-        new PacketMapping(0x3B, ProtocolVersion.MINECRAFT_1_12, true),
-        new PacketMapping(0x3C, ProtocolVersion.MINECRAFT_1_12_1, true),
-        new PacketMapping(0x3F, ProtocolVersion.MINECRAFT_1_13, true),
-        new PacketMapping(0x43, ProtocolVersion.MINECRAFT_1_14, true),
-        new PacketMapping(0x44, ProtocolVersion.MINECRAFT_1_15, true),
-        new PacketMapping(0x4D, ProtocolVersion.MINECRAFT_1_17, true),
-        new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
-        new PacketMapping(0x4E, ProtocolVersion.MINECRAFT_1_19_3, true),
-    });
-
-    this.limboFactory.registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
-        new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
-        new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
-    });
-
     this.reload();
 
     Metrics metrics = this.metricsFactory.make(this, 13699);
@@ -270,16 +239,6 @@ public class LimboFilter {
         .repeat(Settings.IMP.MAIN.CAPTCHA_REGENERATE_RATE, TimeUnit.SECONDS)
         .schedule();
 
-    CachedPackets cachedPackets = new CachedPackets();
-    cachedPackets.createPackets(this.limboFactory, this.packetFactory);
-
-    CachedPackets previousCachedPackets = this.packets;
-    this.packets = cachedPackets;
-
-    if (previousCachedPackets != null) {
-      previousCachedPackets.dispose();
-    }
-
     this.cachedFilterChecks.clear();
 
     Settings.IMP.MAIN.WHITELISTED_PLAYERS.forEach(player -> {
@@ -323,7 +282,48 @@ public class LimboFilter {
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
         .setGameMode(Settings.IMP.MAIN.GAME_MODE)
         .setShouldRespawn(false)
-        .setShouldUpdateTags(false);
+        .setShouldUpdateTags(false)
+        .registerPacket(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
+            new PacketMapping(0x02, ProtocolVersion.MINIMUM_VERSION, false),
+            new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_9, false),
+            new PacketMapping(0x0B, ProtocolVersion.MINECRAFT_1_12, false),
+            new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_12_1, false),
+            new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_13, false),
+            new PacketMapping(0x0E, ProtocolVersion.MINECRAFT_1_14, false),
+            new PacketMapping(0x0D, ProtocolVersion.MINECRAFT_1_17, false),
+            new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19, false),
+            new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false),
+            new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19_3, false),
+            new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_4, false),
+        })
+        .registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
+            new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
+            new PacketMapping(0x39, ProtocolVersion.MINECRAFT_1_9, true),
+            new PacketMapping(0x3B, ProtocolVersion.MINECRAFT_1_12, true),
+            new PacketMapping(0x3C, ProtocolVersion.MINECRAFT_1_12_1, true),
+            new PacketMapping(0x3F, ProtocolVersion.MINECRAFT_1_13, true),
+            new PacketMapping(0x43, ProtocolVersion.MINECRAFT_1_14, true),
+            new PacketMapping(0x44, ProtocolVersion.MINECRAFT_1_15, true),
+            new PacketMapping(0x4D, ProtocolVersion.MINECRAFT_1_17, true),
+            new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
+            new PacketMapping(0x4E, ProtocolVersion.MINECRAFT_1_19_3, true),
+            new PacketMapping(0x52, ProtocolVersion.MINECRAFT_1_19_4, true),
+        })
+        .registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
+            new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
+            new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
+            new PacketMapping(0x01, ProtocolVersion.MINECRAFT_1_19_4, true),
+        });
+
+    CachedPackets cachedPackets = new CachedPackets();
+    cachedPackets.createPackets(this.limboFactory, this.packetFactory);
+
+    CachedPackets previousCachedPackets = this.packets;
+    this.packets = cachedPackets;
+
+    if (previousCachedPackets != null) {
+      previousCachedPackets.dispose();
+    }
 
     CommandManager manager = this.server.getCommandManager();
     manager.unregister("limbofilter");
