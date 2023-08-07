@@ -24,6 +24,7 @@ import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.event.query.ProxyQueryEvent;
 import com.velocitypowered.api.proxy.Player;
+import java.net.InetSocketAddress;
 import net.elytrium.limboapi.api.event.LoginLimboRegisterEvent;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
@@ -49,9 +50,12 @@ public class FilterListener {
 
   @Subscribe
   public void onProxyDisconnect(DisconnectEvent event) {
-    Statistics statistics = this.plugin.getStatistics();
-    if (statistics != null) {
-      statistics.removeAddress(event.getPlayer().getRemoteAddress().getAddress());
+    InetSocketAddress address = event.getPlayer().getRemoteAddress();
+    if (address != null) {
+      Statistics statistics = this.plugin.getStatistics();
+      if (statistics != null) {
+        statistics.removeAddress(address.getAddress());
+      }
     }
   }
 
