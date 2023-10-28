@@ -277,6 +277,7 @@ public class LimboFilter {
             new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_1, false),
             new PacketMapping(0x0F, ProtocolVersion.MINECRAFT_1_19_3, false),
             new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_4, false),
+            new PacketMapping(0x12, ProtocolVersion.MINECRAFT_1_20_2, false),
         })
         .registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
             new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
@@ -290,6 +291,7 @@ public class LimboFilter {
             new PacketMapping(0x50, ProtocolVersion.MINECRAFT_1_19_1, true),
             new PacketMapping(0x4E, ProtocolVersion.MINECRAFT_1_19_3, true),
             new PacketMapping(0x52, ProtocolVersion.MINECRAFT_1_19_4, true),
+            new PacketMapping(0x54, ProtocolVersion.MINECRAFT_1_20_2, true),
         })
         .registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
             new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),

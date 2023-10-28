@@ -20,8 +20,11 @@ package net.elytrium.limbofilter.protocol.data;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.handler.codec.EncoderException;
 import java.util.Map;
 import net.elytrium.limboapi.api.material.VirtualItem;
+import net.kyori.adventure.nbt.BinaryTagTypes;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 
 public class EntityMetadata {
@@ -85,7 +88,17 @@ public class EntityMetadata {
             buf.writeByte(0);
           }
         } else {
-          ProtocolUtils.writeCompoundTag(buf, this.nbt);
+          if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_20_2) < 0) {
+            ProtocolUtils.writeCompoundTag(buf, this.nbt);
+          } else {
+            // TODO: remove then the ProtocolUtils::writeCompoundTag will support 1.20.2
+            try (ByteBufOutputStream output = new ByteBufOutputStream(buf)) {
+              output.writeByte(BinaryTagTypes.COMPOUND.id());
+              BinaryTagTypes.COMPOUND.write(this.nbt, output);
+            } catch (Throwable throwable) {
+              throw new EncoderException("Unable to encode NBT CompoundTag");
+            }
+          }
         }
       }
     }
