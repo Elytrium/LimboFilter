@@ -70,7 +70,7 @@ public class ItemFrame {
     } else {
       return new EntityMetadata(Map.of(
           getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, 0,
-              CompoundBinaryTag.builder().put("map", IntBinaryTag.of(mapId)).build())
+              CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(mapId)).build())
       ));
     }
   }
