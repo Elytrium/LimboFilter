@@ -331,8 +331,8 @@ public class CachedPackets {
                 LimboFilter.getSerializer().deserialize(text)
             ), LegacyChat.CHAT_TYPE, null
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
-        .prepare(new SystemChat(
-            new ComponentHolder(ProtocolVersion.MAXIMUM_VERSION, LimboFilter.getSerializer().deserialize(text)), ChatType.SYSTEM
+        .prepare(version -> new SystemChat(
+            new ComponentHolder(version, LimboFilter.getSerializer().deserialize(text)), ChatType.SYSTEM
         ), ProtocolVersion.MINECRAFT_1_19);
   }
 
