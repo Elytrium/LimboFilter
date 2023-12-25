@@ -9,15 +9,15 @@ plugins {
 }
 
 setGroup("net.elytrium")
-setVersion("1.1.13")
+setVersion("1.1.14")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
 }
 
 java {
-    setSourceCompatibility(JavaVersion.VERSION_11)
-    setTargetCompatibility(JavaVersion.VERSION_11)
+    setSourceCompatibility(JavaVersion.VERSION_17)
+    setTargetCompatibility(JavaVersion.VERSION_17)
 }
 
 repositories {
@@ -30,6 +30,10 @@ repositories {
     maven {
         setName("papermc-repo")
         setUrl("https://papermc.io/repo/repository/maven-public/")
+    }
+    maven() {
+        setName("sonatype-snapshots-repo")
+        setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     }
 }
 

@@ -89,7 +89,7 @@ public class EntityMetadata {
           }
         } else {
           if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_20_2) < 0) {
-            ProtocolUtils.writeCompoundTag(buf, this.nbt);
+            ProtocolUtils.writeBinaryTag(buf, protocolVersion, this.nbt);
           } else {
             // TODO: remove then the ProtocolUtils::writeCompoundTag will support 1.20.2
             try (ByteBufOutputStream output = new ByteBufOutputStream(buf)) {
