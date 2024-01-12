@@ -41,8 +41,10 @@ public class ItemFrame {
       return 45;
     } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_19_3) <= 0) {
       return 46;
-    } else {
+    } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_20_2) <= 0) {
       return 56;
+    } else {
+      return 57;
     }
   }
 
@@ -70,7 +72,7 @@ public class ItemFrame {
     } else {
       return new EntityMetadata(Map.of(
           getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, 0,
-              CompoundBinaryTag.builder().put("map", IntBinaryTag.of(mapId)).build())
+              CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(mapId)).build())
       ));
     }
   }

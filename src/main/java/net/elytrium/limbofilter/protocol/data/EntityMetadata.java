@@ -85,7 +85,7 @@ public class EntityMetadata {
             buf.writeByte(0);
           }
         } else {
-          ProtocolUtils.writeCompoundTag(buf, this.nbt);
+          ProtocolUtils.writeBinaryTag(buf, protocolVersion, this.nbt);
         }
       }
     }

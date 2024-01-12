@@ -23,6 +23,7 @@ import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.packet.Disconnect;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatType;
+import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.chat.legacy.LegacyChat;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
@@ -166,7 +167,8 @@ public class CachedPackets {
                 ), ProtocolVersion.MINECRAFT_1_9, ProtocolVersion.MINECRAFT_1_16_4
             ).prepare(
                 this.createSetSlotPacketModern(
-                    packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
+                    packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1,
+                    CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(0)).build()
                 ), ProtocolVersion.MINECRAFT_1_17
         );
       }
@@ -186,7 +188,8 @@ public class CachedPackets {
               ), ProtocolVersion.MINECRAFT_1_9, ProtocolVersion.MINECRAFT_1_16_4
           ).prepare(
               this.createSetSlotPacketModern(
-                  packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1, CompoundBinaryTag.builder().put("map", IntBinaryTag.of(0)).build()
+                  packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1,
+                  CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(0)).build()
               ), ProtocolVersion.MINECRAFT_1_17
       );
     }
@@ -328,26 +331,26 @@ public class CachedPackets {
                 LimboFilter.getSerializer().deserialize(text)
             ), LegacyChat.CHAT_TYPE, null
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
-        .prepare(new SystemChat(
-            LimboFilter.getSerializer().deserialize(text), ChatType.SYSTEM
+        .prepare(version -> new SystemChat(
+            new ComponentHolder(version, LimboFilter.getSerializer().deserialize(text)), ChatType.SYSTEM
         ), ProtocolVersion.MINECRAFT_1_19);
   }
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {
-    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version)).build();
+    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version, false)).build();
   }
 
   public void createTitlePacket(PreparedPacket preparedPacket, String title, String subtitle) {
     preparedPacket.prepare(version -> {
       GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_TITLE, version);
-      packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(LimboFilter.getSerializer().deserialize(title)));
+      packet.setComponent(new ComponentHolder(version, LimboFilter.getSerializer().deserialize(title)));
       return packet;
     }, ProtocolVersion.MINECRAFT_1_8);
 
     if (!subtitle.isEmpty()) {
       preparedPacket.prepare(version -> {
         GenericTitlePacket packet = GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.SET_SUBTITLE, version);
-        packet.setComponent(ProtocolUtils.getJsonChatSerializer(version).serialize(LimboFilter.getSerializer().deserialize(subtitle)));
+        packet.setComponent(new ComponentHolder(version, LimboFilter.getSerializer().deserialize(subtitle)));
         return packet;
       }, ProtocolVersion.MINECRAFT_1_8);
     }
