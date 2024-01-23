@@ -21,11 +21,11 @@ import com.google.common.primitives.Ints;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
-import com.velocitypowered.proxy.protocol.packet.Disconnect;
+import com.velocitypowered.proxy.protocol.packet.DisconnectPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatType;
 import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
-import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
-import com.velocitypowered.proxy.protocol.packet.chat.legacy.LegacyChat;
+import com.velocitypowered.proxy.protocol.packet.chat.SystemChatPacket;
+import com.velocitypowered.proxy.protocol.packet.chat.legacy.LegacyChatPacket;
 import com.velocitypowered.proxy.protocol.packet.title.GenericTitlePacket;
 import java.text.MessageFormat;
 import java.util.UUID;
@@ -321,23 +321,24 @@ public class CachedPackets {
 
   public void createChatPacket(PreparedPacket packet, String text) {
     packet
-        .prepare(new LegacyChat(
+        .prepare(new LegacyChatPacket(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINIMUM_VERSION).serialize(
                 LimboFilter.getSerializer().deserialize(text)
-            ), LegacyChat.CHAT_TYPE, null
+            ), LegacyChatPacket.CHAT_TYPE, null
         ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_15_2)
-        .prepare(new LegacyChat(
+        .prepare(new LegacyChatPacket(
             ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINECRAFT_1_16).serialize(
                 LimboFilter.getSerializer().deserialize(text)
-            ), LegacyChat.CHAT_TYPE, null
+            ), LegacyChatPacket.CHAT_TYPE, null
         ), ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_18_2)
-        .prepare(version -> new SystemChat(
+        .prepare(version -> new SystemChatPacket(
             new ComponentHolder(version, LimboFilter.getSerializer().deserialize(text)), ChatType.SYSTEM
         ), ProtocolVersion.MINECRAFT_1_19);
   }
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {
-    return factory.createPreparedPacket().prepare(version -> Disconnect.create(LimboFilter.getSerializer().deserialize(message), version, false)).build();
+    return factory.createPreparedPacket().prepare(version ->
+        DisconnectPacket.create(LimboFilter.getSerializer().deserialize(message), version, false)).build();
   }
 
   public void createTitlePacket(PreparedPacket preparedPacket, String title, String subtitle) {

@@ -19,8 +19,8 @@ package net.elytrium.limbofilter.handler;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.proxy.protocol.packet.ClientSettings;
-import com.velocitypowered.proxy.protocol.packet.PluginMessage;
+import com.velocitypowered.proxy.protocol.packet.ClientSettingsPacket;
+import com.velocitypowered.proxy.protocol.packet.PluginMessagePacket;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
 import java.util.HashMap;
 import java.util.Map;
@@ -272,8 +272,8 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   @Override
   public void onGeneric(Object packet) {
-    if (packet instanceof PluginMessage) {
-      PluginMessage pluginMessage = (PluginMessage) packet;
+    if (packet instanceof PluginMessagePacket) {
+      PluginMessagePacket pluginMessage = (PluginMessagePacket) packet;
       if (PluginMessageUtil.isMcBrand(pluginMessage) && !this.checkedByBrand) {
         String brand = PluginMessageUtil.readBrandMessage(pluginMessage.content());
         LimboFilter.getLogger().info("{} has client brand {}", this.proxyPlayer, brand);
@@ -281,7 +281,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
           this.checkedByBrand = true;
         }
       }
-    } else if (packet instanceof ClientSettings) {
+    } else if (packet instanceof ClientSettingsPacket) {
       if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
         this.checkedBySettings = true;
       }
