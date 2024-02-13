@@ -43,8 +43,10 @@ public class ItemFrame {
       return 46;
     } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_20_2) <= 0) {
       return 56;
-    } else {
+    } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_20_3) <= 0) {
       return 57;
+    } else {
+      return 60;
     }
   }
 
@@ -67,12 +69,13 @@ public class ItemFrame {
   public static EntityMetadata createMapMetadata(LimboFactory limboFactory, ProtocolVersion protocolVersion, int mapId) {
     if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_12_2) <= 0) {
       return new EntityMetadata(Map.of(
-          getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, mapId, null)
+          getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, mapId, null, null)
       ));
     } else {
       return new EntityMetadata(Map.of(
           getMetadataIndex(protocolVersion), new EntityMetadata.SlotEntry(limboFactory.getItem(Item.FILLED_MAP), 1, 0,
-              CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(mapId)).build())
+              CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(mapId)).build(),
+              limboFactory.createItemComponentMap().add(ProtocolVersion.MINECRAFT_1_20_5, "minecraft:map_id", mapId))
       ));
     }
   }

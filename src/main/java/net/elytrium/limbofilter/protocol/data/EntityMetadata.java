@@ -22,6 +22,7 @@ import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import java.util.Map;
 import net.elytrium.limboapi.api.material.VirtualItem;
+import net.elytrium.limboapi.api.protocol.item.ItemComponentMap;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 
 public class EntityMetadata {
@@ -40,25 +41,52 @@ public class EntityMetadata {
     private final int count;
     private final int data;
     private final CompoundBinaryTag nbt;
+    private final ItemComponentMap map;
 
-    public SlotEntry(boolean present, VirtualItem item, int count, int data, CompoundBinaryTag nbt) {
+    public SlotEntry(boolean present, VirtualItem item, int count, int data, CompoundBinaryTag nbt, ItemComponentMap map) {
       this.present = present;
       this.item = item;
       this.count = count;
       this.data = data;
       this.nbt = nbt;
+      this.map = map;
     }
 
-    public SlotEntry(VirtualItem item, int count, int data, CompoundBinaryTag nbt) {
-      this(true, item, count, data, nbt);
+    public SlotEntry(VirtualItem item, int count, int data, CompoundBinaryTag nbt, ItemComponentMap map) {
+      this(true, item, count, data, nbt, map);
     }
 
     public SlotEntry() {
-      this(false, null, 0, 0, null);
+      this(false, null, 0, 0, null, null);
     }
 
     @Override
     public void encode(ByteBuf buf, ProtocolVersion protocolVersion) {
+      if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_20_5) >= 0) {
+        this.encodeModern(buf, protocolVersion);
+      } else {
+        this.encodeLegacy(buf, protocolVersion);
+      }
+    }
+
+    public void encodeModern(ByteBuf buf, ProtocolVersion protocolVersion) {
+      int id = this.item.getID(protocolVersion);
+      if (id == 0) {
+        ProtocolUtils.writeVarInt(buf, 0);
+      } else {
+        ProtocolUtils.writeVarInt(buf, this.count);
+        ProtocolUtils.writeVarInt(buf, id);
+
+        if (this.map != null) {
+          this.map.write(protocolVersion, buf);
+        } else {
+          ProtocolUtils.writeVarInt(buf, 0);
+          ProtocolUtils.writeVarInt(buf, 0);
+        }
+      }
+    }
+
+    public void encodeLegacy(ByteBuf buf, ProtocolVersion protocolVersion) {
       if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_13_2) >= 0) {
         buf.writeBoolean(this.present);
       }
