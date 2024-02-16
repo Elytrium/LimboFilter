@@ -21,6 +21,7 @@ import com.google.common.primitives.Ints;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
+import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.packet.DisconnectPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatType;
 import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
@@ -338,7 +339,7 @@ public class CachedPackets {
 
   private PreparedPacket createDisconnectPacket(LimboFactory factory, String message) {
     return factory.createPreparedPacket().prepare(version ->
-        DisconnectPacket.create(LimboFilter.getSerializer().deserialize(message), version, false)).build();
+        DisconnectPacket.create(LimboFilter.getSerializer().deserialize(message), version, StateRegistry.PLAY)).build();
   }
 
   public void createTitlePacket(PreparedPacket preparedPacket, String title, String subtitle) {
