@@ -1,0 +1,32 @@
+[versions]
+velocity = "3.3.0-SNAPSHOT"
+
+checkstyle = "10.13.0"
+
+[libraries]
+velocity-api = { module = "com.velocitypowered:velocity-api", version.ref = "velocity" }
+velocity-proxy = { module = "com.velocitypowered:velocity-proxy", version.ref = "velocity" } # from Elytrium repo.
+
+fastutil = "it.unimi.dsi:fastutil:8.5.13"
+
+log4j-core = "org.apache.logging.log4j:log4j-core:2.22.1"
+
+netty-buffer = "io.netty:netty-buffer:4.1.107.Final"
+
+limboapi = "net.elytrium.limboapi:api:1.1.18"
+
+pcap = "net.elytrium:pcap:1.0.1"
+
+bstats = "org.bstats:bstats-velocity:3.0.2"
+
+[bundles]
+velocity = ["velocity-api", "velocity-proxy", "fastutil", "log4j-core", "netty-buffer"] # fastutil and log4j and netty needed for some internal velocity's things
+
+[plugins]
+grgit = "org.ajoberstar.grgit:5.2.2"
+buildconfig = "com.github.gmazzo.buildconfig:5.3.5" # kotlin 💀
+
+shadow = "io.github.goooler.shadow:8.1.3"
+
+spotless = "com.diffplug.spotless:6.25.0"
+spotbugs = "com.github.spotbugs:6.0.7"

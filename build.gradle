@@ -1,122 +1,109 @@
-//file:noinspection GroovyAssignabilityCheck
+//file:noinspection VulnerableLibrariesLocal
 
-plugins {
-    id("java")
-    id("checkstyle")
-    id("com.github.spotbugs").version("5.0.6")
-    id("org.cadixdev.licenser").version("0.6.1")
-    id("com.github.johnrengelman.shadow").version("7.1.2")
+plugins() {
+  id("java")
+
+  alias(libs.plugins.grgit)
+  alias(libs.plugins.buildconfig)
+
+  alias(libs.plugins.shadow)
+
+  alias(libs.plugins.spotless)
+
+  id("checkstyle")
+  alias(libs.plugins.spotbugs)
 }
 
-setGroup("net.elytrium")
-setVersion("1.1.16")
+this.group = "net.elytrium"
+this.version = "2.0.0-SNAPSHOT"
 
-compileJava {
-    getOptions().setEncoding("UTF-8")
+if (this.version.endsWith("-SNAPSHOT")) {
+  this.version += " (${grgit.head().abbreviatedId})"
 }
 
-java {
-    setSourceCompatibility(JavaVersion.VERSION_17)
-    setTargetCompatibility(JavaVersion.VERSION_17)
+tasks.withType(JavaCompile).configureEach() {
+  options.setEncoding("UTF-8")
 }
 
-repositories {
-    mavenCentral()
+java() {
+  toolchain.setLanguageVersion(JavaLanguageVersion.of(17))
+}
 
-    maven {
-        setName("elytrium-repo")
-        setUrl("https://maven.elytrium.net/repo/")
+configurations() {
+  // TODO remove when checkstyle get fixed
+  checkstyle() {
+    resolutionStrategy.getCapabilitiesResolution().withCapability("com.google.collections:google-collections") {
+      select("com.google.guava:guava:0")
     }
-    maven {
-        setName("papermc-repo")
-        setUrl("https://papermc.io/repo/repository/maven-public/")
-    }
-    maven() {
-        setName("sonatype-snapshots-repo")
-        setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-    }
+  }
 }
 
-dependencies {
-    compileOnly("net.elytrium.limboapi:api:$limboapiVersion")
+repositories() {
+  mavenCentral()
 
-    compileOnly("com.velocitypowered:velocity-api:$velocityVersion")
-    annotationProcessor("com.velocitypowered:velocity-api:$velocityVersion")
-    compileOnly("com.velocitypowered:velocity-proxy:$velocityVersion") // From Elytrium Repo.
+  maven() {
+    name = "elytrium"
+    url = "https://maven.elytrium.net/repo/"
+  }
 
-    // Needs for some velocity methods.
-    compileOnly("io.netty:netty-codec:$nettyVersion")
-    compileOnly("it.unimi.dsi:fastutil-core:$fastutilVersion")
-    compileOnly("org.apache.logging.log4j:log4j-api:$log4jVersion")
-    compileOnly("org.apache.logging.log4j:log4j-core:$log4jVersion")
-
-    implementation("org.bstats:bstats-velocity:$bstatsVersion")
-    implementation("net.elytrium:pcap:$pcapVersion")
-
-    compileOnly("com.github.spotbugs:spotbugs-annotations:$spotbugsVersion")
+  maven() {
+    name = "papermc"
+    url = "https://repo.papermc.io/repository/maven-public/"
+  }
 }
 
-shadowJar {
-    getArchiveClassifier().set("")
+dependencies() {
+  annotationProcessor(libs.velocity.api)
+  compileOnly(libs.bundles.velocity)
 
-    relocate("org.bstats", "net.elytrium.limbofilter.thirdparty.org.bstats")
-    relocate("net.elytrium.commons.velocity", "net.elytrium.limboapi.thirdparty.commons.velocity")
-    relocate("net.elytrium.commons.kyori", "net.elytrium.limboapi.thirdparty.commons.kyori")
-    relocate("net.elytrium.commons.config", "net.elytrium.limboapi.thirdparty.commons.config")
+  compileOnly(libs.limboapi)
+
+  implementation(libs.bstats)
+  implementation(libs.pcap)
 }
 
-license {
-    setHeader(file("HEADER.txt"))
+buildConfig() {
+  packageName("${this.group}.${this.name}")
+
+  buildConfigField("String", "VERSION", "\"${this.version}\"")
 }
 
-checkstyle {
-    setToolVersion("10.1")
-    setConfigFile(file("${this.getRootDir()}/config/checkstyle/checkstyle.xml"))
-    setConfigProperties("configDirectory": "${this.getRootDir()}/config/checkstyle")
+shadowJar() {
+  archiveClassifier = null
 
-    // The build should immediately fail if we have errors.
-    setMaxErrors(0)
-    setMaxWarnings(0)
+  // TODO use buildConfig + LibrariesLoader
+  relocate("org.bstats", "net.elytrium.limbofilter.3rdparty.org.bstats")
+  relocate("net.elytrium.commons.velocity", "net.elytrium.limboapi.3rdparty.commons.velocity")
+  relocate("net.elytrium.commons.kyori", "net.elytrium.limboapi.3rdparty.commons.kyori")
+  relocate("net.elytrium.commons.config", "net.elytrium.limboapi.3rdparty.commons.config")
 }
 
-spotbugsMain {
-    setExcludeFilter(file("${this.getRootDir()}/config/spotbugs/suppressions.xml"))
-
-    reports {
-        html {
-            getRequired().set(true)
-            getOutputLocation().set(file("${this.getBuildDir()}/reports/spotbugs/main/spotbugs.html"))
-            setStylesheet("fancy-hist.xsl")
-        }
-    }
+spotless() {
+  java() {
+    licenseHeaderFile(rootProject.file("HEADER.txt"))
+    targetExclude("**/BuildConfig.java")
+  }
 }
 
-sourceSets.main.getJava().srcDir(
-        getTasks().register("generateTemplates", Copy) {
-            task -> {
-                String version = getVersion().contains("-") ? "${getVersion()} (git-${getCurrentShortRevision()})" : getVersion()
-                task.getInputs().properties("version": version)
-                task.from(file("src/main/templates")).into(getLayout().getBuildDirectory().dir("generated/sources/templates"))
-                task.expand("version": version)
-            }
-        }.map {
-            it.getOutputs()
-        }
-)
+checkstyle() {
+  toolVersion = libs.versions.checkstyle.get()
+
+  configFile = rootProject.file(".config/checkstyle/checkstyle.xml")
+  maxErrors = 0
+  maxWarnings = 0
+}
+
+checkstyleMain() {
+  exclude("**/BuildConfig.java")
+}
+
+spotbugsMain() {
+  excludeFilter.set(rootProject.file(".config/spotbugs/suppressions.xml"))
+  reports.register("html") {
+    required = true
+    outputLocation.value(layout.buildDirectory.file("reports/spotbugs/spotbugs.html"))
+    stylesheet = "fancy-hist.xsl"
+  }
+}
 
 assemble.dependsOn(shadowJar)
-
-String getCurrentShortRevision() {
-    OutputStream outputStream = new ByteArrayOutputStream()
-    exec {
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            commandLine("cmd", "/c", "git rev-parse --short HEAD")
-        } else {
-            commandLine("bash", "-c", "git rev-parse --short HEAD")
-        }
-
-        setStandardOutput(outputStream)
-    }
-
-    return outputStream.toString().trim()
-}

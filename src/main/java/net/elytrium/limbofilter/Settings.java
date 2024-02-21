@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2021-2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter;
@@ -27,13 +27,14 @@ import net.elytrium.limboapi.api.player.GameMode;
 import net.elytrium.limbofilter.commands.CommandPermissionState;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 
+@SuppressWarnings({"checkstyle:AbbreviationAsWordInName", "checkstyle:TypeName", "checkstyle:MemberName", "checkstyle:RequireThis"})
 public class Settings extends YamlConfig {
 
   @Ignore
   public static final Settings IMP = new Settings();
 
   @Final
-  public String VERSION = BuildConstants.FILTER_VERSION;
+  public String VERSION = BuildConfig.VERSION;
 
   @Comment({
       "Available serializers:",

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2022-2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter.protocol.packets;
@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.UUID;
 import java.util.function.Function;
 
-public class SpawnEntity implements MinecraftPacket {
+public final class SpawnEntityPacket implements MinecraftPacket {
 
   private final int id;
   private final UUID uuid;
@@ -41,7 +41,7 @@ public class SpawnEntity implements MinecraftPacket {
   private final float velocityY;
   private final float velocityZ;
 
-  public SpawnEntity(int id, UUID uuid, Function<ProtocolVersion, Integer> type, double positionX, double positionY, double positionZ,
+  public SpawnEntityPacket(int id, UUID uuid, Function<ProtocolVersion, Integer> type, double positionX, double positionY, double positionZ,
                      float pitch, float yaw, float headYaw, int data, float velocityX, float velocityY, float velocityZ) {
     this.id = id;
     this.uuid = uuid;
@@ -58,7 +58,7 @@ public class SpawnEntity implements MinecraftPacket {
     this.velocityZ = velocityZ;
   }
 
-  public SpawnEntity() {
+  public SpawnEntityPacket() {
     throw new IllegalStateException();
   }
 

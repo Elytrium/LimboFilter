@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2021-2024 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter.cache;
@@ -40,8 +40,8 @@ import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
 import net.elytrium.limbofilter.protocol.data.ItemFrame;
-import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
-import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadataPacket;
+import net.elytrium.limbofilter.protocol.packets.SpawnEntityPacket;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.IntBinaryTag;
 
@@ -124,21 +124,21 @@ public class CachedPackets {
 
         preparedPacket
             .prepare(
-                new SpawnEntity(
+                new SpawnEntityPacket(
                     entityId, UUID.nameUUIDFromBytes(Ints.toByteArray(id)), ItemFrame::getID,
                     settings.COORDS.X + x + offset.X, settings.COORDS.Y + y + offset.Y, settings.COORDS.Z + offset.Z,
                     0, 0, 0, 2, 0, 0, 0
                 ), ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINECRAFT_1_7_6
             )
             .prepare(
-                new SpawnEntity(
+                new SpawnEntityPacket(
                     entityId, UUID.nameUUIDFromBytes(Ints.toByteArray(id)), ItemFrame::getID,
                     settings.COORDS.X + x, settings.COORDS.Y + y, settings.COORDS.Z,
                     0, 180, 180, 2, 0, 0, 0
                 ), ProtocolVersion.MINECRAFT_1_8
             )
             .prepare(
-                new SetEntityMetadata(
+                new SetEntityMetadataPacket(
                     entityId, version -> ItemFrame.createMapMetadata(limboFactory, version, id)
                 ), ProtocolVersion.MINIMUM_VERSION
             );

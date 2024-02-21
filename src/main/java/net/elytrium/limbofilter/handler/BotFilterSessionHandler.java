@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2021-2024 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter.handler;
@@ -36,8 +36,8 @@ import net.elytrium.limbofilter.captcha.CaptchaHolder;
 import net.elytrium.limbofilter.listener.TcpListener;
 import net.elytrium.limbofilter.protocol.data.EntityMetadata;
 import net.elytrium.limbofilter.protocol.data.ItemFrame;
-import net.elytrium.limbofilter.protocol.packets.Interact;
-import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
+import net.elytrium.limbofilter.protocol.packets.InteractPacket;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadataPacket;
 import net.elytrium.limbofilter.stats.Statistics;
 
 public class BotFilterSessionHandler implements LimboSessionHandler {
@@ -272,8 +272,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
 
   @Override
   public void onGeneric(Object packet) {
-    if (packet instanceof PluginMessagePacket) {
-      PluginMessagePacket pluginMessage = (PluginMessagePacket) packet;
+    if (packet instanceof PluginMessagePacket pluginMessage) {
       if (PluginMessageUtil.isMcBrand(pluginMessage) && !this.checkedByBrand) {
         String brand = PluginMessageUtil.readBrandMessage(pluginMessage.content());
         LimboFilter.getLogger().info("{} has client brand {}", this.proxyPlayer, brand);
@@ -285,12 +284,11 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
       if (Settings.IMP.MAIN.CHECK_CLIENT_SETTINGS && !this.checkedBySettings) {
         this.checkedBySettings = true;
       }
-    } else if (packet instanceof Interact) {
-      Interact interact = (Interact) packet;
+    } else if (packet instanceof InteractPacket interact) {
       if (interact.getType() == 0 || interact.getType() == 1) {
         int rotation = this.frameRotation.compute(interact.getEntityId(), (k, v) -> (v != null ? v : 0) + 1);
         EntityMetadata metadata = ItemFrame.createRotationMetadata(this.version, rotation);
-        this.player.writePacketAndFlush(new SetEntityMetadata(interact.getEntityId(), metadata));
+        this.player.writePacketAndFlush(new SetEntityMetadataPacket(interact.getEntityId(), metadata));
       }
     }
   }

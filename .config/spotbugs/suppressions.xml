@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FindBugsFilter>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <!--???-->
+  <Match>
+    <Class name="net.elytrium.limbofilter.captcha.painter.CaptchaPainter"/>
+    <Method name="&lt;init&gt;"/>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
+</FindBugsFilter>

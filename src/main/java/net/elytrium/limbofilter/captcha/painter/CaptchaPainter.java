@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2021-2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter.captcha.painter;
@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import net.elytrium.limboapi.api.protocol.packets.data.MapPalette;
 import net.elytrium.limbofilter.Settings;
 
@@ -68,7 +67,7 @@ public class CaptchaPainter {
     if (!Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.isEmpty()) {
       this.curveColor = Settings.IMP.MAIN.CAPTCHA_GENERATOR.CURVES_COLORS.stream()
           .map(c -> new Color(Integer.parseInt(c, 16)))
-          .collect(Collectors.toUnmodifiableList());
+          .toList();
       this.curveColorIterator = ThreadLocal.withInitial(this.curveColor::iterator);
     } else {
       this.curveColor = null;

@@ -1,1 +1,1 @@
-getRootProject().setName("limbofilter")
+this.rootProject.setName("limbofilter")

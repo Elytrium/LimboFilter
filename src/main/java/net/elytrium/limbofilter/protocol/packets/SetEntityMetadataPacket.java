@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2022-2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter.protocol.packets;
@@ -25,21 +25,21 @@ import io.netty.buffer.ByteBuf;
 import java.util.function.Function;
 import net.elytrium.limbofilter.protocol.data.EntityMetadata;
 
-public class SetEntityMetadata implements MinecraftPacket {
+public final class SetEntityMetadataPacket implements MinecraftPacket {
 
   private final int entityId;
   private final Function<ProtocolVersion, EntityMetadata> metadata;
 
-  public SetEntityMetadata(int entityId, Function<ProtocolVersion, EntityMetadata> metadata) {
+  public SetEntityMetadataPacket(int entityId, Function<ProtocolVersion, EntityMetadata> metadata) {
     this.entityId = entityId;
     this.metadata = metadata;
   }
 
-  public SetEntityMetadata(int entityId, EntityMetadata metadata) {
+  public SetEntityMetadataPacket(int entityId, EntityMetadata metadata) {
     this(entityId, protocolVersion -> metadata);
   }
 
-  public SetEntityMetadata() {
+  public SetEntityMetadataPacket() {
     throw new IllegalStateException();
   }
 

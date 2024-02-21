@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 - 2023 Elytrium
+ * Copyright (C) 2021-2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,7 +12,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package net.elytrium.limbofilter;
@@ -30,7 +30,6 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.velocitypowered.proxy.console.VelocityConsole;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOError;
@@ -62,9 +61,9 @@ import net.elytrium.limbofilter.commands.SendFilterCommand;
 import net.elytrium.limbofilter.handler.BotFilterSessionHandler;
 import net.elytrium.limbofilter.listener.FilterListener;
 import net.elytrium.limbofilter.listener.TcpListener;
-import net.elytrium.limbofilter.protocol.packets.Interact;
-import net.elytrium.limbofilter.protocol.packets.SetEntityMetadata;
-import net.elytrium.limbofilter.protocol.packets.SpawnEntity;
+import net.elytrium.limbofilter.protocol.packets.InteractPacket;
+import net.elytrium.limbofilter.protocol.packets.SetEntityMetadataPacket;
+import net.elytrium.limbofilter.protocol.packets.SpawnEntityPacket;
 import net.elytrium.limbofilter.stats.Statistics;
 import net.elytrium.pcap.PcapException;
 import net.kyori.adventure.text.Component;
@@ -81,7 +80,7 @@ import org.slf4j.Logger;
 @Plugin(
     id = "limbofilter",
     name = "LimboFilter",
-    version = BuildConstants.FILTER_VERSION,
+    version = BuildConfig.VERSION,
     url = "https://elytrium.net/",
     authors = {
         "Elytrium (https://elytrium.net/)",
@@ -164,7 +163,6 @@ public class LimboFilter {
     Configurator.setLevel(consoleLogger.getName(), consoleLogger.getLevel());
   }
 
-  @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
   public void reload() {
     Settings.IMP.reload(this.configFile, Settings.IMP.PREFIX);
 
@@ -265,7 +263,7 @@ public class LimboFilter {
         .setGameMode(Settings.IMP.MAIN.GAME_MODE)
         .setShouldRespawn(false)
         .setShouldUpdateTags(false)
-        .registerPacket(PacketDirection.SERVERBOUND, Interact.class, Interact::new, new PacketMapping[]{
+        .registerPacket(PacketDirection.SERVERBOUND, InteractPacket.class, InteractPacket::new, new PacketMapping[] {
             new PacketMapping(0x02, ProtocolVersion.MINIMUM_VERSION, false),
             new PacketMapping(0x0A, ProtocolVersion.MINECRAFT_1_9, false),
             new PacketMapping(0x0B, ProtocolVersion.MINECRAFT_1_12, false),
@@ -279,8 +277,7 @@ public class LimboFilter {
             new PacketMapping(0x10, ProtocolVersion.MINECRAFT_1_19_4, false),
             new PacketMapping(0x12, ProtocolVersion.MINECRAFT_1_20_2, false),
             new PacketMapping(0x13, ProtocolVersion.MINECRAFT_1_20_3, false),
-        })
-        .registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, SetEntityMetadata::new, new PacketMapping[]{
+        }).registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadataPacket.class, SetEntityMetadataPacket::new, new PacketMapping[] {
             new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
             new PacketMapping(0x39, ProtocolVersion.MINECRAFT_1_9, true),
             new PacketMapping(0x3B, ProtocolVersion.MINECRAFT_1_12, true),
@@ -294,8 +291,7 @@ public class LimboFilter {
             new PacketMapping(0x52, ProtocolVersion.MINECRAFT_1_19_4, true),
             new PacketMapping(0x54, ProtocolVersion.MINECRAFT_1_20_2, true),
             new PacketMapping(0x56, ProtocolVersion.MINECRAFT_1_20_3, true),
-        })
-        .registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, SpawnEntity::new, new PacketMapping[]{
+        }).registerPacket(PacketDirection.CLIENTBOUND, SpawnEntityPacket.class, SpawnEntityPacket::new, new PacketMapping[] {
             new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
             new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_9, true),
             new PacketMapping(0x01, ProtocolVersion.MINECRAFT_1_19_4, true),
@@ -332,7 +328,7 @@ public class LimboFilter {
         this.tcpListener = new TcpListener(this);
         this.tcpListener.start();
       } catch (PcapException e) {
-        new Exception("Got exception when starting TCP listener. Disable it if you are unsure what does it does.", e).printStackTrace();
+        LOGGER.error("Got exception when starting TCP listener. Disable it if you are unsure what does it does", e);
       }
     }
 
