@@ -36,6 +36,7 @@ import net.elytrium.limboapi.api.chunk.VirtualChunk;
 import net.elytrium.limboapi.api.material.Item;
 import net.elytrium.limboapi.api.material.VirtualItem;
 import net.elytrium.limboapi.api.protocol.PreparedPacket;
+import net.elytrium.limboapi.api.protocol.item.ItemComponentMap;
 import net.elytrium.limboapi.api.protocol.packets.PacketFactory;
 import net.elytrium.limbofilter.LimboFilter;
 import net.elytrium.limbofilter.Settings;
@@ -170,7 +171,12 @@ public class CachedPackets {
                 this.createSetSlotPacketModern(
                     packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1,
                     CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(0)).build()
-                ), ProtocolVersion.MINECRAFT_1_17
+                ), ProtocolVersion.MINECRAFT_1_17, ProtocolVersion.MINECRAFT_1_20_3
+            ).prepare(
+                this.createSetSlotPacketComponent(
+                    packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1,
+                    limboFactory.createItemComponentMap().add(ProtocolVersion.MINECRAFT_1_20_5, "minecraft:map_id", 0)
+                ), ProtocolVersion.MINECRAFT_1_20_5
         );
       }
       packets[i] = packet.build();
@@ -191,7 +197,12 @@ public class CachedPackets {
               this.createSetSlotPacketModern(
                   packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1,
                   CompoundBinaryTag.builder().put("map", IntBinaryTag.intBinaryTag(0)).build()
-              ), ProtocolVersion.MINECRAFT_1_17
+              ), ProtocolVersion.MINECRAFT_1_17, ProtocolVersion.MINECRAFT_1_20_3
+          ).prepare(
+              this.createSetSlotPacketComponent(
+                  packetFactory, limboFactory.getItem(Item.FILLED_MAP), 1,
+                  limboFactory.createItemComponentMap().add(ProtocolVersion.MINECRAFT_1_20_5, "minecraft:map_id", 0)
+              ), ProtocolVersion.MINECRAFT_1_20_5
       );
     }
     packets[Settings.IMP.MAIN.CAPTCHA_ATTEMPTS].build();
@@ -318,6 +329,10 @@ public class CachedPackets {
 
   private MinecraftPacket createSetSlotPacketModern(PacketFactory packetFactory, VirtualItem item, int count, CompoundBinaryTag nbt) {
     return (MinecraftPacket) packetFactory.createSetSlotPacket(0, Settings.IMP.MAIN.CAPTCHA_LEFT_HAND ? 45 : 36, item, count, 0, nbt);
+  }
+
+  private MinecraftPacket createSetSlotPacketComponent(PacketFactory packetFactory, VirtualItem item, int count, ItemComponentMap map) {
+    return (MinecraftPacket) packetFactory.createSetSlotPacket(0, Settings.IMP.MAIN.CAPTCHA_LEFT_HAND ? 45 : 36, item, count, 0, map);
   }
 
   public void createChatPacket(PreparedPacket packet, String text) {
