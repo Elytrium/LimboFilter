@@ -56,7 +56,7 @@ public class Settings extends YamlConfig {
     public boolean CHECK_CLIENT_SETTINGS = true;
     @Comment("Check if player's Minecraft client has a brand.")
     public boolean CHECK_CLIENT_BRAND = true;
-    @Comment("If player's Minecraft client brand (e.g. fabric or forge) is set here, then this player will be kicked.")
+    @Comment("If a player's Minecraft client brand (e.g., fabric or forge) is set here, then that player will be kicked.")
     public List<String> BLOCKED_CLIENT_BRANDS = List.of("brand1", "brand2");
     @Comment("Time in milliseconds, how frequently will the cache list with verified players be reset. Before that time, verified players can join the server without passing antibot checks.")
     public long PURGE_CACHE_MILLIS = 3600000;
@@ -98,7 +98,7 @@ public class Settings extends YamlConfig {
 
     public boolean LOAD_WORLD = false;
     @Comment({
-        "World file type:",
+        "World file types:",
         " SCHEMATIC (MCEdit .schematic, 1.12.2 and lower, not recommended)",
         " STRUCTURE (structure block .nbt, any Minecraft version is supported, but the latest one is recommended).",
         " WORLDEDIT_SCHEM (WorldEdit .schem, any Minecraft version is supported, but the latest one is recommended)."
@@ -118,7 +118,7 @@ public class Settings extends YamlConfig {
     @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
     public GameMode GAME_MODE = GameMode.ADVENTURE;
 
-    @Comment("Unit of time in seconds for the Auto Toggles the Statistics.")
+    @Comment("Unit of time in seconds for the Auto Toggles and Statistics.")
     public int UNIT_OF_TIME_CPS = 300;
 
     @Comment("Unit of time in seconds for the Auto Toggles and the Statistics.")
@@ -186,7 +186,7 @@ public class Settings extends YamlConfig {
       })
       public int CHECK_STATE_TOGGLE = 0;
 
-      @Comment("The player will need to reconnect after passing AntiBot check.")
+      @Comment("The player will need to reconnect after passing the AntiBot check.")
       public int NEED_TO_RECONNECT = 129;
 
       @Comment("Picture in the MOTD Server Ping packet will be disabled.")
@@ -251,7 +251,7 @@ public class Settings extends YamlConfig {
       public boolean NUMBER_SPELLING = false;
       @Comment({
           "Set to true if you want to verify the number spelling configuration.",
-          "The results will be saved to the number_spelling.txt file."
+          "Results will be saved to the number_spelling.txt file."
       })
       public boolean SAVE_NUMBER_SPELLING_OUTPUT = false;
       public boolean EACH_WORD_ON_SEPARATE_LINE = true;
@@ -424,11 +424,11 @@ public class Settings extends YamlConfig {
       public String CHECKING_SUBTITLE = "&aPlease wait..";
 
       public String CHECKING_CAPTCHA_CHAT = "{PRFX} &aPlease, solve the captcha, you have &6{0} &aattempts.";
-      public String CHECKING_WRONG_CAPTCHA_CHAT = "{PRFX} &cYou entered the captcha incorrectly, you have &6{0} &cattempts left.";
+      public String CHECKING_WRONG_CAPTCHA_CHAT = "{PRFX} &cYou have entered the captcha incorrectly, you have &6{0} &cattempts left.";
       public String CHECKING_CAPTCHA_TITLE = "&aPlease solve the captcha.";
       public String CHECKING_CAPTCHA_SUBTITLE = "&aYou have &6{0} &aattempts.";
 
-      public String SUCCESSFUL_CRACKED = "{PRFX} &aSuccessfully passed Bot-Filter check.";
+      public String SUCCESSFUL_CRACKED = "{PRFX} &aSuccessfully passed the Bot-Filter check.";
       public String SUCCESSFUL_PREMIUM_KICK = "{PRFX}{NL}&aSuccessfully passed Bot-Filter check.{NL}&6Please, rejoin the server!";
 
       public String CAPTCHA_FAILED_KICK = "{PRFX}{NL}&cYou've mistaken in captcha check.{NL}&6Please, rejoin the server.";
@@ -436,14 +436,14 @@ public class Settings extends YamlConfig {
       public String TIMES_UP = "{PRFX}{NL}&cYou have exceeded the maximum Bot-Filter check time.{NL}&6Please, rejoin the server.";
 
       public String STATS_FORMAT = "&c&lTotal Blocked: &6&l{0} &c&l| Connections: &6&l{1}s &c&l| Pings: &6&l{2}s &c&l| Total Connections: &6&l{3} &c&l| L7 Ping: &6&l{4} &c&l| L4 Ping: &6&l{5}";
-      public String STATS_ENABLED = "{PRFX} &aNow you see statistics in your action bar.";
-      public String STATS_DISABLED = "{PRFX} &cYou're no longer see statistics in your action bar.";
+      public String STATS_ENABLED = "{PRFX} &aNow you may see statistics in your action bar.";
+      public String STATS_DISABLED = "{PRFX} &cYou can no longer see statistics in your action bar.";
 
       public String SEND_PLAYER_SUCCESSFUL = "{PRFX} Successfully sent {0} to the filter limbo.";
-      public String SEND_SERVER_SUCCESSFUL = "{PRFX} Successfully sent {0} players from {1} to the filter limbo.";
+      public String SEND_SERVER_SUCCESSFUL = "{PRFX} Successfully sent {0} players from {1} to filter limbo.";
       public String SEND_FAILED = "{PRFX} There is no registered servers or connected players named {0}.";
 
-      public String CAPTCHA_NOT_READY_YET = "{PRFX} Captcha is not ready yet. Try again in a few seconds";
+      public String CAPTCHA_NOT_READY_YET = "{PRFX} The captcha is not ready yet. Try again in a few seconds.";
     }
   }
 }
