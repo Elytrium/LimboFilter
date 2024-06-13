@@ -238,6 +238,29 @@ public class LimboFilter {
         (float) captchaCoords.CAPTCHA_YAW, (float) captchaCoords.CAPTCHA_PITCH
     );
 
+    // Make LimboAPI preload parent to captcha chunks to ensure that Sodium can properly render captcha.
+    if (Settings.IMP.MAIN.FRAMED_CAPTCHA.FRAMED_CAPTCHA_ENABLED) {
+      Settings.MAIN.FRAMED_CAPTCHA settings = Settings.IMP.MAIN.FRAMED_CAPTCHA;
+      Settings.MAIN.FRAMED_CAPTCHA.COORDS.OFFSET_1_7 offset = settings.COORDS.OFFSET_1_7;
+
+      for (int y = 0; y < settings.HEIGHT; y++) {
+        for (int x = 0; x < settings.WIDTH; x++) {
+          int id = y * settings.WIDTH + x;
+          int entityId = id + 10;
+
+          this.filterWorld.getChunkOrNew(
+              (settings.COORDS.X + x + offset.X) >> 4,
+              (settings.COORDS.Z + offset.Z) >> 4
+          );
+
+          this.filterWorld.getChunkOrNew(
+              (settings.COORDS.X + x) >> 4,
+              (settings.COORDS.Z) >> 4
+          );
+        }
+      }
+    }
+
     if (Settings.IMP.MAIN.LOAD_WORLD) {
       try {
         Path path = this.dataDirectory.resolve(Settings.IMP.MAIN.WORLD_FILE_PATH);
