@@ -170,6 +170,9 @@ public class Settings extends YamlConfig {
       })
       public int ONLINE_MODE_BYPASS = 49;
 
+      @Comment("Geyser players will bypass all anti-bot checks.")
+      public int GEYSER_BYPASS = 0;
+
       @Comment({
           "Verify Online Mode connection before AntiBot.",
           "If connections per unit of time amount is bigger than the limit: online mode players will need to reconnect.",

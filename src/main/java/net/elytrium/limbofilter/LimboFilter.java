@@ -398,6 +398,10 @@ public class LimboFilter {
       return false;
     }
 
+    if (player.getRemoteAddress().getPort() == 0 && !this.checkCpsLimit(Settings.IMP.MAIN.FILTER_AUTO_TOGGLE.GEYSER_BYPASS)) {
+      return false;
+    }
+
     return this.shouldCheck(player.getUsername(), player.getRemoteAddress().getAddress());
   }
 
