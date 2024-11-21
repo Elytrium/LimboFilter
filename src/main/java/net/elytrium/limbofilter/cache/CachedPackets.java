@@ -60,6 +60,7 @@ public class CachedPackets {
   private PreparedPacket kickProxyCheck;
   private PreparedPacket successfulBotFilterChat;
   private PreparedPacket successfulBotFilterDisconnect;
+  private PreparedPacket fallingCheckChunkUnload;
   private PreparedPacket noAbilities;
   private PreparedPacket[] experience;
   private PreparedPacket captchaNotReadyYet;
@@ -99,6 +100,7 @@ public class CachedPackets {
 
     this.successfulBotFilterDisconnect = this.createDisconnectPacket(limboFactory, strings.SUCCESSFUL_PREMIUM_KICK);
 
+    this.fallingCheckChunkUnload = this.createFallingCheckChunkUnloadPacket(limboFactory, packetFactory);
     this.noAbilities = this.createAbilitiesPacket(limboFactory, packetFactory);
     this.experience = this.createExpPackets(limboFactory, packetFactory);
 
@@ -306,6 +308,11 @@ public class CachedPackets {
     return (MinecraftPacket) factory.createUpdateViewPositionPacket(x >> 4, z >> 4);
   }
 
+  private PreparedPacket createFallingCheckChunkUnloadPacket(LimboFactory limboFactory, PacketFactory packetFactory) {
+    Settings.MAIN.FALLING_COORDS coords = Settings.IMP.MAIN.FALLING_COORDS;
+    return limboFactory.createPreparedPacket().prepare(packetFactory.createChunkUnloadPacket(coords.X >> 4, coords.Z >> 4)).build();
+  }
+
   private PreparedPacket createAbilitiesPacket(LimboFactory limboFactory, PacketFactory packetFactory) {
     return limboFactory.createPreparedPacket().prepare(packetFactory.createPlayerAbilitiesPacket((byte) 6, 0f, 0f)).build();
   }
@@ -313,11 +320,9 @@ public class CachedPackets {
   private PreparedPacket[] createExpPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     int ticks = Settings.IMP.MAIN.FALLING_CHECK_TICKS;
     PreparedPacket[] packets = new PreparedPacket[ticks];
-    float expInterval = 0.01F;
+    final int ticksM1 = ticks - 1;
     for (int i = 0; i < ticks; ++i) {
-      int percentage = i * 100 / ticks;
-      packets[i] =
-          limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket(percentage * expInterval, percentage, 0)).build();
+      packets[i] = limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket((float) i / ticksM1, (i * 100) / ticksM1, 0)).build();
     }
 
     return packets;
@@ -417,6 +422,10 @@ public class CachedPackets {
 
   public PreparedPacket getSuccessfulBotFilterDisconnect() {
     return this.successfulBotFilterDisconnect;
+  }
+
+  public PreparedPacket getFallingCheckChunkUnload() {
+    return this.fallingCheckChunkUnload;
   }
 
   public PreparedPacket getNoAbilities() {

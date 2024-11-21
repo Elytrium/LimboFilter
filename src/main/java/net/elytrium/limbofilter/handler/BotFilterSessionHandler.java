@@ -191,9 +191,9 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
         this.fallingCheckFailed("Non-valid X, Z or Velocity");
         return;
       }
-      PreparedPacket expBuf = this.plugin.getPackets().getExperience(this.ticks);
-      if (expBuf != null) {
-        this.player.writePacketAndFlush(expBuf);
+      PreparedPacket experience = this.plugin.getPackets().getExperience(this.ticks);
+      if (experience != null) {
+        this.player.writePacketAndFlush(experience);
       }
 
       ++this.ticks;
@@ -366,9 +366,15 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private void changeStateToCaptcha() {
+    if (this.state != CheckState.ONLY_CAPTCHA) {
+      this.player.writePacket(this.plugin.getPackets().getFallingCheckChunkUnload());
+    }
+
     this.state = CheckState.ONLY_CAPTCHA;
     this.server.respawnPlayer(this.proxyPlayer);
-    this.player.writePacketAndFlush(this.plugin.getPackets().getNoAbilities());
+    if (Settings.IMP.MAIN.DISABLE_FALLING_ON_CAPTCHA) {
+      this.player.writePacketAndFlush(this.plugin.getPackets().getNoAbilities());
+    }
 
     this.waitingTeleportId = this.validTeleportId;
     if (this.captchaAnswer == null) {

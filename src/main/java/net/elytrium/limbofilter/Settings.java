@@ -118,6 +118,12 @@ public class Settings extends YamlConfig {
     @Comment("Available: ADVENTURE, CREATIVE, SURVIVAL, SPECTATOR")
     public GameMode GAME_MODE = GameMode.ADVENTURE;
 
+    @Comment({
+        "Should we prevent the player from falling after passing the fall check, or after they join the game when the ONLY_CAPTCHA mode is enabled",
+        "This might be useful when using a world schema to allow players to walk in that world"
+    })
+    public boolean DISABLE_FALLING_ON_CAPTCHA = true;
+
     @Comment("Unit of time in seconds for the Auto Toggles and Statistics.")
     public int UNIT_OF_TIME_CPS = 300;
 
