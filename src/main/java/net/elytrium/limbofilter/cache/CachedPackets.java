@@ -310,7 +310,7 @@ public class CachedPackets {
 
   private PreparedPacket createFallingCheckChunkUnloadPacket(LimboFactory limboFactory, PacketFactory packetFactory) {
     Settings.MAIN.FALLING_COORDS coords = Settings.IMP.MAIN.FALLING_COORDS;
-    return limboFactory.createPreparedPacket().prepare(packetFactory.createChunkUnloadPacket(coords.X >> 4, coords.Z >> 4)).build();
+    return limboFactory.createPreparedPacket().prepare(packetFactory.createChunkUnloadPacket(coords.X >> 4, coords.Z >> 4), ProtocolVersion.MINECRAFT_1_21_2).build();
   }
 
   private PreparedPacket createAbilitiesPacket(LimboFactory limboFactory, PacketFactory packetFactory) {

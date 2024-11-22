@@ -366,7 +366,7 @@ public class BotFilterSessionHandler implements LimboSessionHandler {
   }
 
   private void changeStateToCaptcha() {
-    if (this.state != CheckState.ONLY_CAPTCHA) {
+    if (this.state != CheckState.ONLY_CAPTCHA && this.version.noLessThan(ProtocolVersion.MINECRAFT_1_21_2)) {
       this.player.writePacket(this.plugin.getPackets().getFallingCheckChunkUnload());
     }
 
