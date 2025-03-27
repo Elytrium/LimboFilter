@@ -22,7 +22,7 @@ jobs:
       - name: Build LimboFilter
         run: ./gradlew build
       - name: Upload LimboFilter
-        uses: actions/upload-artifact@v3.0.0
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: LimboFilter
           path: "build/libs/limbofilter*.jar"
