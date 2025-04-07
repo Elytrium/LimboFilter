@@ -39,10 +39,6 @@ public class SetEntityMetadata implements MinecraftPacket {
     this(entityId, protocolVersion -> metadata);
   }
 
-  public SetEntityMetadata() {
-    throw new IllegalStateException();
-  }
-
   @Override
   public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion protocolVersion) {
     throw new IllegalStateException();

@@ -58,10 +58,6 @@ public class SpawnEntity implements MinecraftPacket {
     this.velocityZ = velocityZ;
   }
 
-  public SpawnEntity() {
-    throw new IllegalStateException();
-  }
-
   @Override
   public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion protocolVersion) {
     throw new IllegalStateException();
