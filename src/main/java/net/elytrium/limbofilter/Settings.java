@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import net.elytrium.commons.config.YamlConfig;
 import net.elytrium.commons.kyori.serialization.Serializers;
+import net.elytrium.limboapi.BuildConstants;
 import net.elytrium.limboapi.api.chunk.Dimension;
 import net.elytrium.limboapi.api.file.BuiltInWorldFileType;
 import net.elytrium.limboapi.api.player.GameMode;
@@ -33,7 +34,7 @@ public class Settings extends YamlConfig {
   public static final Settings IMP = new Settings();
 
   @Final
-  public String VERSION = BuildConstants.FILTER_VERSION;
+  public String VERSION = BuildConstants.LIMBO_VERSION;
 
   @Comment({
       "Available serializers:",
@@ -453,6 +454,28 @@ public class Settings extends YamlConfig {
       public String SEND_FAILED = "{PRFX} There is no registered servers or connected players named {0}.";
 
       public String CAPTCHA_NOT_READY_YET = "{PRFX} The captcha is not ready yet. Try again in a few seconds.";
+    }
+
+    @Create
+    public REDIS REDIS;
+
+    @Comment("Redis connection settings")
+    public static class REDIS {
+
+      public boolean ENABLE = false;
+      public String HOST = "localhost";
+      public int PORT = 6379;
+    }
+
+
+    @Create
+    public CAPTCHA_WHITELIST CAPTCHA_WHITELIST;
+
+    @Comment("Whitelist usernames or IP addresses to not show captcha")
+    public static class CAPTCHA_WHITELIST {
+
+      public boolean ENABLE = false;
+      public boolean OVERRIDE_OTHER_CHECKS = false;
     }
   }
 }

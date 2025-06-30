@@ -42,9 +42,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.commons.utils.updates.UpdatesChecker;
+import net.elytrium.limboapi.BuildConstants;
 import net.elytrium.limboapi.api.Limbo;
 import net.elytrium.limboapi.api.LimboFactory;
 import net.elytrium.limboapi.api.chunk.VirtualWorld;
@@ -77,11 +80,13 @@ import org.bstats.charts.SingleLineChart;
 import org.bstats.velocity.Metrics;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 @Plugin(
     id = "limbofilter",
     name = "LimboFilter",
-    version = BuildConstants.FILTER_VERSION,
+    version = BuildConstants.LIMBO_VERSION,
     url = "https://elytrium.net/",
     authors = {
         "Elytrium (https://elytrium.net/)",
@@ -117,6 +122,9 @@ public class LimboFilter {
   private CachedPackets packets;
   private boolean logsDisabled;
   private TcpListener tcpListener;
+
+  private JedisPool jedisPool;
+  private final Matcher nicknameMatcher = Pattern.compile("[^a-zA-Z0-9_]+").matcher("");
 
   @Inject
   public LimboFilter(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
@@ -167,6 +175,16 @@ public class LimboFilter {
   @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
   public void reload() {
     Settings.IMP.reload(this.configFile, Settings.IMP.PREFIX);
+
+    if (Settings.IMP.MAIN.REDIS.ENABLE) {
+      this.jedisPool = new JedisPool(Settings.IMP.MAIN.REDIS.HOST, Settings.IMP.MAIN.REDIS.PORT);
+
+      try (Jedis jedis = this.jedisPool.getResource()) {
+        if (jedis.ping().equals("PONG")) {
+          LOGGER.info("Redis connected");
+        }
+      }
+    }
 
     ComponentSerializer<Component, Component, String> serializer = Settings.IMP.SERIALIZER.getSerializer();
     if (serializer == null) {
@@ -410,6 +428,18 @@ public class LimboFilter {
   }
 
   public boolean shouldCheck(String nickname, InetAddress ip) {
+    if (this.jedisPool != null && Settings.IMP.MAIN.CAPTCHA_WHITELIST.ENABLE) {
+      try (Jedis jedis = this.jedisPool.getResource()) {
+        String sanitizedNickname = this.nicknameMatcher.reset(nickname).replaceAll(""); // Probably no need, but I did it anyway
+        if (jedis.exists("captcha_whitelist_nickname:" + sanitizedNickname)
+                || jedis.exists("captcha_whitelist_ip:" + ip.getHostAddress())) {
+          return false;
+        } else if (Settings.IMP.MAIN.CAPTCHA_WHITELIST.OVERRIDE_OTHER_CHECKS) {
+          return true;
+        }
+      }
+    }
+
     if (this.cachedFilterChecks.containsKey(nickname)) {
       return !ip.equals(this.cachedFilterChecks.get(nickname).getInetAddress());
     } else {
