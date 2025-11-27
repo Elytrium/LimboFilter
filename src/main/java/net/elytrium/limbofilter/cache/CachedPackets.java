@@ -225,6 +225,7 @@ public class CachedPackets {
     this.singleDispose(this.kickProxyCheck);
     this.singleDispose(this.successfulBotFilterChat);
     this.singleDispose(this.successfulBotFilterDisconnect);
+    this.singleDispose(this.fallingCheckChunkUnload);
     this.singleDispose(this.noAbilities);
     this.singleDispose(this.experience);
     this.singleDispose(this.captchaNotReadyYet);
