@@ -24,6 +24,7 @@ import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import java.util.UUID;
 import java.util.function.Function;
+import net.elytrium.limbofilter.protocol.data.PackedVector;
 
 public class SpawnEntity implements MinecraftPacket {
 
@@ -76,6 +77,10 @@ public class SpawnEntity implements MinecraftPacket {
       buf.writeDouble(this.positionX);
       buf.writeDouble(this.positionY);
       buf.writeDouble(this.positionZ);
+
+      if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_21_9)) {
+        PackedVector.write(buf, this.velocityX, this.velocityY, this.velocityZ);
+      }
     } else {
       buf.writeByte(this.type.apply(protocolVersion));
       buf.writeInt((int) (this.positionX * 32.0));
@@ -90,9 +95,12 @@ public class SpawnEntity implements MinecraftPacket {
     } else {
       buf.writeInt(this.data);
     }
-    buf.writeShort((int) (this.velocityX * 8000.0F));
-    buf.writeShort((int) (this.velocityY * 8000.0F));
-    buf.writeShort((int) (this.velocityZ * 8000.0F));
+
+    if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_21_9)) {
+      buf.writeShort((int) (this.velocityX * 8000.0F));
+      buf.writeShort((int) (this.velocityY * 8000.0F));
+      buf.writeShort((int) (this.velocityZ * 8000.0F));
+    }
   }
 
   @Override
