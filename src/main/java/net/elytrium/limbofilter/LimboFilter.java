@@ -30,7 +30,6 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.velocitypowered.proxy.console.VelocityConsole;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOError;
@@ -164,7 +163,6 @@ public class LimboFilter {
     Configurator.setLevel(consoleLogger.getName(), consoleLogger.getLevel());
   }
 
-  @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
   public void reload() {
     Settings.IMP.reload(this.configFile, Settings.IMP.PREFIX);
 
@@ -299,6 +297,7 @@ public class LimboFilter {
             new PacketMapping(0x16, ProtocolVersion.MINECRAFT_1_20_5, false),
             new PacketMapping(0x18, ProtocolVersion.MINECRAFT_1_21_2, false),
             new PacketMapping(0x19, ProtocolVersion.MINECRAFT_1_21_6, false),
+            new PacketMapping(0x1A, ProtocolVersion.MINECRAFT_26_1, false),
         })
         .registerPacket(PacketDirection.CLIENTBOUND, SetEntityMetadata.class, null, new PacketMapping[]{
             new PacketMapping(0x1C, ProtocolVersion.MINIMUM_VERSION, true),
@@ -318,6 +317,7 @@ public class LimboFilter {
             new PacketMapping(0x5D, ProtocolVersion.MINECRAFT_1_21_2, true),
             new PacketMapping(0x5C, ProtocolVersion.MINECRAFT_1_21_5, true),
             new PacketMapping(0x61, ProtocolVersion.MINECRAFT_1_21_9, true),
+            new PacketMapping(0x63, ProtocolVersion.MINECRAFT_26_1, true),
         })
         .registerPacket(PacketDirection.CLIENTBOUND, SpawnEntity.class, null, new PacketMapping[]{
             new PacketMapping(0x0E, ProtocolVersion.MINIMUM_VERSION, true),
