@@ -22,6 +22,7 @@ import com.velocitypowered.proxy.connection.MinecraftSessionHandler;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
+import net.elytrium.limbofilter.protocol.data.PackedVector;
 
 public class Interact implements MinecraftPacket {
 
@@ -35,7 +36,15 @@ public class Interact implements MinecraftPacket {
 
   @Override
   public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion protocolVersion) {
-    if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_7_6) > 0) {
+    if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_26_1) >= 0) {
+      this.entityId = ProtocolUtils.readVarInt(buf);
+      this.hand = ProtocolUtils.readVarInt(buf);
+      PackedVector target = PackedVector.read(buf);
+      this.targetX = (float) target.x();
+      this.targetY = (float) target.y();
+      this.targetZ = (float) target.z();
+      this.sneaking = buf.readBoolean();
+    } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_7_6) > 0) {
       this.entityId = ProtocolUtils.readVarInt(buf);
       this.type = ProtocolUtils.readVarInt(buf);
       if (this.type == 2) {
