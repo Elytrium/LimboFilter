@@ -321,7 +321,7 @@ public class CachedPackets {
   private PreparedPacket[] createExpPackets(LimboFactory limboFactory, PacketFactory packetFactory) {
     int ticks = Settings.IMP.MAIN.FALLING_CHECK_TICKS;
     PreparedPacket[] packets = new PreparedPacket[ticks];
-    final int ticksM1 = ticks - 1;
+    final int ticksM1 = Math.max(1, ticks - 1);
     for (int i = 0; i < ticks; ++i) {
       packets[i] = limboFactory.createPreparedPacket().prepare(packetFactory.createSetExperiencePacket((float) i / ticksM1, (i * 100) / ticksM1, 0)).build();
     }
