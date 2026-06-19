@@ -1,0 +1,32 @@
+name: Build LimboFilter JAR
+
+# Builds the plugin jar on the development branch and publishes it as a
+# downloadable workflow artifact. No repository secrets are required, so this
+# runs cleanly on forks/feature branches. Download the "LimboFilter" artifact
+# from the run summary and drop the jar into your Velocity plugins folder.
+
+on:
+  push:
+    branches:
+      - claude/inspiring-fermi-op84ll
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4.7.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - name: Build LimboFilter
+        run: ./gradlew build
+      - name: Upload LimboFilter JAR
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: LimboFilter
+          path: build/libs/limbofilter*.jar
+          if-no-files-found: error
