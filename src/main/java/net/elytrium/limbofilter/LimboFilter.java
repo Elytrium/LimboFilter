@@ -91,6 +91,8 @@ import org.slf4j.Logger;
 )
 public class LimboFilter {
 
+  private static final String FILTER_WORLD_NAME = "limbofilter:filter";
+
   @MonotonicNonNull
   private static Logger LOGGER;
   @MonotonicNonNull
@@ -232,6 +234,7 @@ public class LimboFilter {
     Settings.MAIN.COORDS captchaCoords = Settings.IMP.MAIN.COORDS;
     this.filterWorld = this.limboFactory.createVirtualWorld(
         Settings.IMP.MAIN.BOTFILTER_DIMENSION,
+        FILTER_WORLD_NAME,
         captchaCoords.CAPTCHA_X, captchaCoords.CAPTCHA_Y, captchaCoords.CAPTCHA_Z,
         (float) captchaCoords.CAPTCHA_YAW, (float) captchaCoords.CAPTCHA_PITCH
     );
