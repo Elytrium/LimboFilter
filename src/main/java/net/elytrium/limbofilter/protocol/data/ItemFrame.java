@@ -55,8 +55,10 @@ public class ItemFrame {
       return 71;
     } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_1_21_9) <= 0) {
       return 72;
-    } else {
+    } else if (protocolVersion.compareTo(ProtocolVersion.MINECRAFT_26_2) <= 0) {
       return 73;
+    } else {
+      return 74;
     }
   }
 

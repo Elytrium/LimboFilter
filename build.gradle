@@ -5,7 +5,7 @@ plugins {
     id("checkstyle")
     id("com.github.spotbugs").version("6.4.8")
     id("net.minecraftforge.licenser").version("1.2.0")
-    id("com.gradleup.shadow").version("9.4.0")
+    id("com.gradleup.shadow").version("9.6.1")
 }
 
 setGroup("net.elytrium")
@@ -16,8 +16,8 @@ compileJava {
 }
 
 java {
-    setSourceCompatibility(JavaVersion.VERSION_21)
-    setTargetCompatibility(JavaVersion.VERSION_21)
+    setSourceCompatibility(JavaVersion.VERSION_25)
+    setTargetCompatibility(JavaVersion.VERSION_25)
 }
 
 repositories {
